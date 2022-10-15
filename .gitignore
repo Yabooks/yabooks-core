@@ -1,0 +1,7 @@
+.DS_Store
+apps
+node_modules
+yabooks-linux
+yabooks-macos
+yabooks-win.exe
+.env
