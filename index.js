@@ -10,7 +10,7 @@ process.env.port = app.listen(process.env.port || 8080).address().port;
 const rawBodySaver = (req, res, buf, encoding) => { if(buf && buf.length) req.rawBody = buf.toString(encoding || 'utf8') };
 app.use(bodyParser.json({ verify: rawBodySaver, limit: "10mb" }));
 app.use(bodyParser.urlencoded({ verify: rawBodySaver, extended: true }));
-app.use(bodyParser.raw({ verify: rawBodySaver, type: '*/*' }));
+app.use(bodyParser.raw({ verify: rawBodySaver, type: "*/*" }));
 
 // authentication via JWT
 app.use("/api/v1/*", jwt({ secret: process.env.secret || Math.random(), algorithms: [ "HS256" ] }), (err, req, res, next) =>
@@ -31,7 +31,7 @@ app.use(async function(req, res, next)
     });
 
     // convert query string in mongo filter
-    req.filters = Object.keys(req.query).filter(key => [ "skip", "limit" ].indexOf(key) < 0 && key.indexOf("alternate_") < 0).map(key =>
+    req.filters = Object.keys(req.query).filter(key => [ "skip", "limit" ].indexOf(key) < 0).map(key =>
     {
         const guessType = (value) =>
         {
