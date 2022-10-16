@@ -1,5 +1,5 @@
 const mongoose = require("../services/connector.js");
-const { Address, Email, Phone } = requrie("./contact.js");
+const { Address, Email, Phone } = require("./contact.js");
 
 // cost center schema, which is also used by articles and stores
 const CostCenter = mongoose.model("CostCenter", (function()
