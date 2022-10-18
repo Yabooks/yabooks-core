@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-const { LedgerAccount } = require("../models/account.js"), { Document } = require("../models/document.js"), { CostCenter, Article, Store } = require("../models/costcenter.js");
+const { LedgerAccount } = require("../models/account.js"), { CostCenter, Article, Store } = require("../models/costcenter.js");
+const { Document } = require("../models/document.js"), { Business } = require("../models/business.js");
 
 module.exports = function(api)
 {
@@ -70,6 +71,29 @@ module.exports = function(api)
                 { $unwind: "$account" },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$account" ] } } },
                 { $project: { account: 0 } }
+            ]));
+        }
+        catch(x) { next(x) }
+    });
+
+    api.get("/api/v1/businesses/:id/open-items", async (req, res, next) =>
+    {
+        try
+        {
+            res.send(await req.paginatedAggregatePipelineWithFilters(Document,
+            [
+                { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true, receivable: { $ne: 0 } } },
+                { $unionWith: { coll: Document.collection.collectionName, pipeline: [
+                    { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
+                    { $unwind: "$pays" },
+                    { $set: { "_id": "$pays.document", "receivable": "$pays.amount_paid", due_date: null } }
+                ] } },
+                { $match: { receivable: { $ne: 0 } } },
+                { $group: { _id: "$_id", receivable: { $sum: "$receivable" }, due_date: { $min: "$due_date" } } },
+                { $lookup: { from: Document.collection.collectionName, localField: "_id", foreignField: "_id", as: "business_partner" } },
+                { $unwind: "$business_partner" },
+                { $lookup: { from: Business.collection.collectionName, localField: "business_partner.business_partner", foreignField: "_id", as: "business_partner" } },
+                { $unwind: { path: "$business_partner", preserveNullAndEmptyArrays: true } }
             ]));
         }
         catch(x) { next(x) }

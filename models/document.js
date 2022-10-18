@@ -110,6 +110,19 @@ const ShippingTransaction = (function()
     return schema;
 })();
 
+const Payment = (function()
+{
+    const schemaDefinition = (
+    {
+        document: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
+        amount_paid: { type: mongoose.Schema.Types.Decimal128, required: true }
+    });
+
+    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true } });
+    schema.path("document").index(true);
+    return schema;
+})();
+
 // document schema
 const Document = mongoose.model("Document", (function()
 {
@@ -132,7 +145,8 @@ const Document = mongoose.model("Document", (function()
         posted: { type: Boolean, required: true, default: false },
 
         receivable: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
-        pays: [ { type: mongoose.Schema.Types.ObjectId, ref: "Document" } ],
+        due_date: Date,
+        pays: [ Payment ],
 
         ledger_transactions: [ LedgerTransaction ],
         cost_transactions: [ CostTransaction ],
