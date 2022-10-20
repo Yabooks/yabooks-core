@@ -6,17 +6,16 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
     const schemaDefinition = (
     {
         business: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: true },
-        type: { type: String, enum: [ "assets", "liabilities", "revenues", "expenses" ], required: true },
+        type: { type: String, enum: [ "assets", "liabilities", "equity", "revenues", "expenses" ], required: true },
         display_number: { type: String, required: true },
         display_name: { type: String, required: true },
 
         preferred_tax_code: String,
         preferred_tax_percent: mongoose.Schema.Types.Decimal128,
 
+        tags: [ { type: String, enum: [ "fixed", "current", "liquid funds", "raw materials and supplies", "long-term", "short-term" ] } ],
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
         tax_number: String,
-
-        is_payment_account: { type: Boolean, required: true, default: false },
         credit_card_number_ending: String,
         iban: String,
         bic: String,

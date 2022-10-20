@@ -6,7 +6,9 @@ const CostCenter = mongoose.model("CostCenter", (function()
 {
     const schemaDefinition = (
     {
-        name: String
+        display_name: String,
+        display_number: String,
+        data: mongoose.Schema.Types.Mixed
     });
 
     return new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false });

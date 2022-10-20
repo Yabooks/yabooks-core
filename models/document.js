@@ -140,6 +140,7 @@ const Document = mongoose.model("Document", (function()
         name: String,
         mime_type: String,
         bytes: Buffer,
+        tags: [ String ],
 
         posting_date: { type: Date, required: true, default: Date.now },
         posted: { type: Boolean, required: true, default: false },
