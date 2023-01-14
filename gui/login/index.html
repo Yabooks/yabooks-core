@@ -1,0 +1,82 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title></title>
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+    </head>
+    <body>
+        <form id="login_form" onsubmit="return false">
+            <input type="email" v-model="email" placeholder="email address" />
+            <input type="password" v-model="password" placeholder="password" />
+            <button type="submit" @click="login">login</button>
+        </form>
+        <script type="text/javascript">
+            new Vue(
+            {
+                el: "#login_form",
+
+                data:
+                {
+                    params: {},
+                    email: "",
+                    password: ""
+                },
+
+                async created()
+                {
+                    try
+                    {
+                        // parse request url query parameters
+                        this.params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) =>
+                            typeof prop === "string" ? searchParams.get(prop) : false });
+
+                        // check if user is already logged in using an existing cookie
+                        let session = await axios.get("/api/v1/session");
+                        
+                        if(session.data.user_token)
+                            this.proceed(session.data.user_token);
+                    }
+                    catch(x) { console.error(x) }
+                },
+
+                methods:
+                {
+                    login: async function()
+                    {
+                        try
+                        {
+                            // authenticate against api
+                            let res = await axios.post("/api/v1/session", { email: this.email, password: this.password });
+
+                            // successful authentication
+                            if(res.data.user_token)
+                                this.proceed(res.data.user_token);
+
+                            // unsuccessful authentication
+                            else throw false;
+                        }
+                        catch(x)
+                        {
+                            alert("Error!");
+                        }
+                    },
+
+                    proceed: async function(user_token)
+                    {
+                        // if user was redirected here for oauth, proceed with oauth flow
+                        if(this.params.context_token)
+                            self.location = "/oauth/code?context_token=" + this.params.context_token + "&user_token=" + user_token;
+
+                        // if user was redirected here from some specific page, go back there
+                        else if(this.params.redir)
+                            self.location = this.params.redir;
+
+                        // if no context was provided, redirect to home page
+                        else self.location = "/home/";
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
