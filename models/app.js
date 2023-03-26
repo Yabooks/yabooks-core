@@ -5,7 +5,7 @@ const App = mongoose.model("App", (function()
 {
     const webhookSchema = new mongoose.Schema(
     {
-        trigger: { type: String, required: true },
+        event: { type: String, required: true },
         url: { type: String, required: true }
     });
 
@@ -50,10 +50,50 @@ const OAuthCode = mongoose.model("OAuthCode", (function()
     return schema;
 })());
 
-//
-App.callWebhooks = async function(webhook_id, payload)
+// calls all webhooks for the specified event (optionally restriced to a specific app)
+App.callWebhooks = async function(event, payload, app_id = null)
 {
-    // TODO
+    try
+    {
+        let pipeline = [];
+
+        if(app_id)
+            pipeline.push({ $match: { _id: new mongoose.Types.ObjectId(app_id) } });
+
+        pipeline = (
+        [
+            ...pipeline,
+            { $unwind: "$webhooks" },
+            { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$webhooks", { document_id: "$$ROOT._id" } ] } }  },
+            { $match: { $or: [ { event }, { event: event + ".own" } ] } }
+        ]);
+
+        for(let webhook of await App.aggregate(pipeline))
+            if(app_id && webhook.event.indexOf(".own") > -1 && webhook._id !== app_id)
+                continue;
+            else ;// TODO await axios.get(webhook.url + payload);
+    }
+    catch(x)
+    {
+        console.error(x);
+    }
+};
+
+// returns the webhook url for the specified event and app
+App.getWebhook = async function(event, app_id)
+{
+    let webhooks = await App.aggregate(
+    [
+        { $match: { _id: new mongoose.Types.ObjectId(app_id) } },
+        { $unwind: "$webhooks" },
+        { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$webhooks", { document_id: "$$ROOT._id" } ] } }  },
+        { $match: { event } }
+    ]);
+
+    if(webhooks && webhooks.length > 0)
+        return webhooks[0].url;
+
+    else throw `no webhook for event "${event}" found for app ${app_id}`;
 };
 
 module.exports = { App, OAuthCode };

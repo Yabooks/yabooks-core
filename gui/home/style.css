@@ -1,0 +1,14 @@
+html, body
+{
+    font-family: "Roboto", sans-serif;
+}
+
+.app
+{
+    width: 125px;
+    height: 125px;
+    cursor: pointer;
+    border-radius: 20px;
+    display: inline-block;
+    border: 1px solid gray;
+}

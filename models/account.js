@@ -23,9 +23,7 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
         valid_from: Date,
         valid_to: Date,
 
-        data: mongoose.Schema.Types.Mixed,
-        created_by_app: { type: mongoose.Schema.Types.ObjectId, ref: "App" },
-        created_by_user: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+        data: mongoose.Schema.Types.Mixed
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });

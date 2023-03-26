@@ -166,6 +166,9 @@ const Document = mongoose.model("Document", (function()
     schema.path("internal_reference").index(true);
     schema.path("external_reference").index(true);
     schema.path("business_partner").index(true);
+    schema.path("intracompany").index(true);
+    schema.path("mime_type").index(true);
+    schema.path("tags").index(true);
     schema.path("posting_date").index(true);
     schema.path("posted").index(true);
     schema.path("pays").index(true);

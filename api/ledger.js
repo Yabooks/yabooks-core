@@ -12,6 +12,7 @@ module.exports = function(api)
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
+                { $set: { "document_id": "$_id._id" } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", { document_id: "$$ROOT._id" } ] } }  },
                 { $match: { alternate_ledger: null } },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, time_transactions: 0, stock_transactions: 0, shipping_transactions: 0 } },
@@ -29,6 +30,7 @@ module.exports = function(api)
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
+                { $set: { "document_id": "$_id._id" } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", { document_id: "$$ROOT._id" } ] } }  },
                 { $match: { $or: [ { alternate_ledger: null }, { alternate_ledger: req.params.alternate_ledger} ] } },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, time_transactions: 0, stock_transactions: 0, shipping_transactions: 0 } },
@@ -130,6 +132,7 @@ module.exports = function(api)
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$cost_transactions" },
+                { $set: { "document_id": "$_id._id" } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$cost_transactions", { document_id: "$$ROOT._id" } ] } } },
                 { $unionWith: { coll: Document.collection.collectionName, pipeline: [
                     { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },

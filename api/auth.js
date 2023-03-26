@@ -53,7 +53,7 @@ module.exports = function(api)
         await session.save();
 
         let user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
-        res.cookie("user_token", user_token).send({ user_token });
+        res.cookie("user_token", user_token, { httpOnly: true, path: "/" }).send({ user_token });
     });
 
     // where front-end redirects after successful login to continue with oauth flow

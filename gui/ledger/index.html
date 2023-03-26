@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+    </head>
+    <body>
+        <div id="table">
+            <table>
+                <tr>
+                    <th>Date</th>
+                    <th>Text</th>
+                    <th>Amount</th>
+                    <th>Tax</th>
+                </tr>
+                <tr v-for="record in records">
+                    <td>{{ record.display_data || record.date || record.posting_date }}</td>
+                    <td>{{ record.text }}</td>
+                    <td>{{ record.amount }}</td>
+                    <td>{{ record.tax_code_base }}{{ record.tax_percent }}%</td>
+                </tr>
+            </table>
+            <span v-if="error">
+                {{ error }}
+            </span>
+        </div>
+        <script type="text/javascript">
+            new Vue(
+            {
+                el: "#table",
+
+                data:
+                {
+                    records: [],
+                    error: null
+                },
+
+                async created()
+                {
+                    try
+                    {
+                        let business = localStorage.getItem("business");
+                        if(!business)
+                        {
+                            let res = await axios.get("/api/v1/session");
+                            business = res.data.data.business;
+                        }
+
+                        let res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
+                        this.records = res.data.data;
+                    }
+                    catch(x)
+                    {
+                        this.docs = [];
+                        this.error = "Please select a business first.";
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -1,7 +1,6 @@
 <!DOCTYPE HTML>
 <html>
     <head>
-        <title></title>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
     </head>
@@ -33,11 +32,10 @@
 
                         // check if user is already logged in using an existing cookie
                         let session = await axios.get("/api/v1/session");
-                        
                         if(session.data.user_token)
                             this.proceed(session.data.user_token);
                     }
-                    catch(x) { console.error(x) }
+                    catch(x) {}
                 },
 
                 methods:

@@ -1,4 +1,5 @@
 const isoDateRegex = /(\d{4}-[01]\d-[0-3]\d)|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+)|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d)|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d)/;
+const mongoose = require("mongoose");
 
 module.exports = async function(req, res, next)
 {
@@ -28,6 +29,10 @@ module.exports = async function(req, res, next)
             // detect iso date string
             if(isoDateRegex.test(value))
                 return new Date(value);
+
+            // detect mongo object id
+            if(/[0-9a-f]{24}/.test(value))
+                return new mongoose.Types.ObjectId(value);
 
             // string otherwise
             return value;

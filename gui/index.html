@@ -1,22 +1,43 @@
-<!DOCTYPE>
+<!DOCTYPE HTML>
 <html>
     <head>
-        <title></title>
+        <title>YaBooks</title>
         <base target="main" />
-        <style type="text/css">
-            html, body
-            {
-                margin: 0 0 0 0;
-            }
-            #main
-            {
-                border: 0;
-                width: 100%;
-                height: 100%;
-            }
-        </style>
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
     </head>
     <body>
-        <iframe id="main" name="main" src="/login/" />
+        <main>
+            <nav>
+                <a href="/login/">
+                    Home
+                </a>
+                <a @click="logout">
+                    Logout
+                </a>
+            </nav>
+            <iframe id="main" name="main" src="/login/"></iframe>
+        </main>
+        <script type="text/javascript">
+            new Vue(
+            {
+                el: "main",
+
+                async mounted()
+                {
+
+                },
+
+                methods:
+                {
+                    async logout()
+                    {
+                        await axios.delete("/api/v1/session");
+                        self.location = "/";
+                    }
+                }
+            });
+        </script>
     </body>
 </html>
