@@ -13,10 +13,17 @@ module.exports = function(api)
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
                 { $set: { "document_id": "$_id._id" } },
-                { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", { document_id: "$$ROOT._id" } ] } }  },
+                { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", {
+                    document_id: "$$ROOT._id",
+                    document_type: "$$ROOT.type",
+                    document_internal_reference: "$$ROOT.internal_reference",
+                    document_external_reference: "$$ROOT.external_reference",
+                    business_partner: "$$ROOT.business_partner"
+                } ] } } },
                 { $match: { alternate_ledger: null } },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, time_transactions: 0, stock_transactions: 0, shipping_transactions: 0 } },
-                { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } }
+                { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
+                { $unwind: "$account" }
             ]));
         }
         catch(x) { next(x) }
@@ -31,10 +38,17 @@ module.exports = function(api)
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
                 { $set: { "document_id": "$_id._id" } },
-                { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", { document_id: "$$ROOT._id" } ] } }  },
+                { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", {
+                    document_id: "$$ROOT._id",
+                    document_type: "$$ROOT.type",
+                    document_internal_reference: "$$ROOT.internal_reference",
+                    document_external_reference: "$$ROOT.external_reference",
+                    business_partner: "$$ROOT.business_partner"
+                } ] } }  },
                 { $match: { $or: [ { alternate_ledger: null }, { alternate_ledger: req.params.alternate_ledger} ] } },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, time_transactions: 0, stock_transactions: 0, shipping_transactions: 0 } },
-                { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } }
+                { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
+                { $unwind: "$account" }
             ]));
         }
         catch(x) { next(x) }
@@ -140,7 +154,8 @@ module.exports = function(api)
                     { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$time_transactions", { document_id: "$$ROOT._id" } ] } } },
                 ] } },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, time_transactions: 0, stock_transactions: 0, shipping_transactions: 0, receivable: 0, pays: 0 } },
-                { $lookup: { from: CostCenter.collection.collectionName, localField: "cost_center", foreignField: "_id", as: "cost_center" } }
+                { $lookup: { from: CostCenter.collection.collectionName, localField: "cost_center", foreignField: "_id", as: "cost_center" } },
+                { $unwind: "$cost_center" }
             ]));
         }
         catch(x) { next(x) }

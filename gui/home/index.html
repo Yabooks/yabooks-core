@@ -3,7 +3,7 @@
     <head>
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
     </head>
     <body>
         <div id="app_screen">
@@ -14,6 +14,10 @@
             <div class="app" @click="navigate({ link: '/documents/' })">
                 <img class="icon" src="/documents/logo.png" />
                 <span>Documents</span>
+            </div>
+            <div class="app" @click="navigate({ link: '/balances/' })">
+                <img class="icon" src="/balances/logo.png" />
+                <span>Balances</span>
             </div>
             <div class="app" v-for="app in apps" v-if="app.link" @click="navigate(app)">
                 <img class="icon" :src="app.icon" />

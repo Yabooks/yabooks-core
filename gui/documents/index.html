@@ -2,7 +2,9 @@
 <html>
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
     </head>
     <body>
         <div id="doc_list">
@@ -11,7 +13,7 @@
                 <span>{{ doc.type }}{{ doc.internal_reference }}</span>
                 <span>{{ doc.external_reference }}</span>
                 <span>{{ doc.name }}</span>
-                <span>{{ doc.date || doc.posting_date | date }}</span>
+                <span>{{ doc.date || doc.posting_date | formatDate }}</span>
                 <div>
                     <button @click="showLedgerRecords(doc)">show ledger records</button>
                 </div>
@@ -20,55 +22,6 @@
                 {{ error }}
             </span>
         </div>
-        <script type="text/javascript">
-            new Vue(
-            {
-                el: "#doc_list",
-
-                data:
-                {
-                    docs: [],
-                    error: null
-                },
-
-                async created()
-                {
-                    try
-                    {
-                        let business = localStorage.getItem("business");
-                        if(!business)
-                        {
-                            let res = await axios.get("/api/v1/session");
-                            business = res.data.data.business;
-                        }
-
-                        res = await axios.get(`/api/v1/businesses/${business}/documents`);
-                        this.docs = res.data.data;
-                        this.error = null;
-                    }
-                    catch(x)
-                    {
-                        this.docs = [];
-                        this.error = "Please select a business first.";
-                    }
-                },
-
-                filters:
-                {
-                    date: (timestamp) =>
-                    {
-                        return new Date(timestamp).toLocaleDateString();
-                    }
-                },
-
-                methods:
-                {
-                    showLedgerRecords(doc)
-                    {
-                        self.location = `/ledger/?business=${doc.business}&document_id=${doc._id}`;
-                    }
-                }
-            });
-        </script>
+        <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

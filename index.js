@@ -5,6 +5,7 @@ require("dotenv").config();
 const app = express();
 app.use(express.static("./gui"));
 app.use("/js/axios", express.static("./node_modules/axios/dist"));
+app.use("/js/vue", express.static("./node_modules/vue/dist"));
 process.env.port = app.listen(process.env.port || 8080).address().port;
 
 // inject express middlewares

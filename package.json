@@ -22,6 +22,7 @@
     "express-jwt": "^8.3.0",
     "jsonwebtoken": "^9.0.0",
     "libphonenumber-js": "^1.10.14",
-    "mongoose": "^6.6.0"
+    "mongoose": "^6.6.0",
+    "vue": "^2.6.14"
   }
 }

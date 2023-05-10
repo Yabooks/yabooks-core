@@ -2,60 +2,67 @@
 <html>
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
     </head>
     <body>
         <div id="table">
             <table>
                 <tr>
                     <th>Date</th>
+                    <th>Document</th>
+                    <th>Account</th>
                     <th>Text</th>
-                    <th>Amount</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
                     <th>Tax</th>
                 </tr>
                 <tr v-for="record in records">
-                    <td>{{ record.display_data || record.date || record.posting_date }}</td>
-                    <td>{{ record.text }}</td>
-                    <td>{{ record.amount }}</td>
-                    <td>{{ record.tax_code_base }}{{ record.tax_percent }}%</td>
+                    <td>
+                        {{ record.display_data || record.date || record.posting_date | formatDate }}
+                    </td>
+                    <td>
+                        <a @click="goToDocument(record.document_id)">
+                            <span v-if="record.document_external_reference">{{ record.document_external_reference }}</span>
+                            <span v-else>{{ record.document_type }}{{ record.document_internal_reference }}</span>
+                        </a>
+                    </td>
+                    <td :title="record.account.display_name">
+                        <a @click="goToAccount(record.account._id)">
+                            {{ record.account.display_number }}
+                        </a>
+                    </td>
+                    <td>
+                        {{ record.text }}
+                    </td>
+                    <td align="right">
+                        <span v-if="(record.amount.$numberDecimal || record.amount) > 0">
+                            {{ record.amount | formatNumber }}
+                        </span>
+                    </td>
+                    <td align="right">
+                        <span v-if="(record.amount.$numberDecimal || record.amount) < 0">
+                            {{ record.amount | absolute | formatNumber }}
+                        </span>
+                    </td>
+                    <td :title="record.tax_code || record.tax_code_base">
+                        <span v-if="record.tax_code || record.tax_code_base">
+                            {{ record.tax_code || record.tax_code_base | formatTaxCode }}
+                            <span v-if="record.tax_code_base">
+                                {{ record.tax_percent | formatNumber }}%
+                            </span>
+                            <span v-if="record.tax_code">
+                                {{ record.tax_code | toTaxName }}
+                            </span>
+                        </span>
+                    </td>
                 </tr>
             </table>
             <span v-if="error">
                 {{ error }}
             </span>
         </div>
-        <script type="text/javascript">
-            new Vue(
-            {
-                el: "#table",
-
-                data:
-                {
-                    records: [],
-                    error: null
-                },
-
-                async created()
-                {
-                    try
-                    {
-                        let business = localStorage.getItem("business");
-                        if(!business)
-                        {
-                            let res = await axios.get("/api/v1/session");
-                            business = res.data.data.business;
-                        }
-
-                        let res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
-                        this.records = res.data.data;
-                    }
-                    catch(x)
-                    {
-                        this.docs = [];
-                        this.error = "Please select a business first.";
-                    }
-                }
-            });
-        </script>
+        <script type="text/javascript" src="app.js"></script>
     </body>
 </html>
