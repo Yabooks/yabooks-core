@@ -5,6 +5,7 @@
         <script type="text/javascript" src="/js/vue/vue.min.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+        <link rel="stylesheet" type="text/css" href="/_generic/design.css" />
     </head>
     <body>
         <div id="table">
@@ -23,13 +24,13 @@
                         {{ record.display_data || record.date || record.posting_date | formatDate }}
                     </td>
                     <td>
-                        <a @click="goToDocument(record.document_id)">
+                        <a class="link" @click="goToDocument(record.document_id)">
                             <span v-if="record.document_external_reference">{{ record.document_external_reference }}</span>
                             <span v-else>{{ record.document_type }}{{ record.document_internal_reference }}</span>
                         </a>
                     </td>
                     <td :title="record.account.display_name">
-                        <a @click="goToAccount(record.account._id)">
+                        <a class="link" @click="goToAccount(record.account._id)">
                             {{ record.account.display_number }}
                         </a>
                     </td>

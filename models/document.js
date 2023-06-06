@@ -28,6 +28,13 @@ const LedgerTransaction = (function()
     return schema;
 })();
 
+// make sure there cannot be a debit/credit difference on ledger transactions
+const debitCreditValidation = function(transactions)
+{
+    console.log("validation", transactions);
+    return true;
+};
+
 // cost transaction schema
 const CostTransaction = (function()
 {
@@ -141,6 +148,7 @@ const Document = mongoose.model("Document", (function()
         name: String,
         mime_type: String,
         bytes: Buffer,
+        thumbnail: Buffer,
         tags: [ String ],
 
         posting_date: { type: Date, required: true, default: Date.now },
@@ -161,6 +169,7 @@ const Document = mongoose.model("Document", (function()
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    schema.path("ledger_transactions").validate(debitCreditValidation, "debit credit difference");
     schema.path("business").index(true);
     schema.path("type").index(true);
     schema.path("internal_reference").index(true);

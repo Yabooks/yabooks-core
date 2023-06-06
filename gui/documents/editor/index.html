@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" type="text/css" href="/_generic/design.css" />
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+    </head>
+    <body>
+        <main>
+            <table>
+                <tr>
+                    <th>Date</th>
+                    <th>Account</th>
+                    <th>Text</th>
+                    <th>Amount Debit</th>
+                    <th>Amount Credit</th>
+                    <th>Tax Code Base</th>
+                    <th>Tax Code</th>
+                    <th>Tax Percent</th>
+                </tr>
+                <tbody is="ledger-tx" v-for="tx in doc.ledger_transactions" :tx="tx" />
+            </table>
+            <button @click="save" :disabled="getWarnings()">
+                save changes
+            </button>
+            <span v-if="getWarnings()">
+                &#x26a0;&#xfe0f; {{ getWarnings() }}
+            </span>
+        </main>
+        <script type="text/javascript" src="app.js"></script>
+        <script type="text/javascript" src="components/ledger-tx.js"></script>
+    </body>
+</html>

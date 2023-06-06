@@ -1,6 +1,8 @@
 <!DOCTYPE HTML>
 <html>
     <head>
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" type="text/css" href="/_generic/design.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.min.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
@@ -9,18 +11,51 @@
     <body>
         <div id="doc_list">
             <div class="doc" v-for="doc in docs">
-                <img src="" />
-                <span>{{ doc.type }}{{ doc.internal_reference }}</span>
-                <span>{{ doc.external_reference }}</span>
-                <span>{{ doc.name }}</span>
-                <span>{{ doc.date || doc.posting_date | formatDate }}</span>
-                <div>
-                    <button @click="showLedgerRecords(doc)">show ledger records</button>
+                <img class="thumbnail" :src="'/api/v1/documents/' + doc._id + '/thumbnail'" height="50" />
+                <div class="description">
+                    <span class="label internal_reference" v-if="doc.type || doc.internal_reference">
+                        <a class="link" @click="filterForDocType(doc.type)" v-if="doc.type">
+                            {{ doc.type }}
+                        </a>
+                        {{ doc.internal_reference }}
+                    </span>
+                    <span class="label external_reference" v-if="doc.external_reference">
+                        {{ doc.external_reference }}
+                    </span>
+                    <span class="label name" v-if="doc.name">
+                        {{ doc.name }}
+                    </span>
+                    <span class="label date">
+                        {{ doc.date || doc.posting_date | formatDate }}
+                    </span>
+                    <span class="label tag" v-for="tag in doc.tags">
+                        {{ tag }}
+                    </span>
+                    <div>
+                        <button @click="downloadDocument(doc)" v-if="doc.mime_type">
+                            download document
+                        </button>
+                        <button @click="showLedgerRecords(doc)">
+                            show ledger records
+                        </button>
+                        <button @click="editDocument(doc)">
+                            edit document
+                        </button>
+                        <button @click="deleteDocument(doc)">
+                            delete document
+                        </button>
+                    </div>
                 </div>
             </div>
             <span v-if="error">
                 {{ error }}
             </span>
+            <div>
+                <input type="file" style="display: none" id="upload_file_selector" />
+                <button @click="uploadFile()">
+                    upload documents
+                </button>
+            </div>
         </div>
         <script type="text/javascript" src="app.js"></script>
     </body>

@@ -1,4 +1,5 @@
 const { Document } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
+const fs = require("fs").promises;
 
 module.exports = function(api)
 {
@@ -17,6 +18,7 @@ module.exports = function(api)
         try
         {
             let doc = new Document({ business: req.params.id, ...req.body });
+            await doc.validate();
             await doc.save();
             res.send(doc);
 
@@ -40,7 +42,7 @@ module.exports = function(api)
 
     api.patch("/api/v1/documents/:id", async (req, res) =>
     {
-        await Document.updateOne({ _id: req.params.id }, req.body);
+        let x = await Document.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
         res.send({ success: true });
 
         //await Logger.logRecordUpdated("document", , );
@@ -54,7 +56,7 @@ module.exports = function(api)
             let doc = await Document.findOne({ _id: req.params.id }, [ "document_name", "mime_type", "bytes" ]);
             if(!doc)
                 res.status(404).send({ error: "not found" });
-            else res.header("content-type", doc["mime_type"]).send(doc.bytes); // TODO file is actually link to external resource
+            else res.header("content-type", doc["mime_type"]).header("content-disposition", `attachment; name="${doc.name}"`).send(doc.bytes); // TODO if file is actually link to external resource
         }
         catch(x) { next(x) }
     });
@@ -66,6 +68,33 @@ module.exports = function(api)
 
         //await Logger.logRecordUpdated("document", , );
         //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+    });
+
+    api.get("/api/v1/documents/:id/thumbnail", async (req, res) =>
+    {
+        try
+        {
+            let doc = await Document.findOne({ _id: req.params.id }, [ "thumbnail" ]);
+
+            if(doc.thumbnail)
+                res.header("content-type", "image/png").send(doc.thumbnail);
+
+            else
+            {
+                let ext = "";
+                if(doc.name && doc.name.indexOf(".") > -1)
+                    ext = doc.name.substring(doc.name.indexOf(".") + 1).toUpperCase();
+
+                const extColors = { 0: 0, /*D*/3: 4302318, /*P*/15: 16720150, /*X*/23: 1596471, 25: 0 };
+                extColors.get = (i) => extColors[i] ? extColors[i] : 0;//FIXME (extColors.get(i-1) + extColors.get(i+1))/2;
+                extColors.getColor = (str) => "#" + extColors.get(str.charCodeAt(0) - 65).toString(16);
+
+                let svg = await fs.readFile("./gui/documents/file.svg", "utf8");
+                svg = svg.split("$$EXTENSION").join(ext).split("$$COLOR").join(ext ? extColors.getColor(ext) : "#000");
+                res.header("content-type", "image/svg+xml").send(svg);
+            }
+        }
+        catch(x) { next(x) }
     });
 
     api.delete("/api/v1/documents/:id", async (req, res) =>

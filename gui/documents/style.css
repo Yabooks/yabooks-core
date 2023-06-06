@@ -1,0 +1,50 @@
+.doc
+{
+    height: 50px;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.doc .description
+{
+    top: 0;
+    left: 50px;
+    height: 50px;
+    position: absolute;
+    display: inline-block;
+}
+
+.label
+{
+    font-weight: bold;
+    padding: 2px 6px;
+    font-size: .75em;
+    border-radius: 100px;
+}
+
+.label.internal_reference
+{
+    color: rgb(71, 168, 90);
+    background: rgb(243, 252, 242);
+    border: 1px solid rgb(230, 241, 230);
+}
+
+.label.external_reference
+{
+    color: blue;
+}
+
+.label.name
+{
+
+}
+
+.label.date
+{
+
+}
+
+.label.tag
+{
+    color: yellow;
+}

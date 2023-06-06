@@ -5,7 +5,7 @@ const loadSession = async () =>
     if(session && session.user && session.data)
         return;
 
-    let res = await axios.get("/api/v1/session");console.log(res.data);
+    let res = await axios.get("/api/v1/session");
     session = res.data;
 };
 
