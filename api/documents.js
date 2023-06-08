@@ -32,7 +32,7 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, "-bytes");
+            let doc = await Document.findOne({ _id: req.params.id }, [ "-bytes", "-thumbnail" ]);
             if(!doc)
                 res.status(404).send({ error: "not found" });
             else res.send(doc);
@@ -76,7 +76,14 @@ module.exports = function(api)
         {
             let doc = await Document.findOne({ _id: req.params.id }, [ "thumbnail" ]);
 
-            if(doc.thumbnail)
+            if(doc.thumbnail && doc.thumbnail.length < 67) // assume unicode emoji
+            {
+                let svg = await fs.readFile("./gui/documents/unicode-icon.svg", "utf8");
+                svg = svg.split("$$ICON").join(Buffer.from(doc.thumbnail).toString("utf8"));
+                res.header("content-type", "image/svg+xml").send(svg);
+            }
+
+            else if(doc.thumbnail)
                 res.header("content-type", "image/png").send(doc.thumbnail);
 
             else

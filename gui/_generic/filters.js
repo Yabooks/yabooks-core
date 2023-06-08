@@ -1,3 +1,17 @@
+const parseDecimal = function(number)
+{
+    if(!number)
+        return 0;
+
+    if(typeof number === "number")
+        return number;
+
+    if(number.$numberDecimal)
+        return parseFloat(number.$numberDecimal);
+
+    return parseFloat(number);
+};
+
 const filters = (
 {
     absolute: (number) =>

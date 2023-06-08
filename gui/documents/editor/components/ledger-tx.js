@@ -4,9 +4,6 @@ Vue.component("LedgerTx",
 {
     template: `
         <tr>
-            <td>
-                <input type="date" v-model="tx.date" />
-            </td>
             <td :class="{ left: getAmount() < 0, right: getAmount() > 0 }">
                 <input type="text" v-model="tx.account" />
             </td>
@@ -23,7 +20,7 @@ Vue.component("LedgerTx",
                 <select v-model="tx.tax_code_base" @change="taxUpdated" :disabled="tx.tax_code">
                     <option :value="undefined" title="no tax" />
                     <option v-for="tax_code in tax_codes" :value="tax_code">
-                        {{ tax_code }}
+                        {{ tax_code | toTaxName }}
                     </option>
                 </select>
             </td>
@@ -31,7 +28,7 @@ Vue.component("LedgerTx",
                 <select v-model="tx.tax_code" @change="taxUpdated" :disabled="tx.tax_code_base">
                     <option :value="undefined" title="not a tax base" />
                     <option v-for="tax_code in tax_codes" :value="tax_code">
-                        {{ tax_code }}
+                        {{ tax_code | toTaxName }}
                     </option>
                 </select>
             </td>
@@ -65,12 +62,12 @@ Vue.component("LedgerTx",
     {
         getAmount()
         {
-            return parseFloat((this.tx.amount ? this.tx.amount.$numberDecimal : null) || this.tx.amount || 0);
+            return parseDecimal(this.tx.amount);
         },
 
         amountUpdated(event)
         {
-            let value = parseFloat(event.srcElement.value);
+            let value = parseDecimal(event.srcElement.value);
 
             if(event.srcElement.dataset.side == "debit")
             {
@@ -96,7 +93,7 @@ Vue.component("LedgerTx",
             else
             {
                 if(event.srcElement.dataset.field === "percent")
-                    this.tx.tax_percent = this.tax_percent = parseFloat(event.srcElement.value) || 0;
+                    this.tx.tax_percent = this.tax_percent = parseDecimal(event.srcElement.value) || 0;
                 else this.tax_percent = (this.tx.tax_percent ? this.tx.tax_percent.$numberDecimal : null) || this.tx.tax_percent || "";
             }
         }
