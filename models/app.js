@@ -24,7 +24,7 @@ const App = mongoose.model("App", (function()
         description: String,
         icon: String,
         link: String,
-        redirect_uris: [ String ],
+        redirect_uris: [ String ], // for oauth flow
         pid: String,
         webhooks: [ webhookSchema ]
     });

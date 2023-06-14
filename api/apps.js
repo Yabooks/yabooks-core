@@ -6,7 +6,7 @@ module.exports = function(api)
     {
         try
         {
-            let query = App.find({}, { secret: false }, req.pagination);
+            let query = App.find({}, { secret: false, redirect_uris: false }, req.pagination);
             res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
         }
         catch(x) { next(x) }
@@ -23,7 +23,7 @@ module.exports = function(api)
     {
         try
         {
-            let app = App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] }, { secret: false });
+            let app = App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] }, { secret: false, redirect_uris: false });
             if(!app)
                 res.status(404).send({ error: "not found" });
             else res.send(app);
