@@ -126,4 +126,28 @@ module.exports = function(api)
             res.status(404).send({ error: "not found", error_description: "document or its editor could not be found" });
         }
     });
+
+    api.all("/api/v1/documents/:id/sqlite", async (req, res, next) =>
+    {
+        try
+        {
+            let doc = await Document.findOne({ _id: req.params.id }, [ "mime_type", "bytes" ]);
+            let sql = req.body?.toString?.("utf8"); // TODO req.get("content-type")
+
+            if(!doc)
+                return void res.status(404).send({ error: "not found" });
+
+            if(doc.mime_type?.toLowerCase() !== "application/vnd.sqlite3" && doc.mime_type?.toLowerCase() !== "application/x-sqlite3")
+                return void res.status(406).send({ error: "not acceptable", error_description: "document is not a sqlite database" });
+
+            if(!sql)
+                return void res.status(400).send({ error: "no sql statement provided" });
+
+            // TODO
+        }
+        catch(x)
+        {
+            next(x);
+        }
+    });
 };

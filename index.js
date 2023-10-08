@@ -13,7 +13,7 @@ process.env.port = app.listen(process.env.port || 8080).address().port;
 const rawBodySaver = (req, res, buf, encoding) => { if(buf && buf.length) req.rawBody = buf };
 app.use(bodyParser.json({ verify: rawBodySaver, limit: "10mb" }));
 app.use(bodyParser.urlencoded({ verify: rawBodySaver, extended: true }));
-app.use(bodyParser.raw({ verify: rawBodySaver, type: "*/*" }));
+app.use(bodyParser.raw({ verify: rawBodySaver, type: "*/*", limit: "50mb" }));
 app.use(cookieParser());
 
 // authentication routes

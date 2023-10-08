@@ -147,7 +147,9 @@ const Document = mongoose.model("Document", (function()
 
         name: String,
         mime_type: String,
+        uri: String,
         bytes: Buffer,
+        search_text: String,
         thumbnail: Buffer,
         tags: [ String ],
 
@@ -177,6 +179,7 @@ const Document = mongoose.model("Document", (function()
     schema.path("business_partner").index(true);
     schema.path("intracompany").index(true);
     schema.path("mime_type").index(true);
+    schema.path("search_text").index(true);
     schema.path("tags").index(true);
     schema.path("posting_date").index(true);
     schema.path("posted").index(true);
