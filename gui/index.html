@@ -18,14 +18,28 @@
                 </a>
             </nav>
             <iframe id="main" name="main" src="/login/"></iframe>
+            <div id="shadow" v-if="modal">
+                <iframe id="modal" name="modal" :src="modal" />
+            </iframe>
         </main>
         <script type="text/javascript">
             new Vue(
             {
                 el: "main",
 
+                data:
+                {
+                    modal: false
+                },
+
                 async mounted()
                 {
+                    document.addEventListener("keyup", (event) =>
+                    {
+                        if(event.key == 'Q') // shift + q
+                            this.openModal("/quick-recorder/");
+                    });
+
                     const notifier = new WebSocket(location.protocol.split("http").join("ws") + "//" + location.host + "/api/v1/notifications/ws");
                     notifier.onmessage = async (event) => {
                         console.log(event); // FIXME
@@ -34,6 +48,11 @@
 
                 methods:
                 {
+                    openModal(url)
+                    {
+                        this.modal = url;
+                    },
+
                     async logout()
                     {
                         await axios.delete("/api/v1/session");

@@ -1,0 +1,89 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="wildguess.js"></script>
+    <body>
+        <main>
+            <input type="text" id="recorder" v-model="input" @keyup="guess" autofocus />
+            <table class="discovery" @drop="fileDropped">
+                <tr v-if="wildguess.date">
+                    <td>Date</td>
+                    <td>{{ wildguess.date | date }}</td>
+                </tr>
+                <tr v-if="wildguess.text">
+                    <td>Text</td>
+                    <td>{{ wildguess.text }}</td>
+                </tr>
+                <tr v-if="wildguess.account_debit">
+                    <td>Account Debit</td>
+                    <td>{{ wildguess.account_debit }}</td>
+                </tr>
+                <tr v-if="wildguess.account_credit">
+                    <td>Account Credit</td>
+                    <td>{{ wildguess.account_credit }}</td>
+                </tr>
+                <tr v-if="wildguess.amount">
+                    <td>Amount</td>
+                    <td>{{ wildguess.amount | currency }}</td>
+                </tr>
+                <tr v-if="wildguess.tax_percent">
+                    <td>Tax Percent</td>
+                    <td>{{ wildguess.tax_percent }}%</td>
+                </tr>
+            </table>
+        </main>
+        <script type="text/javascript">
+            new Vue(
+            {
+                el: "main",
+
+                data:
+                {
+                    input: "",
+                    wildguess: {}
+                },
+
+                filters:
+                {
+                    date(timestamp)
+                    {
+                        return new Date(timestamp).toLocaleDateString();
+                    },
+
+                    currency(number)
+                    {
+                        return new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR" }).format(number); // TODO
+                    }
+                },
+
+                methods:
+                {
+                    async guess(event)
+                    {
+                        this.wildguess = await wildguess(this.input);
+
+                        if(event.code == "Enter")
+                        {
+                            if(!this.wildguess.date || !this.wildguess.account_debit || !this.wildguess.account_credit || !this.wildguess.amount)
+                                return;
+
+                            // TODO submit
+
+                            this.wildguess = {};
+                            this.input = "";
+                            this.$forceUpdate();
+                        }
+                    },
+
+                    fileDropped(event)
+                    {
+
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
