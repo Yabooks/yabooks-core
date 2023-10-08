@@ -26,7 +26,10 @@
 
                 async mounted()
                 {
-
+                    const notifier = new WebSocket(location.protocol.split("http").join("ws") + "//" + location.host + "/api/v1/notifications/ws");
+                    notifier.onmessage = async (event) => {
+                        console.log(event); // FIXME
+                    };
                 },
 
                 methods:

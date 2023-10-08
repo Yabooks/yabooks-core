@@ -3,6 +3,7 @@ require("dotenv").config();
 
 // start web server and serve web gui
 const app = express();
+require("express-ws")(app);
 app.use(express.static("./gui"));
 app.use("/js/axios", express.static("./node_modules/axios/dist"));
 app.use("/js/vue", express.static("./node_modules/vue/dist"));
