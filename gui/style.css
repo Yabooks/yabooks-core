@@ -34,6 +34,11 @@ nav a
     height: calc(100% - 40px);
 }
 
+iframe
+{
+    border: none;
+}
+
 #shadow
 {
     top: 0;
@@ -53,7 +58,14 @@ nav a
     height: calc(100% - 100px);
 }
 
-iframe
+#shadow #close
 {
-    border: 0;
+    top: 10px;
+    left: 10px;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 26pt;
+    position: absolute;
+    background: transparent;
 }

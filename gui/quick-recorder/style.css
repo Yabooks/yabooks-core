@@ -1,8 +1,21 @@
 #recorder
 {
-    width: 100%;
     height: 24px;
+    outline: none;
     font-size: 18pt;
+    border-radius: 5px;
+    width: calc(100% - 16px);
+    border: 8px solid #e1d8d1;
+}
+
+#recorder.yellow
+{
+    border-color: #eab676;
+}
+
+#recorder.green
+{
+    border-color: #d2e1d1;
 }
 
 .discovery

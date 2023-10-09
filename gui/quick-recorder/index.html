@@ -4,11 +4,12 @@
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="wildguess.js"></script>
     <body>
-        <main>
-            <input type="text" id="recorder" v-model="input" @keyup="guess" autofocus />
-            <table class="discovery" @drop="fileDropped">
+        <main @dragover="acceptFile" @drop="fileDropped">
+            <input type="text" id="recorder" v-model="input" @keyup="guess" autocomplete="off" :class="input_status" placeholder="Type here..." autofocus />
+            <table class="discovery">
                 <tr v-if="wildguess.date">
                     <td>Date</td>
                     <td>{{ wildguess.date | date }}</td>
@@ -33,57 +34,12 @@
                     <td>Tax Percent</td>
                     <td>{{ wildguess.tax_percent }}%</td>
                 </tr>
+                <tr v-if="file">
+                    <td>Document</td>
+                    <td>{{ this.file.name }}</td>
+                </tr>
             </table>
         </main>
-        <script type="text/javascript">
-            new Vue(
-            {
-                el: "main",
-
-                data:
-                {
-                    input: "",
-                    wildguess: {}
-                },
-
-                filters:
-                {
-                    date(timestamp)
-                    {
-                        return new Date(timestamp).toLocaleDateString();
-                    },
-
-                    currency(number)
-                    {
-                        return new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR" }).format(number); // TODO
-                    }
-                },
-
-                methods:
-                {
-                    async guess(event)
-                    {
-                        this.wildguess = await wildguess(this.input);
-
-                        if(event.code == "Enter")
-                        {
-                            if(!this.wildguess.date || !this.wildguess.account_debit || !this.wildguess.account_credit || !this.wildguess.amount)
-                                return;
-
-                            // TODO submit
-
-                            this.wildguess = {};
-                            this.input = "";
-                            this.$forceUpdate();
-                        }
-                    },
-
-                    fileDropped(event)
-                    {
-
-                    }
-                }
-            });
-        </script>
+        <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

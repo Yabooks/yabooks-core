@@ -19,7 +19,8 @@
             </nav>
             <iframe id="main" name="main" src="/login/"></iframe>
             <div id="shadow" v-if="modal">
-                <iframe id="modal" name="modal" :src="modal" />
+                <iframe id="modal" name="modal" :src="modal"></iframe>
+                <button id="close" @click="openModal(false)" alt="close">&#10006;</button>
             </iframe>
         </main>
         <script type="text/javascript">
@@ -36,9 +37,12 @@
                 {
                     document.addEventListener("keyup", (event) =>
                     {
-                        if(event.key == 'Q') // shift + q
+                        if((event.ctrlKey || event.metaKey) && (event.key == 'i' || event.key == 'I'))
                             this.openModal("/quick-recorder/");
-                    });
+
+                        if(this.modal && event.key == "Escape")
+                            this.openModal(false);
+                    }, true);
 
                     const notifier = new WebSocket(location.protocol.split("http").join("ws") + "//" + location.host + "/api/v1/notifications/ws");
                     notifier.onmessage = async (event) => {
