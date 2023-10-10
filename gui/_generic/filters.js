@@ -27,10 +27,10 @@ const filters = (
         if(typeof number === "object" && number.$numberDecimal)
             number = number.$numberDecimal;
 
-        return Intl.NumberFormat(this.lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
+        return Intl.NumberFormat(getUserLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
     },
 
-    formatDate: (timestamp, language = undefined) => // TODO
+    formatDate: (timestamp, language = getUserLanguage()) =>
     {
         return new Date(timestamp).toLocaleDateString(language);
     },

@@ -6,18 +6,23 @@
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
     </head>
     <body>
         <main>
             <nav>
-                <a href="/login/">
+                <a href="/login/" style="font-weight: bold">
                     Home
                 </a>
                 <a @click="logout">
                     Logout
                 </a>
+                <span>
+                    <img v-if="selectedBusinessId" src="https://img.freepik.com/vektoren-kostenlos/vogel-bunter-logo-gradientenvektor_343694-1365.jpg" id="logo" />
+                    <img v-if="loggedIn" src="/api/v1/session/profile-picture" id="picture" />
+                </span>
             </nav>
-            <iframe id="main" name="main" src="/login/"></iframe>
+            <iframe id="main" name="main" src="/login/" @load="updateSessionData()"></iframe>
             <div id="shadow" v-if="modal">
                 <iframe id="modal" name="modal" :src="modal"></iframe>
                 <button id="close" @click="openModal(false)" alt="close">&#10006;</button>
@@ -30,7 +35,10 @@
 
                 data:
                 {
-                    modal: false
+                    modal: false,
+                    loggedIn: false,
+                    notifications: 0,
+                    selectedBusinessId: null
                 },
 
                 async mounted()
@@ -46,7 +54,8 @@
 
                     const notifier = new WebSocket(location.protocol.split("http").join("ws") + "//" + location.host + "/api/v1/notifications/ws");
                     notifier.onmessage = async (event) => {
-                        console.log(event); // FIXME
+                        ++this.notifications;
+                        this.updateSessionData();
                     };
                 },
 
@@ -55,6 +64,21 @@
                     openModal(url)
                     {
                         this.modal = url;
+                    },
+
+                    async updateSessionData()
+                    {
+                        try
+                        {
+                            this.loggedIn = (await loadSession())?.user;
+                            this.selectedBusinessId = await getSelectedBusinessId();
+                        }
+                        catch(x)
+                        {
+                            this.loggedIn = false;
+                            this.selectedBusinessId = null;
+                        }
+                        this.$forceUpdate();
                     },
 
                     async logout()

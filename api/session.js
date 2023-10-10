@@ -38,4 +38,16 @@ module.exports = function(api)
         await Session.findOneAndDelete({ _id: req.auth.session_id });
         res.clearCookie("user_info").send({ success: true });
     });
+
+    //
+    api.get("/api/v1/session/profile-picture", async (req, res) =>
+    {
+        try
+        {
+            let session = await Session.findOne({ _id: req.auth.session_id });
+            if(!session) throw "session not found";
+            res.redirect(`/api/v1/users/${session.user}/profile-picture`);
+        }
+        catch(x) { res.status(401).send({ error: "unauthenticated" }) }
+    });
 };

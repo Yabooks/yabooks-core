@@ -11,6 +11,9 @@ const LedgerTransaction = (function()
         amount: { type: mongoose.Schema.Types.Decimal128, required: true },
         text: { type: String, required: true },
 
+        alternate_currency: { type: String },
+        alternate_currency_amount: { type: mongoose.Schema.Types.Decimal128 },
+
         tax_code: String,
         tax_code_base: String,
         tax_percent: mongoose.Schema.Types.Decimal128,

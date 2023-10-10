@@ -14,12 +14,7 @@ new Vue(
     {
         date(timestamp)
         {
-            return new Date(timestamp).toLocaleDateString();
-        },
-
-        currency(number)
-        {
-            return new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR" }).format(number); // TODO
+            return new Date(timestamp).toLocaleDateString(getUserLanguage());
         }
     },
 

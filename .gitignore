@@ -1,5 +1,6 @@
 .DS_Store
 apps
+data/
 node_modules
 yabooks-linux
 yabooks-macos

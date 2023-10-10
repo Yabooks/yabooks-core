@@ -1,6 +1,18 @@
 html, body
 {
+    height: 100%;
+    margin: 0 0 0 0;
+    text-align: center;
     font-family: "Roboto", sans-serif;
+}
+
+#app_screen
+{
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
 }
 
 .app
@@ -8,7 +20,9 @@ html, body
     width: 125px;
     height: 125px;
     cursor: pointer;
-    border-radius: 20px;
+    border-radius: 20%;
     display: inline-block;
-    border: 1px solid gray;
+    background-color: white;
+    margin: 20px 20px 20px 20px;
+    border: 1px solid rgba(200, 200, 200, .5);
 }

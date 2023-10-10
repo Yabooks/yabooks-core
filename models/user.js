@@ -1,4 +1,4 @@
-const mongoose = require("../services/connector.js");
+const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("fs").promises;
 
 // user schema
 const User = mongoose.model("User", (function()
@@ -8,10 +8,27 @@ const User = mongoose.model("User", (function()
         email: { type: String, required: true, unique: true },
         password_hash: { type: String },
         external_oauth: { type: String },
+        preferred_language: { type: String }, // BCP 47
         individual: { type: mongoose.Schema.Types.ObjectId, ref: "Individual" }
     });
 
-    const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    const methods = (
+    {
+        async getProfilePicture()
+        {
+            try
+            {
+                let file = path.join(process.env.persistent_data_dir || "./data", "user_" + this._id);
+                return await fs.readFile(file);
+            }
+            catch(x)
+            {
+                return null;
+            }
+        }
+    });
+
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false, methods });
     schema.path("email").index(true);
     schema.path("individual").index(true);
     return schema;

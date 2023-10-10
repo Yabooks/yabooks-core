@@ -5,6 +5,7 @@
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
         <script type="text/javascript" src="wildguess.js"></script>
     <body>
         <main @dragover="acceptFile" @drop="fileDropped">
@@ -12,7 +13,7 @@
             <table class="discovery">
                 <tr v-if="wildguess.date">
                     <td>Date</td>
-                    <td>{{ wildguess.date | date }}</td>
+                    <td>{{ wildguess.date | formatDate }}</td>
                 </tr>
                 <tr v-if="wildguess.text">
                     <td>Text</td>
@@ -28,7 +29,7 @@
                 </tr>
                 <tr v-if="wildguess.amount">
                     <td>Amount</td>
-                    <td>{{ wildguess.amount | currency }}</td>
+                    <td>{{ wildguess.amount | formatNumber }}</td>
                 </tr>
                 <tr v-if="wildguess.tax_percent">
                     <td>Tax Percent</td>

@@ -3,10 +3,10 @@ let session = {};
 const loadSession = async () =>
 {
     if(session && session.user && session.data)
-        return;
+        return session;
 
     let res = await axios.get("/api/v1/session");
-    session = res.data;console.log(session);
+    return session = res.data;
 };
 
 const getSelectedBusinessId = async () =>
@@ -22,7 +22,13 @@ const getSelectedBusinessId = async () =>
     return business;
 };
 
+const getSelectedBusinessCurrency = async () =>
+{
+    let res = await axios.get(`/api/v1/businesses/${await getSelectedBusinessId()}`);
+    return res.data.default_currency;
+};
+
 const getUserLanguage = () =>
 {
-    return (session.data ? session.data.language : null) || navigator.language || navigator.userLanguage;
+    return session.data?.language || navigator.language || navigator.userLanguage;
 };
