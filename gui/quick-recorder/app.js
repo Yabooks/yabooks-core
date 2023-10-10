@@ -43,6 +43,7 @@ new Vue(
                     doc.mime_type = this.file?.type;
 
                     let business = await getSelectedBusinessId();
+                    if(!business) return void alert("Select a business first!");
                     doc = await axios.post(`/api/v1/businesses/${business}/documents`, doc);
                     if(this.file) await axios.put(`/api/v1/documents/${doc.data._id}/binary`, this.file.bytes);
 

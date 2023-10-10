@@ -6,7 +6,7 @@ const loadSession = async () =>
         return;
 
     let res = await axios.get("/api/v1/session");
-    session = res.data;
+    session = res.data;console.log(session);
 };
 
 const getSelectedBusinessId = async () =>
@@ -16,7 +16,7 @@ const getSelectedBusinessId = async () =>
     if(!business)
     {
         await loadSession();
-        business = session.data.business;
+        business = session.data?.business;
     }
 
     return business;
