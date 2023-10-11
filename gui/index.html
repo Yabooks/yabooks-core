@@ -26,9 +26,11 @@
                         {{ notifications }}
                     </span>
                 </a>
-                <span>
-                    <img v-if="selectedBusinessId" src="https://img.freepik.com/vektoren-kostenlos/vogel-bunter-logo-gradientenvektor_343694-1365.jpg" id="logo" />
-                    <img v-if="loggedIn" src="/api/v1/session/profile-picture" id="picture" />
+                <span id="session">
+                    <img v-if="loggedIn" src="/api/v1/session/profile-picture" id="picture" @click="openModal('/profile/')" />
+                    <a :href="`/people/#/businesses/${selectedBusinessId}`">
+                        <img v-if="selectedBusinessId" :src="`/api/v1/businesses/${selectedBusinessId}/logo`" id="logo" />
+                    </a>
                 </span>
             </nav>
             <iframe id="main" name="main" src="/login/" @load="updateSessionData()"></iframe>

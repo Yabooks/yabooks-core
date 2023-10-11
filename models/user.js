@@ -23,7 +23,8 @@ const User = mongoose.model("User", (function()
             }
             catch(x)
             {
-                return null;
+                let file = path.join(__dirname, "../gui/people/individual.svg");
+                return await fs.readFile(file);
             }
         }
     });

@@ -3,7 +3,7 @@ const { User } = require("../models/user.js");
 module.exports = function(api)
 {
     // get profile picture of a user
-    api.get("/api/v1/users/:id/profile-picture", async (req, res) =>
+    api.get("/api/v1/users/:id/profile-picture", async (req, res, next) =>
     {
         try
         {
@@ -13,11 +13,7 @@ module.exports = function(api)
             else
             {
                 let picture = await user.getProfilePicture();
-
-                if(!picture)
-                    picture = "asdf";// FIXME
-
-                res.set("Content-Type", "image/*").send(picture);
+                res.set("Content-Type", `image/${picture.length > 400 ? "jpeg" : "svg+xml"}`).send(picture);
             }
         }
         catch(x) { next(x) }

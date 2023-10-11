@@ -46,4 +46,20 @@ module.exports = function(api)
         await Business.deleteOne({ _id: req.params.id });
         res.send({ success: true });
     });
+
+    api.get("/api/v1/businesses/:id/logo", async (req, res, next) =>
+    {
+        try
+        {
+            let business = await Business.findOne({ _id: req.params.id });
+            if(!business)
+                res.status(404).send({ error: "not found" });
+            else
+            {
+                let picture = await business.getLogo();
+                res.set("Content-Type", `image/${picture.length > 400 ? "jpeg" : "svg+xml"}`).send(picture);
+            }
+        }
+        catch(x) { next(x) }
+    });
 };

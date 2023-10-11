@@ -8,15 +8,15 @@
     <body>
         <div id="app_screen">
             <div class="app" @click="navigate({ link: '/people/' })">
-                <img class="icon" src="/people/logo.png" />
+                <img class="icon" src="/people/icon.svg" />
                 <span>People</span>
             </div>
             <div class="app" @click="navigate({ link: '/documents/' })">
-                <img class="icon" src="/documents/logo.png" />
+                <img class="icon" src="/documents/icon.svg" />
                 <span>Documents</span>
             </div>
             <div class="app" @click="navigate({ link: '/balances/' })">
-                <img class="icon" src="/balances/logo.png" />
+                <img class="icon" src="/balances/icon.svg" />
                 <span>Balances</span>
             </div>
             <div class="app" v-for="app in apps" v-if="app.link" @click="navigate(app)">
@@ -24,8 +24,12 @@
                 <span>{{ app.name }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/market/' })">
-                <img class="icon" src="" />
+                <img class="icon" src="/market/icon.svg" />
                 <span>Market</span>
+            </div>
+            <div class="app" @click="navigate({ link: '/settings/' })">
+                <img class="icon" src="/settings/icon.svg" />
+                <span>Settings</span>
             </div>
         </div>
         <script type="text/javascript">
