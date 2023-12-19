@@ -170,7 +170,7 @@ const Document = mongoose.model("Document", (function()
         shipping_transactions: [ ShippingTransaction ],
 
         data: mongoose.Schema.Types.Mixed,
-        owner: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
+        owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });

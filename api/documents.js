@@ -63,6 +63,8 @@ module.exports = function(api)
 
     api.put("/api/v1/documents/:id/binary", async (req, res) =>
     {
+        // TODO versioning if parameter is provided or if document is posted
+
         await Document.updateOne({ _id: req.params.id }, { mime_type: req.headers["content-type"], bytes: req.rawBody });
         res.send({ success: true });
 
@@ -106,6 +108,8 @@ module.exports = function(api)
 
     api.delete("/api/v1/documents/:id", async (req, res) =>
     {
+        // TODO versioning of last version
+
         await Document.deleteOne({ _id: req.params.id });
         res.send({ success: true });
 

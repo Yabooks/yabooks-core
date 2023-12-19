@@ -54,16 +54,28 @@
 
                 async mounted()
                 {
-                    const notifier = new WebSocket(location.protocol.split("http").join("ws") + "//" + location.host + "/api/v1/notifications/ws");
-                    notifier.onmessage = async (event) =>
-                    {
-                        ++this.notifications;
-                        this.updateSessionData();
-                    };
+                    const counter = await axios.get("/api/v1/notifications?limit=0&read=false");
+                    this.notifications = counter.data.total;
+                    this.reconnectWebsocket();
                 },
 
                 methods:
                 {
+                    reconnectWebsocket()
+                    {
+                        const notifier = new WebSocket(location.protocol.split("http").join("ws") + "//" + location.host + "/api/v1/notifications/ws");
+                        notifier.onclose = (_) => setTimeout(this.reconnectWebsocket, 1000);
+                        notifier.onmessage = async (event) =>
+                        {
+                            // play sound
+                            new Audio("/notifications/beep.wav").play();
+
+                            // count up badge and check if user is still logged in
+                            ++this.notifications;
+                            this.updateSessionData();
+                        };
+                    },
+
                     openModal(url)
                     {
                         this.modal = url;
@@ -81,7 +93,10 @@
                             this.loggedIn = false;
                             this.selectedBusinessId = null;
                         }
-                        this.$forceUpdate();
+                        finally
+                        {
+                            this.$forceUpdate();
+                        }
                     },
 
                     async logout()

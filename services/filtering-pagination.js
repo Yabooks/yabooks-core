@@ -96,7 +96,7 @@ module.exports = async function(req, res, next)
             { $set: { skip: req.pagination.skip, limit: req.pagination.limit } }
         ]]);
 
-        return result[0] || { skip: req.pagination.skip, limit: req.pagination.limit, data: [], total: 0 };
+        return result[0] || { skip: req.pagination.skip, limit: req.pagination.limit, data: [], total: 0 }; // FIXME "total" is also limited to "limit"
     };
 
     next();

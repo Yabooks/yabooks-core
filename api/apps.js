@@ -6,7 +6,7 @@ module.exports = function(api)
     {
         try
         {
-            let query = App.find({}, { secret: false, redirect_uris: false }, req.pagination);
+            let query = App.find({}, [ "id", "bundle_id", "name", "translated_name", "icon", "link" ], req.pagination);
             res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
         }
         catch(x) { next(x) }
@@ -23,7 +23,8 @@ module.exports = function(api)
     {
         try
         {
-            let app = App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] }, { secret: false, redirect_uris: false });
+            let app = await App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] },
+                { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, license_key: false });
             if(!app)
                 res.status(404).send({ error: "not found" });
             else res.send(app);

@@ -1,0 +1,10 @@
+.item
+{
+    background: white;
+    border-radius: 15px;
+}
+
+.item.read
+{
+    background: lightgray;
+}

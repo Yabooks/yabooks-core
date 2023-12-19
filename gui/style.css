@@ -39,6 +39,16 @@ nav a
     margin-left: 40px;
 }
 
+.badge
+{
+    color: white;
+    padding: 4px 8px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 5px;
+    background-color: orange;
+}
+
 #logo
 {
     top: 10px;

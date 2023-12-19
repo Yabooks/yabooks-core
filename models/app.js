@@ -1,4 +1,4 @@
-const mongoose = require("../services/connector.js");
+const mongoose = require("../services/connector.js"), cmd = require("node:child_process");
 
 // app schema
 const App = mongoose.model("App", (function()
@@ -25,6 +25,9 @@ const App = mongoose.model("App", (function()
         icon: String,
         link: String,
         redirect_uris: [ String ], // for oauth flow
+        install_path: String,
+        auto_start_command: String,
+        license_key: String,
         pid: String,
         webhooks: [ webhookSchema ]
     });
@@ -94,6 +97,38 @@ App.getWebhook = async function(event, app_id)
         return webhooks[0].url;
 
     else throw `no webhook for event "${event}" found for app ${app_id}`;
+};
+
+// starts locally installed apps
+App.startLocalApps = async function()
+{
+    let query = await App.find({ install_path: { $ne: null }, auto_start_command: { $ne: null } },
+        { _id: true, name: true, install_path: true, auto_start_command: true, secret: true, license_key: true });
+
+    for(let app of query)
+        try
+        {
+            // prepare environment variables for app
+            let env = {
+                YABOOKS_CORE_BASE_URL: process.env.base_url || `http://localhost:${process.env.port}/`,
+                YABOOKS_APP_ID: app._id,
+                YABOOKS_APP_SECRET: app.secret,
+                YABOOKS_APP_LICENSE_KEY: app.license_key
+            };
+
+            // start app as child process
+            const child = cmd.spawn(app.auto_start_command, { cwd: app.install_path, shell: true, env, stdio: "inherit" });
+            child.on("exit", (code, signal) => console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} exited with signal ${signal}`));
+            child.on("close", (code) => console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} closed with code ${code}`));
+
+            // store process id in the database
+            await App.updateOne({ _id: app._id }, { pid: child.pid });
+            console.log(`[${ new Date().toLocaleString() }]`, "successfully started app", app.name);
+        }
+        catch(err)
+        {
+            console.error(`[${ new Date().toLocaleString() }]`, "could not start app", app.name, err);
+        }
 };
 
 module.exports = { App, OAuthCode };

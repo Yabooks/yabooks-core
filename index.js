@@ -20,7 +20,7 @@ app.use(cookieParser());
 require("./api/auth.js")(app);
 
 // all other routes require to be authenticated
-app.use("/api/v1/*", jwt({ secret: app.jwt_secret = process.env.secret || require("crypto").randomBytes(32), algorithms: [ "HS256" ] }), (err, req, res, next) =>
+app.use("/api/*", jwt({ secret: app.jwt_secret = process.env.secret || require("crypto").randomBytes(32), algorithms: [ "HS256" ] }), (err, req, res, next) =>
 {
     try
     {
@@ -45,6 +45,13 @@ app.use("/api/v1/*", jwt({ secret: app.jwt_secret = process.env.secret || requir
     next();
 });
 
+// log api calls for fair use pricing per 100k requests
+app.use("/api/*", async (req, _, next) =>
+{
+    require("./services/logger.js").Logger.logApiCall(req);
+    next();
+});
+
 // inject filtering and pagination preparations
 app.use(require("./services/filtering-pagination.js"));
 
@@ -55,6 +62,12 @@ for(let file of require("fs").readdirSync("./api"))
 // error handler
 app.use(async (err, req, res, next) =>
 {
-    console.error(err);
+    console.error(`[${ new Date().toLocaleString() }]`, err);
     res.status(500).send({ error: err.message || "unknown error" });
+});
+
+// start up all locally installed apps with a start command set
+require("./models/app.js").App.startLocalApps().catch(err =>
+{
+    console.error(`[${ new Date().toLocaleString() }]`, "could not start apps", err);
 });

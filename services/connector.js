@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+mongoose.set("strictQuery", true);
 
 // connect to MongoDB database
 const mongoConnectionString = "mongodb://" +
