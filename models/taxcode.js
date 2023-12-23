@@ -7,8 +7,7 @@ const SubTaxCode = (function()
     {
         code: { type: String, unique: true, required: true },
         description: String,
-        keywords: [ String ],
-        owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
+        keywords: [ String ]
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
@@ -24,6 +23,8 @@ const TaxCode = mongoose.model("TaxCode", (function()
         code: { type: String, unique: true, required: true },
         description: String,
         keywords: [ String ],
+        type: { type: String, enum: [ "tax payable", "input tax receivable", "purchase tax payable and receivable", "tax payment" ], required: true },
+        un_ece_5305: String, // https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5305.htm
         sub_codes: [ SubTaxCode ],
         owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
     });
