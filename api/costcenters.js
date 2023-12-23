@@ -41,7 +41,7 @@ module.exports = function(api)
         res.send({ success: true });
     });
 
-    api.delete("/api/v1/ledger-accounts/:id", async (req, res) =>
+    api.delete("/api/v1/cost-centers/:id", async (req, res) =>
     {
         await CostCenter.deleteOne({ _id: req.params.id });
         res.send({ success: true });

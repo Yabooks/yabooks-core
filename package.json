@@ -19,11 +19,15 @@
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.0.2",
     "express": "^4.18.1",
+    "express-http-proxy": "^2.0.0",
     "express-jwt": "^8.3.0",
     "express-ws": "^5.0.2",
     "jsonwebtoken": "^9.0.0",
     "libphonenumber-js": "^1.10.14",
     "mongoose": "^6.6.0",
-    "vue": "^2.6.14"
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.6",
+    "vue": "^2.6.14",
+    "wstcp": "^1.0.6"
   }
 }

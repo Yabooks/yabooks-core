@@ -1,4 +1,4 @@
-const mongoose = require("../services/connector.js");
+const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
 
 // ledger transaction schema
 const LedgerTransaction = (function()
@@ -16,9 +16,9 @@ const LedgerTransaction = (function()
 
         tax_code: String,
         tax_code_base: String,
+        tax_sub_code: String,
         tax_percent: mongoose.Schema.Types.Decimal128,
-        tax_rv_code: String,
-        tax_number: String,
+        tax_number: String, // VAT number, TIN, etc.
         tax_date: Date
     });
 
@@ -27,7 +27,7 @@ const LedgerTransaction = (function()
     schema.path("account").index(true);
     schema.path("tax_code").index(true);
     schema.path("tax_code_base").index(true);
-    schema.path("tax_rv_code").index(true);
+    schema.path("tax_sub_code").index(true);
     return schema;
 })();
 
@@ -147,14 +147,15 @@ const Document = mongoose.model("Document", (function()
         external_reference: String,
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
         intracompany: { type: Boolean, required: true, default: false },
+        linked_documents: [ { type: mongoose.Schema.Types.ObjectId, ref: "Document" } ],
 
         name: String,
         mime_type: String,
         uri: String,
-        bytes: Buffer,
         search_text: String,
         thumbnail: Buffer,
         tags: [ String ],
+        data: mongoose.Schema.Types.Mixed,
 
         posting_date: { type: Date, required: true, default: Date.now },
         posted: { type: Boolean, required: true, default: false },
@@ -169,11 +170,13 @@ const Document = mongoose.model("Document", (function()
         stock_transactions: [ StockTransaction ],
         shipping_transactions: [ ShippingTransaction ],
 
-        data: mongoose.Schema.Types.Mixed,
+        classification: { type: String, enum: [ "top secret", "secret", "confidential", "restricted", "official" ],  },
+        created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was created by an app
+        last_updated_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was updated by an app
         owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
     });
 
-    const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, autoIndex: false });
     schema.path("ledger_transactions").validate(debitCreditValidation, "debit credit difference");
     schema.path("business").index(true);
     schema.path("type").index(true);
@@ -190,4 +193,40 @@ const Document = mongoose.model("Document", (function()
     return schema;
 })());
 
-module.exports = { Document };
+const DocumentVersion = mongoose.model("DocumentVersion", (function()
+{
+    const schemaDefinition = (
+    {
+        document: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
+        invalidated_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was updated by an app
+        bytes: Buffer
+    });
+
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, autoIndex: false });
+    schema.path("document").index(true);
+    return schema;
+})());
+
+Document.getStorageLocation = function(id)
+{
+    return path.join(process.env.persistent_data_dir || "./data", `document_${id}`);
+};
+
+Document.readCurrentVersion = async function(id)
+{
+    return await fs.readFile(Document.getStorageLocation(id));
+};
+
+Document.archiveCurrentVersion = async function(id, invalidated_by)
+{
+    let version = new DocumentVersion({ document: id, bytes: await Document.readCurrentVersion(id), invalidated_by });
+    await version.save();
+    return version._id;
+};
+
+Document.overwriteCurrentVersion = async function(id, data)
+{
+    await fs.writeFile(Document.getStorageLocation(id), data);
+};
+
+module.exports = { Document, DocumentVersion };

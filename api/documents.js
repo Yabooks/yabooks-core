@@ -1,5 +1,5 @@
 const { Document } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
-const fs = require("fs").promises;
+const fs = require("node:fs").promises, sqlite = require("sqlite"), sqlite3 = require("sqlite3");
 
 module.exports = function(api)
 {
@@ -56,16 +56,23 @@ module.exports = function(api)
             let doc = await Document.findOne({ _id: req.params.id }, [ "document_name", "mime_type", "bytes" ]);
             if(!doc)
                 res.status(404).send({ error: "not found" });
-            else res.header("content-type", doc["mime_type"]).header("content-disposition", `attachment; name="${doc.name}"`).send(doc.bytes); // TODO if file is actually link to external resource
+            else res.header("content-type", doc["mime_type"]).header("content-disposition", `attachment; name="${doc.name}"`)
+                    .send(await Document.readCurrentVersion(doc._id));
         }
         catch(x) { next(x) }
     });
 
     api.put("/api/v1/documents/:id/binary", async (req, res) =>
     {
-        // TODO versioning if parameter is provided or if document is posted
+        let doc = await Document.findOne({ _id: req.params.id });
 
-        await Document.updateOne({ _id: req.params.id }, { mime_type: req.headers["content-type"], bytes: req.rawBody });
+        if(req.query.versioning || doc.posted)
+            await Document.archiveCurrentVersion(req.params.id);
+
+        if(doc.mime_type !== req.headers["content-type"])
+            await Document.updateOne({ _id: req.params.id }, { mime_type: req.headers["content-type"] });
+
+        await Document.overwriteCurrentVersion(req.params.id, req.rawBody);
         res.send({ success: true });
 
         //await Logger.logRecordUpdated("document", , );
@@ -108,7 +115,7 @@ module.exports = function(api)
 
     api.delete("/api/v1/documents/:id", async (req, res) =>
     {
-        // TODO versioning of last version
+        await Document.archiveCurrentVersion(req.params.id);
 
         await Document.deleteOne({ _id: req.params.id });
         res.send({ success: true });
@@ -147,7 +154,8 @@ module.exports = function(api)
             if(!sql)
                 return void res.status(400).send({ error: "no sql statement provided" });
 
-            // TODO
+            let db = await sqlite.open({ filename: Document.getStorageLocation(req.params.id), driver: sqlite3.Database });
+            res.json(await db.query(sql));
         }
         catch(x)
         {
