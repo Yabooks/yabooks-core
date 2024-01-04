@@ -66,6 +66,7 @@ module.exports = async function(req, res, next)
     const keywords = [ "skip", "limit", "sort_asc", "sort_desc" ];
     req.base_filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") === 0).map(parameterToFilter);
     req.filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") !== 0).map(parameterToFilter);
+    req.ObjectId = mongoose.Types.ObjectId;
 
     // prepare method for aggregation pipeline stages for filtering, sorting and pagination
     req.paginatedAggregatePipelineWithFilters = async (model, pipeline) =>
@@ -96,7 +97,7 @@ module.exports = async function(req, res, next)
             { $set: { skip: req.pagination.skip, limit: req.pagination.limit } }
         ]]);
 
-        return result[0] || { skip: req.pagination.skip, limit: req.pagination.limit, data: [], total: 0 }; // FIXME "total" is also limited to "limit"
+        return result[0] || { skip: req.pagination.skip, limit: req.pagination.limit, data: [], total: 0 };
     };
 
     next();

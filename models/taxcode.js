@@ -23,6 +23,7 @@ const TaxCode = mongoose.model("TaxCode", (function()
         code: { type: String, unique: true, required: true },
         description: String,
         keywords: [ String ],
+        tax_base: { type: String, enum: [ "net", "gross" ], default: "net", required: true },
         type: { type: String, enum: [ "tax payable", "input tax receivable", "purchase tax payable and receivable", "tax payment" ], required: true },
         un_ece_5305: String, // https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5305.htm
         sub_codes: [ SubTaxCode ],

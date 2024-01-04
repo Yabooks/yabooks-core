@@ -138,7 +138,7 @@ const Document = mongoose.model("Document", (function()
 {
     const schemaDefinition = (
     {
-        business: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: true },
+        business: { type: mongoose.Schema.Types.ObjectId, ref: "Business" }, // optional for global app config
 
         type: String,
         date: Date,
@@ -170,7 +170,7 @@ const Document = mongoose.model("Document", (function()
         stock_transactions: [ StockTransaction ],
         shipping_transactions: [ ShippingTransaction ],
 
-        classification: { type: String, enum: [ "top secret", "secret", "confidential", "restricted", "official" ],  },
+        classification: { type: String, enum: [ "top secret", "secret", "confidential", "restricted", "official" ], default: "official" },
         created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was created by an app
         last_updated_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was updated by an app
         owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
@@ -207,6 +207,24 @@ const DocumentVersion = mongoose.model("DocumentVersion", (function()
     return schema;
 })());
 
+const DocumentLink = mongoose.model("DocumentLink", (function()
+{
+    const schemaDefinition = (
+    {
+        document_a: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
+        document_b: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
+        name_ab: { type: String, required: true },
+        name_ba: { type: String, required: true }
+    });
+
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, autoIndex: false });
+    schema.path("document_a").index(true);
+    schema.path("document_b").index(true);
+    schema.path("name_ab").index(true);
+    schema.path("name_ba").index(true);
+    return schema;
+})());
+
 Document.getStorageLocation = function(id)
 {
     return path.join(process.env.persistent_data_dir || "./data", `document_${id}`);
@@ -229,4 +247,9 @@ Document.overwriteCurrentVersion = async function(id, data)
     await fs.writeFile(Document.getStorageLocation(id), data);
 };
 
-module.exports = { Document, DocumentVersion };
+Document.deleteFromDisk = async function(id)
+{
+    await fs.unlink(Document.getStorageLocation(id));
+};
+
+module.exports = { Document, DocumentVersion, DocumentLink };

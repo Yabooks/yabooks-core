@@ -1,4 +1,4 @@
-const { Document } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
+const { Document, DocumentLink } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
 const fs = require("node:fs").promises, sqlite = require("sqlite"), sqlite3 = require("sqlite3");
 
 module.exports = function(api)
@@ -7,8 +7,10 @@ module.exports = function(api)
     {
         try
         {
-            let query = Document.find({ business: req.params.id }, "-bytes", req.pagination);
-            res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
+            res.send(await req.paginatedAggregatePipelineWithFilters(Document, [
+                { $match: { business: new req.ObjectId(req.params.id) } },
+                { $project: { thumbnail: 0 } }
+            ]));
         }
         catch(x) { next(x) }
     });
@@ -32,7 +34,7 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, [ "-bytes", "-thumbnail" ]);
+            let doc = await Document.findOne({ _id: req.params.id }, [ "-thumbnail" ]);
             if(!doc)
                 res.status(404).send({ error: "not found" });
             else res.send(doc);
@@ -49,11 +51,11 @@ module.exports = function(api)
         //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
     });
 
-    api.get("/api/v1/documents/:id/binary", async (req, res) =>
+    api.get("/api/v1/documents/:id/binary", async (req, res, next) =>
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, [ "document_name", "mime_type", "bytes" ]);
+            let doc = await Document.findOne({ _id: req.params.id }, [ "document_name", "mime_type" ]);
             if(!doc)
                 res.status(404).send({ error: "not found" });
             else res.header("content-type", doc["mime_type"]).header("content-disposition", `attachment; name="${doc.name}"`)
@@ -62,24 +64,28 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.put("/api/v1/documents/:id/binary", async (req, res) =>
+    api.put("/api/v1/documents/:id/binary", async (req, res, next) =>
     {
-        let doc = await Document.findOne({ _id: req.params.id });
+        try
+        {
+            let doc = await Document.findOne({ _id: req.params.id });
 
-        if(req.query.versioning || doc.posted)
-            await Document.archiveCurrentVersion(req.params.id);
+            if(req.query.versioning || doc.posted)
+                await Document.archiveCurrentVersion(req.params.id);
 
-        if(doc.mime_type !== req.headers["content-type"])
-            await Document.updateOne({ _id: req.params.id }, { mime_type: req.headers["content-type"] });
+            if(doc.mime_type !== req.headers["content-type"])
+                await Document.updateOne({ _id: req.params.id }, { mime_type: req.headers["content-type"] });
 
-        await Document.overwriteCurrentVersion(req.params.id, req.rawBody);
-        res.send({ success: true });
+            await Document.overwriteCurrentVersion(req.params.id, req.rawBody);
+            res.send({ success: true });
 
-        //await Logger.logRecordUpdated("document", , );
-        //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+            //await Logger.logRecordUpdated("document", , );
+            //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+        }
+        catch(x) { next(x) }
     });
 
-    api.get("/api/v1/documents/:id/thumbnail", async (req, res) =>
+    api.get("/api/v1/documents/:id/thumbnail", async (req, res, next) =>
     {
         try
         {
@@ -116,8 +122,8 @@ module.exports = function(api)
     api.delete("/api/v1/documents/:id", async (req, res) =>
     {
         await Document.archiveCurrentVersion(req.params.id);
-
         await Document.deleteOne({ _id: req.params.id });
+        await Document.deleteFromDisk(req.params.id);
         res.send({ success: true });
 
         //await Logger.logRecordDeleted("document", , );
@@ -142,8 +148,27 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, [ "mime_type", "bytes" ]);
-            let sql = req.body?.toString?.("utf8"); // TODO req.get("content-type")
+            let doc = null;
+
+            if(req.params.id == "app-config" && req.auth?.app_id)
+            {
+                let criteria = {
+                    type: "app config",
+                    mime_type: "application/vnd.sqlite3",
+                    classification: "top secret",
+                    owned_by: req.auth.app_id
+                };
+
+                doc = await Document.findOneAndUpdate(criteria, criteria, { upsert: true });
+                req.params.id = doc._id;
+            }
+
+            else doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+
+            if(req.get("content-type") !== "application/sql")
+                throw new Error(`request content type must be of type "application/sql" to execute the statement`);
+
+            let sql = req.rawBody?.toString?.("utf8");
 
             if(!doc)
                 return void res.status(404).send({ error: "not found" });
@@ -155,11 +180,26 @@ module.exports = function(api)
                 return void res.status(400).send({ error: "no sql statement provided" });
 
             let db = await sqlite.open({ filename: Document.getStorageLocation(req.params.id), driver: sqlite3.Database });
-            res.json(await db.query(sql));
+            res.json(await db[req.query.results === "true" ? "all" : "run"](sql));
+            await db.close();
         }
         catch(x)
         {
-            next(x);
+            res.status(400).json({ success: false, error: x?.response?.data || x?.message || x });
         }
+    });
+
+    api.post("/api/v1/documents/:id/links", async (req, res, next) =>
+    {
+        try
+        {
+            let link = new DocumentLink({ document_a: req.params.id, ...req.body });
+            await link.validate();
+            await link.save();
+            res.send(link);
+
+            await Logger.logRecordCreated("link", link);
+        }
+        catch(x) { next(x) }
     });
 };
