@@ -147,7 +147,6 @@ const Document = mongoose.model("Document", (function()
         external_reference: String,
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
         intracompany: { type: Boolean, required: true, default: false },
-        linked_documents: [ { type: mongoose.Schema.Types.ObjectId, ref: "Document" } ],
 
         name: String,
         mime_type: String,
@@ -214,7 +213,8 @@ const DocumentLink = mongoose.model("DocumentLink", (function()
         document_a: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
         document_b: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
         name_ab: { type: String, required: true },
-        name_ba: { type: String, required: true }
+        name_ba: { type: String, required: true },
+        code: String
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, autoIndex: false });

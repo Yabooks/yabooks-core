@@ -121,13 +121,17 @@ module.exports = function(api)
 
     api.delete("/api/v1/documents/:id", async (req, res) =>
     {
-        await Document.archiveCurrentVersion(req.params.id);
-        await Document.deleteOne({ _id: req.params.id });
-        await Document.deleteFromDisk(req.params.id);
-        res.send({ success: true });
+        try
+        {
+            await Document.archiveCurrentVersion(req.params.id);
+            await Document.deleteOne({ _id: req.params.id });
+            await Document.deleteFromDisk(req.params.id);
+            res.send({ success: true });
 
-        //await Logger.logRecordDeleted("document", , );
-        //App.callWebhooks("document.deleted", { document_id: req.params.id }, doc.owner);
+            //await Logger.logRecordDeleted("document", , );
+            //App.callWebhooks("document.deleted", { document_id: req.params.id }, doc.owner);
+        }
+        catch(x) { next(x) }
     });
 
     api.get("/api/v1/documents/:id/editor", async (req, res) =>
@@ -199,6 +203,17 @@ module.exports = function(api)
             res.send(link);
 
             await Logger.logRecordCreated("link", link);
+        }
+        catch(x) { next(x) }
+    });
+
+    api.get("/api/v1/documents/:id/links", async (req, res) =>
+    {
+        try
+        {
+            res.send(await req.paginatedAggregatePipelineWithFilters(DocumentLink, [
+                { $match: { $or: [ { document_a: new req.ObjectId(req.params.id) }, { document_b: new req.ObjectId(req.params.id) } ] } }
+            ]));
         }
         catch(x) { next(x) }
     });
