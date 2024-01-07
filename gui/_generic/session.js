@@ -22,11 +22,11 @@ const getSelectedBusinessId = async () =>
     return business;
 };
 
-const getSelectedBusinessCurrency = async () =>
+/*const getSelectedBusinessCurrency = async () =>
 {
     let res = await axios.get(`/api/v1/businesses/${await getSelectedBusinessId()}`);
     return res.data.default_currency;
-};
+};*/
 
 const getUserLanguage = () =>
 {

@@ -29,7 +29,8 @@
                 <span id="session">
                     <img v-if="loggedIn" src="/api/v1/session/profile-picture" id="picture" @click="openModal('/profile/')" />
                     <a :href="`/people/#/businesses/${selectedBusinessId}`">
-                        <img v-if="selectedBusinessId" :src="`/api/v1/businesses/${selectedBusinessId}/logo`" id="logo" />
+                        <img v-if="selectedBusinessId" id="logo" :title="selectedBusinessName"
+                            :src="`/api/v1/businesses/${selectedBusinessId}/logo`" :class="{ recentlyChanged: selectedBusinessHasRecentlyChanged }" />
                     </a>
                 </span>
             </nav>
@@ -40,7 +41,7 @@
             </iframe>
         </main>
         <script type="text/javascript">
-            new Vue(
+            document.app = new Vue(
             {
                 el: "main",
 
@@ -49,7 +50,9 @@
                     modal: false,
                     loggedIn: false,
                     notifications: 0,
-                    selectedBusinessId: null
+                    selectedBusinessId: null,
+                    selectedBusinessName: null,
+                    selectedBusinessHasRecentlyChanged: false
                 },
 
                 async mounted()
@@ -85,13 +88,28 @@
                     {
                         try
                         {
+                            let oldSelectedBusinessId = this.selectedBusinessId;
+
                             this.loggedIn = (await loadSession())?.user;
                             this.selectedBusinessId = await getSelectedBusinessId();
+                            this.selectedBusinessName = (await axios.get(`/api/v1/businesses/${this.selectedBusinessId}`)).data.name;
+
+                            // focus effect to gather user's attention
+                            if(oldSelectedBusinessId && this.selectedBusinessId !== oldSelectedBusinessId)
+                            {
+                                this.selectedBusinessHasRecentlyChanged = true;
+                                setTimeout(async () => {
+                                    this.selectedBusinessHasRecentlyChanged = false;
+                                    this.$forceUpdate();
+                                }, 2500);
+                            }
                         }
                         catch(x)
                         {
                             this.loggedIn = false;
                             this.selectedBusinessId = null;
+                            this.selectedBusinessName = null;
+                            self.location = "/login/";
                         }
                         finally
                         {

@@ -16,7 +16,9 @@ const Identity = mongoose.model("Identity", (function()
         more_phones: [ Phone ],
         website: String,
         customer: { type: Boolean, required: true, default: false },
-        vendor: { type: Boolean, required: true, default: false }
+        vendor: { type: Boolean, required: true, default: false },
+        tax_numbers: mongoose.Schema.Types.Mixed,
+        data: mongoose.Schema.Types.Mixed,
     });
 
     return new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false });

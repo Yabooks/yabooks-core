@@ -1,0 +1,113 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+    </head>
+    <body>
+        <main>
+            <div>
+                <img :src="`/api/v1/identities/${individual._id}/picture`" />
+                <span>
+                    {{ individual.full_name }}
+                </span>
+                <div v-if="individual.dba?.length > 0">
+                    <span>Doing Business As:</span>
+                    <ul>
+                        <li v-for="dba in individual.dba">
+                            {{ dba }}
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <span>Main Contact:</span>
+                    <ul>
+                        <li v-if="individual.main_email?.address">
+                            {{ individual.main_email.address }}
+                        </li>
+                        <li v-if="individual.main_phone?.formatted_international_number">
+                            {{ individual.main_phone.formatted_international_number }}
+                        </li>
+                        <li v-if="individual.main_address?.full_address">
+                            {{ individual.main_address.full_address.split("\n").join(", ") }}
+                        </li>
+                        <li v-for="adr in individual.more_addresses">
+                            {{ adr.full_address }}
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <span>Tax Information:</span>
+                    <ul>
+                        <li v-for="(value, key) in individual.tax_numbers">
+                            {{ key }}
+                            {{ value }}
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <span>Businesses:</span>
+                    <ul>
+                        <li v-for="business in businesses.data">
+                            <img src="`/api/v1/businesses/${business._id}/logo`" />
+                            <span>{{ business.name }}</span>
+                            <button @click="selectBusiness(business)">focus</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+        <script type="text/javascript">
+            new Vue(
+            {
+                el: "main",
+
+                data:
+                {
+                    individual: {},
+                    businesses: []
+                },
+
+                async created()
+                {
+                    try
+                    {
+                        this.individual._id = self.location.search.substring(1);
+                        await this.load();
+                    }
+                    catch(x)
+                    {
+                        console.error(x);
+                        self.location = "/people/";
+                    }
+                },
+
+                methods:
+                {
+                    load: async function()
+                    {
+                        let res = await axios.get(`/api/v1/identities/${this.individual._id}`);
+                        this.individual = res.data;
+                        this.$forceUpdate();
+
+                        res = await await axios.get(`/api/v1/identities/${this.individual._id}/businesses`);
+                        this.businesses = res.data;
+                        this.$forceUpdate();
+                    },
+
+                    selectBusiness: async (business) =>
+                    {
+                        // store selection in local storage
+                        localStorage.setItem("business", business._id);
+
+                        // store selection in session
+                        await axios.put("/api/v1/session", { business: business._id });
+
+                        // refresh page
+                        window.parent.document.app.updateSessionData();
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>

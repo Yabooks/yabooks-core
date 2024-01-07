@@ -5,23 +5,20 @@
         <script type="text/javascript" src="/js/vue/vue.min.js"></script>
     </head>
     <body>
-        <div id="identities_list">
-            <div class="identity" v-for="identity in identities">
-                <img src="" />
-                <span @click="toggleExpanded(identity)">
-                    {{ identity.full_name }}
+        <main id="identities_list">
+            <div class="identity" v-for="identity in identities.data">
+                <img :src="`/api/v1/identities/${identity._id}/picture`" />
+                <span>
+                    <a :href="`${identity.kind.toLowerCase()}.html?${identity._id}`">
+                        {{ identity.full_name }}
+                    </a>
                 </span>
-                <ul v-if="identity.expanded">
-                    <li v-for="business in identity.businesses" @click="selectBusiness(business)">
-                        {{ business.name }}
-                    </li>
-                </ul>
             </div>
-        </div>
+        </main>
         <script type="text/javascript">
             new Vue(
             {
-                el: "#identities_list",
+                el: "main",
 
                 data:
                 {
@@ -31,32 +28,8 @@
                 async created()
                 {
                     let res = await axios.get(`/api/v1/identities`);
-                    this.identities = res.data.data;
-                },
-
-                methods:
-                {
-                    toggleExpanded: async function(identity)
-                    {
-                        identity.expanded = !identity.expanded;
-                        this.$forceUpdate();
-
-                        if(!identity.businesses)
-                        {
-                            let res = await axios.get(`/api/v1/identities/${identity.id}/businesses`);
-                            identity.businesses = res.data.data;
-                            this.$forceUpdate();
-                        }
-                    },
-
-                    selectBusiness: async (business) =>
-                    {
-                        // store selection in local storage
-                        localStorage.setItem("business", business._id);
-
-                        // store selection in session
-                        await axios.put("/api/v1/session", { business: business._id });
-                    }
+                    this.identities = res.data;
+                    this.$forceUpdate();
                 }
             });
         </script>

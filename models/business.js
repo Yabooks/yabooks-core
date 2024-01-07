@@ -1,4 +1,4 @@
-const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("fs").promises;
+const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
 
 // business schema
 const Business = mongoose.model("Business", (function()
@@ -7,6 +7,7 @@ const Business = mongoose.model("Business", (function()
     {
         owner: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
         name: { type: String, required: true },
+        fictive: { type: Boolean, required: true, default: false }, // whether business should not be considered for tax and similar purposes
         default_currency: { type: String, default: "EUR", required: true }, // ISO 4217
         business_number: String,
         closing_month: Number,

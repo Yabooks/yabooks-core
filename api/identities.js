@@ -42,9 +42,15 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.patch("/api/v1/identities/:id", async (req, res) =>
+    api.patch("/api/v1/individuals/:id", async (req, res) =>
     {
-        await Identity.updateOne({ _id: req.params.id }, req.body);
+        await Individual.updateOne({ _id: req.params.id }, req.body);
+        res.send({ success: true });
+    });
+
+    api.patch("/api/v1/organizations/:id", async (req, res) =>
+    {
+        await Organization.updateOne({ _id: req.params.id }, req.body);
         res.send({ success: true });
     });
 

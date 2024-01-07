@@ -61,6 +61,11 @@ nav a
     position: absolute;
 }
 
+#logo.recentlyChanged
+{
+    border: 2px solid red;
+}
+
 #picture
 {
     top: 5px;
