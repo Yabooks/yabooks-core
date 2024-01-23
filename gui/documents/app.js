@@ -66,7 +66,12 @@ new Vue(
                     await axios.delete(`/api/v1/documents/${doc._id}`);
                     this.loadDocuments();
                 }
-                catch(x) {}
+                catch(x)
+                {
+                    console.error(x);
+                    this.error = x?.message;
+                    this.$forceUpdate();
+                }
         },
 
         uploadFile()
@@ -84,8 +89,14 @@ new Vue(
                             mime_type: file.type
                         });
 
-                        await axios.put(`/api/v1/documents/${doc.data._id}/binary`, file);
-                        this.loadDocuments();
+                        let reader = new FileReader();
+                        reader.onload = async () =>
+                        {
+                            const headers = { "Content-Type": "application/octet-stream" };
+                            await axios.put(`/api/v1/documents/${doc.data._id}/binary`, new Uint8Array(reader.result), { headers });
+                            this.loadDocuments();
+                        };
+                        reader.readAsArrayBuffer(file);
                     }
                     catch(x)
                     {

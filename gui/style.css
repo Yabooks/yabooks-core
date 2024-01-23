@@ -25,6 +25,7 @@ nav
     color: black;
     padding-top: 11px;
     position: absolute;
+    overflow: revert-layer;
     backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, .5);
 }

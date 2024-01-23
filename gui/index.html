@@ -10,6 +10,7 @@
     </head>
     <body>
         <main>
+            <iframe id="main" name="main" src="/login/" @load="updateSessionData()"></iframe>
             <nav>
                 <a :href="(loggedIn ? '/home/' : '/login/')" style="font-weight: bold">
                     Home
@@ -34,7 +35,7 @@
                     </a>
                 </span>
             </nav>
-            <iframe id="main" name="main" src="/login/" @load="updateSessionData()"></iframe>
+
             <div id="shadow" v-if="modal">
                 <iframe id="modal" name="modal" :src="modal"></iframe>
                 <button id="close" @click="openModal(false)" alt="close">&#10006;</button>
@@ -92,16 +93,20 @@
 
                             this.loggedIn = (await loadSession())?.user;
                             this.selectedBusinessId = await getSelectedBusinessId();
-                            this.selectedBusinessName = (await axios.get(`/api/v1/businesses/${this.selectedBusinessId}`)).data.name;
 
-                            // focus effect to gather user's attention
-                            if(oldSelectedBusinessId && this.selectedBusinessId !== oldSelectedBusinessId)
+                            if(this.selectedBusinessId)
                             {
-                                this.selectedBusinessHasRecentlyChanged = true;
-                                setTimeout(async () => {
-                                    this.selectedBusinessHasRecentlyChanged = false;
-                                    this.$forceUpdate();
-                                }, 2500);
+                                this.selectedBusinessName = (await axios.get(`/api/v1/businesses/${this.selectedBusinessId}`)).data.name;
+
+                                // focus effect to gather user's attention
+                                if(oldSelectedBusinessId && this.selectedBusinessId !== oldSelectedBusinessId)
+                                {
+                                    this.selectedBusinessHasRecentlyChanged = true;
+                                    setTimeout(async () => {
+                                        this.selectedBusinessHasRecentlyChanged = false;
+                                        this.$forceUpdate();
+                                    }, 2500);
+                                }
                             }
                         }
                         catch(x)
@@ -109,7 +114,9 @@
                             this.loggedIn = false;
                             this.selectedBusinessId = null;
                             this.selectedBusinessName = null;
-                            self.location = "/login/";
+
+                            if(!parent.main.location.href.includes("/login"))
+                                parent.main.location = "/login/";
                         }
                         finally
                         {

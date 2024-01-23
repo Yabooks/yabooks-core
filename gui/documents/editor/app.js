@@ -4,6 +4,7 @@ new Vue(
 
     data:
     {
+        tab: "general",
         doc: { ledger_transactions: [] },
         error: null
     },
@@ -30,7 +31,7 @@ new Vue(
             this.doc.ledger_transactions.push(template);
         },
 
-        getWarnings()
+        getLedgerTxWarnings()
         {
             let balance = 0;
 

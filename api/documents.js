@@ -42,13 +42,17 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.patch("/api/v1/documents/:id", async (req, res) =>
+    api.patch("/api/v1/documents/:id", async (req, res, next) =>
     {
-        let x = await Document.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
-        res.send({ success: true });
+        try
+        {
+            let x = await Document.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
+            res.send({ success: true });
 
-        //await Logger.logRecordUpdated("document", , );
-        //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+            //await Logger.logRecordUpdated("document", , );
+            //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+        }
+        catch(x) { next(x) }
     });
 
     api.get("/api/v1/documents/:id/binary", async (req, res, next) =>
@@ -119,13 +123,18 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.delete("/api/v1/documents/:id", async (req, res) =>
+    api.delete("/api/v1/documents/:id", async (req, res, next) =>
     {
         try
         {
-            await Document.archiveCurrentVersion(req.params.id);
+            try
+            {
+                await Document.archiveCurrentVersion(req.params.id);
+                await Document.deleteFromDisk(req.params.id);
+            }
+            catch(x) {}
+
             await Document.deleteOne({ _id: req.params.id });
-            await Document.deleteFromDisk(req.params.id);
             res.send({ success: true });
 
             //await Logger.logRecordDeleted("document", , );
@@ -207,7 +216,7 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.get("/api/v1/documents/:id/links", async (req, res) =>
+    api.get("/api/v1/documents/:id/links", async (req, res, next) =>
     {
         try
         {

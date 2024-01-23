@@ -24,10 +24,17 @@ const Article = CostCenter.discriminator("Article",
     serial_number: String
 });
 
+// project schema
+const Project = CostCenter.discriminator("Project",
+{
+    start_at: Date,
+    end_at: Date
+});
+
 // store schema
 const Store = CostCenter.discriminator("Store",
 {
     address: Address
 });
 
-module.exports = { CostCenter, Article, Store };
+module.exports = { CostCenter, Article, Project, Store };

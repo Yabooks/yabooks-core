@@ -45,6 +45,7 @@ const CostTransaction = (function()
     {
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: true },
         corresponding_ledger_transaction: mongoose.Schema.Types.ObjectId,
+        is_budget: { type: Boolean, required: true, default: false },
         value: { type: mongoose.Schema.Types.Decimal128, required: true },
         text: String
     });
@@ -52,6 +53,7 @@ const CostTransaction = (function()
     let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true } });
     schema.path("cost_center").index(true);
     schema.path("corresponding_ledger_transaction").index(true);
+    schema.path("is_budget").index(true);
     return schema;
 })();
 
@@ -143,6 +145,7 @@ const Document = mongoose.model("Document", (function()
         type: String,
         date: Date,
         internal_reference: String,
+        associated_cost_centers: [ { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter" } ],
 
         external_reference: String,
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
