@@ -75,15 +75,19 @@ module.exports = function(api)
     // endpoint for app to exchange public auth code against private bearer token
     api.all("/oauth/token", async (req, res) =>
     {
-        let code = await OAuthCode.findOne({ _id: req.query.code || req.body.code, expires_at: { $lt: new Date() } });
-        let app = await App.findOne({ _id: code.app_id });
+        try
+        {
+            let code = await OAuthCode.findOne({ _id: req.query.code || req.body.code, expires_at: { $gt: new Date() } });
+            let app = await App.findOne({ _id: code.app_id });
 
-        if(app.secret !== req.body.client_secret)
-            return void res.status(401).send({ error: "unauthorized", error_description: "provided client secret is incorrect" });
+            if(app.secret !== req.body.client_secret)
+                return void res.status(401).send({ error: "unauthorized", error_description: "provided client secret is incorrect" });
 
-        let app_session = { session_id: code.session, app_id: code.app_id };
-        let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
-        res.send({ token });
+            let app_session = { session_id: code.session, app_id: code.app_id };
+            let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
+            res.send({ token });
+        }
+        catch(x) { res.status(401).send({ error: "exchanging code for token failed" }) }
     });
 
     // endpoint for an app to exchange app secret against bearer token without user context, such as for registering the app

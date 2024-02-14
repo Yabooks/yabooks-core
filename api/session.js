@@ -39,7 +39,7 @@ module.exports = function(api)
         res.clearCookie("user_info").send({ success: true });
     });
 
-    //
+    // redirect to profile picture of logged-in user
     api.get("/api/v1/session/profile-picture", async (req, res) =>
     {
         try

@@ -1,4 +1,5 @@
-const { App } = require("../models/app.js");
+const { App } = require("../models/app.js"), jwt = require("jsonwebtoken");
+const appToAppTokenSecret = process.env.secret || require("crypto").randomBytes(32);
 
 module.exports = function(api)
 {
@@ -29,11 +30,29 @@ module.exports = function(api)
         {
             let app = await App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] },
                 { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, license_key: false });
+
+            // if request is from one app about another, include a JWT token to authenticate potential app to app communication
+            if(req?.auth?.app_id && req.auth.app_id != req.params.id)
+                app.apiToken = await jwt.sign({ iss: "yabooks-core", sub: req.auth.app_id, aud: req.params.id }, appToAppTokenSecret);
+
             if(!app)
                 res.status(404).send({ error: "not found" });
             else res.send(app);
         }
         catch(x) { next(x) }
+    });
+
+    api.get("/api/v1/apps/:id/verify-token/:token", async (req, res, next) => // lets an app verify if the request from another app is authenticated
+    {
+        try
+        {
+            let data = await jwt.verify(req.params.token, appToAppTokenSecret, { audience: req.auth.app_id, subject: req.params.id });
+            res.json(data);
+        }
+        catch(x)
+        {
+            res.status(401).json({ success: false, error: x?.message || x });
+        }
     });
 
     api.patch("/api/v1/apps/:id", async (req, res, next) =>

@@ -24,6 +24,7 @@ const App = mongoose.model("App", (function()
         description: String,
         icon: String,
         link: String,
+        api: String,
         redirect_uris: [ String ], // for oauth flow
         install_path: String,
         auto_start_command: String,
