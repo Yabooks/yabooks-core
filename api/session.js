@@ -21,14 +21,14 @@ module.exports = function(api)
         for(let key in req.body)
             patch_request["data." + key] = req.body[key];
 
-        await Session.update({ _id: req.auth.session_id }, patch_request);
+        await Session.updateOne({ _id: req.auth.session_id }, patch_request);
         res.send({ success: true });
     });
 
     // overwrite all session preferences
     api.put("/api/v1/session", async (req, res) =>
     {
-        await Session.update({ _id: req.auth.session_id }, { data: req.body });
+        await Session.updateOne({ _id: req.auth.session_id }, { data: req.body });
         res.send({ success: true });
     });
 

@@ -11,15 +11,8 @@ const loadSession = async () =>
 
 const getSelectedBusinessId = async () =>
 {
-    let business = localStorage.getItem("business");
-
-    if(!business)
-    {
-        await loadSession();
-        business = session.data?.business;
-    }
-
-    return business;
+    await loadSession();
+    return session.data?.business;
 };
 
 /*const getSelectedBusinessCurrency = async () =>
@@ -32,3 +25,18 @@ const getUserLanguage = () =>
 {
     return session.data?.language || navigator.language || navigator.userLanguage;
 };
+
+// allow iFrames to ask for the user's session token
+window.addEventListener("message", async (event) =>
+{
+    try
+    {
+        let session = await loadSession();
+        if(frames?.main?.postMessage && event.data === "what_is_user_session_token" && session?._id)
+            frames.main.postMessage({ user_token: session._id });
+    }
+    catch(x)
+    {
+        console.error("could not send message to app", x);
+    }
+});

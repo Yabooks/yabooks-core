@@ -33,9 +33,24 @@
                         // check if user is already logged in using an existing cookie
                         let session = await axios.get("/api/v1/session");
                         if(session.data.user_token)
-                            this.proceed(session.data.user_token);
+                            return this.proceed(session.data.user_token);
                     }
                     catch(x) {}
+
+                    try
+                    {
+                        // otherwise ask parent window for user's token to work with the same session
+                        window.addEventListener("message", (event) => {
+                            if(event.data?.user_token)
+                                this.proceed(event.data.user_token);
+                        });
+                        parent.parent.postMessage("what_is_user_session_token");
+                    }
+                    catch(x)
+                    {
+                        console.error(x);
+                        reject(x);
+                    }
                 },
 
                 methods:

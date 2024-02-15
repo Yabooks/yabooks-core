@@ -97,13 +97,8 @@
 
                     selectBusiness: async (business) =>
                     {
-                        // store selection in local storage
-                        localStorage.setItem("business", business._id);
-
-                        // store selection in session
+                        // store selection in session and refresh page
                         await axios.put("/api/v1/session", { business: business._id });
-
-                        // refresh page
                         window.parent.document.app.updateSessionData();
                     }
                 }
