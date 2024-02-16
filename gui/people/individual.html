@@ -49,7 +49,7 @@
                     <span>Businesses:</span>
                     <ul>
                         <li v-for="business in businesses.data">
-                            <img src="`/api/v1/businesses/${business._id}/logo`" />
+                            <img :src="`/api/v1/businesses/${business._id}/logo`" />
                             <span>{{ business.name }}</span>
                             <button @click="selectBusiness(business)">focus</button>
                         </li>

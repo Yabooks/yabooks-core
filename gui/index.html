@@ -35,7 +35,6 @@
                     </a>
                 </span>
             </nav>
-
             <div id="shadow" v-if="modal">
                 <iframe id="modal" name="modal" :src="modal"></iframe>
                 <button id="close" @click="openModal(false)" alt="close">&#10006;</button>
@@ -87,6 +86,12 @@
 
                     async updateSessionData()
                     {
+                        try {
+                            //  if URL access is not blocked by cross-origin restrictions
+                            window.postMessage({ main_url: frames.main.location.href });
+                        }
+                        catch(x) {}
+
                         try
                         {
                             let oldSelectedBusinessId = this.selectedBusinessId;

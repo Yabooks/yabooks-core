@@ -59,8 +59,14 @@ module.exports = function(api)
             await session.save();
 
             let user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
-            let secure_cookie_only = req.protocol === "https" || process.env.base_url?.includes("https://"); // required to allow cookies in iFrames
-            res.cookie("user_token", user_token, { httpOnly: true, path: "/", sameSite: "none", secure: secure_cookie_only }).send({ user_token });
+            let secure_cookie_only = req.protocol === "https" || process.env.base_url?.includes("https://");
+
+            res.cookie("user_token", user_token, {
+                httpOnly: true,
+                path: "/",
+                secure: secure_cookie_only || undefined,
+                sameSite: secure_cookie_only ? "none" : undefined // chrome allows samesite=none only in combination with secure
+            }).send({ user_token });
         }
         catch(x) { next(x) }
     });

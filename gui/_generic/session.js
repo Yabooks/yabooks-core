@@ -2,9 +2,7 @@ let session = {};
 
 const loadSession = async () =>
 {
-    if(session && session.user && session.data)
-        return session;
-
+    // always load from server, context could have been changed
     let res = await axios.get("/api/v1/session");
     return session = res.data;
 };
@@ -26,7 +24,7 @@ const getUserLanguage = () =>
     return session.data?.language || navigator.language || navigator.userLanguage;
 };
 
-// allow iFrames to ask for the user's session token
+// allow apps in iFrames to ask for the user's session token and altering the page URL
 window.addEventListener("message", async (event) =>
 {
     if(event.source === frames.main && event.data === "what_is_user_session_token")
@@ -40,4 +38,7 @@ window.addEventListener("message", async (event) =>
         {
             console.error("could not send message to app", x);
         }
+
+    if([ window, frames.main ].includes(event.source) && event.data?.main_url)
+        self.location.hash = event.data.main_url.split("http://").join("").split("https://").join("");// TODO
 });
