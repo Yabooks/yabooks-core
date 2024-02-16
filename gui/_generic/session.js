@@ -29,14 +29,15 @@ const getUserLanguage = () =>
 // allow iFrames to ask for the user's session token
 window.addEventListener("message", async (event) =>
 {
-    try
-    {
-        let session = await loadSession();
-        if(frames?.main?.postMessage && event.data === "what_is_user_session_token" && session?._id)
-            frames.main.postMessage({ user_token: session._id });
-    }
-    catch(x)
-    {
-        console.error("could not send message to app", x);
-    }
+    if(event.source === frames.main && event.data === "what_is_user_session_token")
+        try
+        {
+            let session = await loadSession();
+            console.info("app in iframe asked for user token, replying");
+            event.source.postMessage({ user_token: session.user_token }, "*");
+        }
+        catch(x)
+        {
+            console.error("could not send message to app", x);
+        }
 });

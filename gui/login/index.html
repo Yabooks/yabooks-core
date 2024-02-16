@@ -22,7 +22,7 @@
                     password: ""
                 },
 
-                async created()
+                async mounted()
                 {
                     try
                     {
@@ -40,11 +40,20 @@
                     try
                     {
                         // otherwise ask parent window for user's token to work with the same session
-                        window.addEventListener("message", (event) => {
-                            if(event.data?.user_token)
-                                this.proceed(event.data.user_token);
+                        window.addEventListener("message", (event) =>
+                        {
+                            if(event.source === window.top && event.data?.user_token)
+                            {
+                                console.info("received user token from top window");
+                                return this.proceed(event.data.user_token);
+                            }
                         });
-                        parent.parent.postMessage("what_is_user_session_token");
+
+                        if(window !== window.top)
+                        {
+                            console.info("asking top window for a user token");
+                            window.top.postMessage("what_is_user_session_token", "*");
+                        }
                     }
                     catch(x)
                     {

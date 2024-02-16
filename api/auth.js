@@ -78,7 +78,11 @@ module.exports = function(api)
 
             res.redirect(context.redirect_uri + "?code=" + code._id);
         }
-        catch(x) { res.status(400).send({ error: "bad request" }) }
+        catch(x)
+        {
+            console.error(`[${ new Date().toLocaleString() }] could not finalize oauth flow`, x);
+            res.status(400).send({ error: "bad request", details: x?.message || x });
+        }
     });
 
     // endpoint for app to exchange public auth code against private bearer token

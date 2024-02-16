@@ -99,6 +99,7 @@
                     {
                         // store selection in session and refresh page
                         await axios.put("/api/v1/session", { business: business._id });
+                        console.info("context changed to business", business._id);
                         window.parent.document.app.updateSessionData();
                     }
                 }
