@@ -3,6 +3,14 @@
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <style type="text/css">
+            .business .logo
+            {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+            }
+        </style>
     </head>
     <body>
         <main>
@@ -48,8 +56,8 @@
                 <div>
                     <span>Businesses:</span>
                     <ul>
-                        <li v-for="business in businesses.data">
-                            <img :src="`/api/v1/businesses/${business._id}/logo`" />
+                        <li class="business" v-for="business in businesses.data">
+                            <img class="logo" :src="`/api/v1/businesses/${business._id}/logo`" />
                             <span>{{ business.name }}</span>
                             <button @click="selectBusiness(business)">focus</button>
                         </li>

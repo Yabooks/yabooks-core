@@ -27,7 +27,7 @@ const getUserLanguage = () =>
 // allow apps in iFrames to ask for the user's session token and altering the page URL
 window.addEventListener("message", async (event) =>
 {
-    if(event.source === frames.main && event.data === "what_is_user_session_token")
+    if(event.source === frames.main && event.data === "what_is_user_session_token") // FIXME make sure that only login page receives the token
         try
         {
             let session = await loadSession();
@@ -40,5 +40,9 @@ window.addEventListener("message", async (event) =>
         }
 
     if([ window, frames.main ].includes(event.source) && event.data?.main_url)
-        self.location.hash = event.data.main_url.split("http://").join("").split("https://").join("");// TODO
+    {
+        let url = event.data.main_url.split("http://").join("").split("https://").join("");
+        if(url.indexOf(self.location.host) === 0) url = url.substring(self.location.host.length);
+        self.location.hash = url;
+    }
 });

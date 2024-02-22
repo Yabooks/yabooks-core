@@ -20,16 +20,23 @@ new Vue(
             try
             {
                 let business = await getSelectedBusinessId();
-
-                res = await axios.get(`/api/v1/businesses/${business}/documents${self.location.search}`);
-                this.docs = res.data.data;
-                this.error = null;
-                this.$forceUpdate();
+                if(business)
+                {
+                    res = await axios.get(`/api/v1/businesses/${business}/documents${self.location.search}`);
+                    this.docs = res.data.data;
+                    this.error = null;
+                    this.$forceUpdate();
+                }
+                else
+                {
+                    this.docs = [];
+                    this.error = "Please select a business first.";
+                }
             }
             catch(x)
             {
                 this.docs = [];
-                this.error = "Please select a business first.";
+                this.error = x?.message || x;
             }
         },
 
