@@ -10,7 +10,7 @@
                 <img :src="`/api/v1/identities/${identity._id}/picture`" />
                 <span>
                     <a :href="`${identity.kind.toLowerCase()}.html?${identity._id}`">
-                        {{ identity.full_name }}
+                        {{ identity.full_name ? identity.full_name : (identity.first_name + " " + identity.last_name) }}
                     </a>
                 </span>
             </div>

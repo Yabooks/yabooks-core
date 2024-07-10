@@ -25,19 +25,12 @@ const Identity = mongoose.model("Identity", (function()
 })());
 
 // individual schema
-const Individual = Identity.discriminator("Individual", (function()
+const Individual = Identity.discriminator("Individual",
 {
-    const schemaDefinition = (
-    {
-        first_name: { type: String, required: true },
-        last_name: { type: String, required: true },
-        birthdate: Date
-    });
-
-    const schema = new mongoose.Schema(schemaDefinition, { toJSON: { virtuals: true }, autoIndex: false });
-    schema.virtual("full_name").get(function() { return this.first_name + " " + this.last_name; });
-    return schema;
-})());
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
+    birthdate: Date
+});
 
 // organization schema
 const Organization = Identity.discriminator("Organization",
