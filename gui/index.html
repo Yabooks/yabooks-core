@@ -57,7 +57,9 @@
 
                 async mounted()
                 {
-                    const counter = await axios.get("/api/v1/notifications?limit=0&read=false");
+                    Notification.requestPermission();
+
+                    const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
                     this.notifications = counter.data.total;
                     this.reconnectWebsocket();
                 },
@@ -70,8 +72,10 @@
                         notifier.onclose = (_) => setTimeout(this.reconnectWebsocket, 1000);
                         notifier.onmessage = async (event) =>
                         {
-                            // play sound
-                            new Audio("/notifications/beep.wav").play();
+                            // show system notification
+                            let msg = JSON.parse(event.data);
+                            let notification = new Notification(msg.title);
+                            notification.onclick = (_) => self.location = msg.link;
 
                             // count up badge and check if user is still logged in
                             ++this.notifications;

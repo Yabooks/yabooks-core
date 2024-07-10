@@ -16,7 +16,7 @@ new Vue(
     {
         async loadNotifications()
         {
-            let res = await axios.get(`/api/v1/notifications`);
+            let res = await axios.get(`/api/v1/notifications?type=user_notification`);
             this.notifications = res.data.data;
             this.error = null;
             this.$forceUpdate();

@@ -12,7 +12,7 @@ module.exports = function(api)
 
             // register web socket connection as listener for new notification
             if(listeners[session.user])
-                listeners[session.user].append(ws);
+                listeners[session.user].push(ws);
             else listeners[session.user] = [ ws ];
 
             // listen to incoming web socket messages (required to keep connection alive)
@@ -68,9 +68,11 @@ module.exports = function(api)
             res.send(msg);
 
             // notify all registered listeners of receiver
-            if(listeners[req.body.user])
+            if(listeners[req.body.user] && (!req.query.type || req.query.type == msg.type))
                 for(let ws of listeners[req.body.user])
-                    ws.send(JSON.stringify({ id: msg._id }));
+                    if(ws.readyState == 1) // connected and open
+                        ws.send(JSON.stringify({ id: msg._id, title: msg.title, link: msg.link }));
+                    else ;// TODO remove listener
 
             await Logger.logRecordCreated("notification", msg);
         }
