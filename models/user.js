@@ -1,4 +1,4 @@
-const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("fs").promises;
+const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
 
 // user schema
 const User = mongoose.model("User", (function()

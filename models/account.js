@@ -12,7 +12,7 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
 
         preferred_tax_code: String,
         preferred_tax_percent: mongoose.Schema.Types.Decimal128,
-        default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false },
+        default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false }, // null if not a cost transaction
 
         tags: [ { type: String, enum: [ "fixed", "current", "liquid funds", "raw materials and supplies", "long-term", "short-term" ] } ],
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },

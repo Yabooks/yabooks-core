@@ -1,4 +1,4 @@
-const mongoose = require("../services/connector.js");
+const mongoose = require("../services/connector.js"), fs = require("node:fs").promises, path = require("node:path");
 const { Address, Email, Phone } = require("./contact.js");
 
 // identity schema, which is shared by individuals and organizations
@@ -21,7 +21,24 @@ const Identity = mongoose.model("Identity", (function()
         data: mongoose.Schema.Types.Mixed,
     });
 
-    return new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false });
+    const methods = (
+    {
+        async getPicture()
+        {
+            try
+            {
+                let file = path.join(process.env.persistent_data_dir || "./data", this.kind + "_" + this._id);
+                return await fs.readFile(file);
+            }
+            catch(x)
+            {
+                let file = path.join(__dirname, `../gui/people/${this.kind.toLowerCase()}.svg`);
+                return await fs.readFile(file);
+            }
+        }
+    });
+
+    return new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false, methods });
 })());
 
 // individual schema

@@ -5,9 +5,12 @@ const LedgerTransaction = (function()
 {
     const schemaDefinition = (
     {
-        display_date: Date,
+        posting_date: { type: Date, required: true, default: Date.now },
         alternate_ledger: String,
+
         account: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerAccount", required: true },
+        override_default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false },
+
         amount: { type: mongoose.Schema.Types.Decimal128, required: true },
         text: { type: String, required: true },
 
@@ -34,7 +37,7 @@ const LedgerTransaction = (function()
 // make sure there cannot be a debit/credit difference on ledger transactions
 const debitCreditValidation = function(transactions)
 {
-    console.log("validation", transactions);
+    console.log("validation", transactions); // TODO make sure that debit and credit balances are the same for each posting date
     return true;
 };
 
@@ -141,11 +144,11 @@ const Document = mongoose.model("Document", (function()
     const schemaDefinition = (
     {
         business: { type: mongoose.Schema.Types.ObjectId, ref: "Business" }, // optional for global app config
+        posted: { type: Boolean, required: true, default: false },
 
         type: String,
         date: Date,
         internal_reference: String,
-        associated_cost_centers: [ { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter" } ],
 
         external_reference: String,
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
@@ -158,9 +161,6 @@ const Document = mongoose.model("Document", (function()
         thumbnail: Buffer,
         tags: [ String ],
         data: mongoose.Schema.Types.Mixed,
-
-        posting_date: { type: Date, required: true, default: Date.now },
-        posted: { type: Boolean, required: true, default: false },
 
         receivable: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
         due_date: Date,
@@ -189,7 +189,6 @@ const Document = mongoose.model("Document", (function()
     schema.path("mime_type").index(true);
     schema.path("search_text").index(true);
     schema.path("tags").index(true);
-    schema.path("posting_date").index(true);
     schema.path("posted").index(true);
     schema.path("pays").index(true);
     return schema;
