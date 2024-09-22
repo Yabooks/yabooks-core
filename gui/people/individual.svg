@@ -3,6 +3,6 @@
     <g>
 	<rect width="100%" height="100%" fill="#D8D8D8" />
         <style>.icon { font: 200px sanserif; fill: white }</style>
-        <text x="130" width="250" y="195" class="icon" text-anchor="middle">&#x2699;</text>
+        <text x="130" width="250" y="195" class="icon" text-anchor="middle">&#x1F642;</text>
     </g>
 </svg>

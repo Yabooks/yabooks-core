@@ -3,11 +3,19 @@
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <style type="text/css">
+            .identity .logo
+            {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+            }
+        </style>
     </head>
     <body>
         <main id="identities_list">
             <div class="identity" v-for="identity in identities.data">
-                <img :src="`/api/v1/identities/${identity._id}/picture`" />
+                <img class="logo" :src="`/api/v1/identities/${identity._id}/picture`" />
                 <span>
                     <a :href="`${identity.kind.toLowerCase()}.html?${identity._id}`">
                         {{ identity.full_name ? identity.full_name : (identity.first_name + " " + identity.last_name) }}
