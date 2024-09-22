@@ -115,8 +115,9 @@ module.exports = function(api)
         try
         {
             let app = await App.findOne({ _id: req.params.id, secret: req.body.secret });
-            let app_session = { session_id: null, app_id: app._id };
+            if(!app) throw "401 unauthorized app";
 
+            let app_session = { session_id: null, app_id: app._id };
             let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
             res.send({ token });
         }

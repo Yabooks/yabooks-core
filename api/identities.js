@@ -58,6 +58,22 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    api.get("/api/v1/identities/:id/picture", async (req, res, next) =>
+    {
+        try
+        {
+            let identity = await Identity.findOne({ _id: req.params.id });
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+            else
+            {
+                let picture = await identity.getPicture();
+                res.set("Content-Type", `image/${picture.length > 400 ? "jpeg" : "svg+xml"}`).send(picture);
+            }
+        }
+        catch(x) { next(x) }
+    });
+
     api.patch("/api/v1/individuals/:id", async (req, res) =>
     {
         await Individual.updateOne({ _id: req.params.id }, req.body);

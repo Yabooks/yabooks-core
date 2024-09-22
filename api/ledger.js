@@ -145,6 +145,7 @@ module.exports = function(api)
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
+                // TODO union with cost transactions from general ledger based on default_cost_center or override_default_cost_center, ignore if null
                 { $unwind: "$cost_transactions" },
                 { $set: { "document_id": "$_id._id" } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$cost_transactions", { document_id: "$$ROOT._id" } ] } } },
@@ -168,6 +169,7 @@ module.exports = function(api)
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
+                // TODO union with cost transactions from general ledger based on default_cost_center or override_default_cost_center, ignore if null
                 { $unwind: "$cost_transactions" },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$cost_transactions", { document_id: "$$ROOT._id" } ] } } },
                 { $unionWith: { coll: Document.collection.collectionName, pipeline: [

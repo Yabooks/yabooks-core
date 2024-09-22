@@ -3,7 +3,7 @@ const appToAppTokenSecret = process.env.secret || require("crypto").randomBytes(
 
 module.exports = function(api)
 {
-    api.get("/api/v1/apps", async (req, res, next) =>
+    api.get("/api/v1/apps", async (req, res, next) => // lists currently registered apps
     {
         try
         {
@@ -13,7 +13,7 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.post("/api/v1/apps", async (req, res, next) =>
+    api.post("/api/v1/apps", async (req, res, next) => // registers an app and returns app information including the app's api secret
     {
         try
         {
@@ -24,7 +24,7 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.get("/api/v1/apps/:id", async (req, res, next) =>
+    api.get("/api/v1/apps/:id", async (req, res, next) => // get details about an installed app
     {
         try
         {
@@ -55,7 +55,7 @@ module.exports = function(api)
         }
     });
 
-    api.patch("/api/v1/apps/:id", async (req, res, next) =>
+    api.patch("/api/v1/apps/:id", async (req, res, next) => // lets an app change its own name, description and other details
     {
         try
         {
@@ -68,12 +68,11 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.delete("/api/v1/apps/:id", async (req, res, next) =>
+    api.delete("/api/v1/apps/:id", async (req, res, next) => // removes an app
     {
         try
         {
-            if(!req.auth || req.auth.app_id != req.params.id)
-                return res.status(403).send({ error: "not allowed", details: "app details can only be altered by the app itself" });
+            // TODO shutdown app
 
             await App.deleteOne({ _id: req.params.id });
             res.send({ success: true });
