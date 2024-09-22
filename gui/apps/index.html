@@ -1,0 +1,41 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+        <link rel="stylesheet" type="text/css" href="/_generic/design.css" />
+        <link rel="stylesheet" type="text/css" href="style.css" />
+    </head>
+    <body>
+        <main>
+            <nav>
+                <a class="button" href="https://market.yabooks.net/" target="_blank">
+                    go to App Market
+                </a>
+                <a class="button" href="#" @click="redeemVoucher(); return false">
+                    redeem App Market voucher
+                </a>
+                <a class="button" href="#" @click="newApiKey(); return false">
+                    register private API key
+                </a>
+            </nav>
+            <div v-for="app in apps" class="container">
+                <div class="app">
+                    <img :src="app.icon || 'icon.png'" class="icon" />
+                    <div class="description">
+                        <h2>{{ app.name }}</h2>
+                        <h3>{{ app.bundle_id }}</h3>
+                        <span>registered at {{ app._id | date }}</span>
+                        <button @click="unregister(app)">unregister</button>
+                    </div>
+                </div>
+            </div>
+            <div v-if="apps?.length == 0">
+                No apps registered.
+            </div>
+        </main>
+        <script type="text/javascript" src="app.js"></script>
+    </body>
+</html>
