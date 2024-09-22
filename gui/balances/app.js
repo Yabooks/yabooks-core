@@ -14,6 +14,7 @@ new Vue(
         try
         {
             let business = await getSelectedBusinessId();
+            if(!business) throw "Please select a buiness first.";
 
             res = await axios.get(`/api/v1/businesses/${business}/general-ledger-balances`);
             this.accounts = res.data.data;
@@ -26,8 +27,8 @@ new Vue(
         }
         catch(x)
         {
-            this.docs = [];
-            this.error = "Please select a business first.";
+            alert(x?.message || x);
+            history.back(1);
         }
     },
 
