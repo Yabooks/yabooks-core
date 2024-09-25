@@ -69,7 +69,7 @@ module.exports = async function(req, res, next)
     req.ObjectId = mongoose.Types.ObjectId;
 
     // prepare method for aggregation pipeline stages for filtering, sorting and pagination
-    req.paginatedAggregatePipelineWithFilters = async (model, pipeline) =>
+    req.paginatedAggregatePipelineWithFilters = async (model, pipeline = []) =>
     {
         if(req.base_filters.length > 0)
             pipeline.unshift({ $match: { $and: [ ...req.base_filters ] } });

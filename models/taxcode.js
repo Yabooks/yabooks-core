@@ -5,7 +5,7 @@ const SubTaxCode = (function()
 {
     const schemaDefinition = (
     {
-        code: { type: String, unique: true, required: true },
+        code: { type: String, /*unique: true,*/ sparse: true, required: true },
         description: String,
         keywords: [ String ]
     });
@@ -33,7 +33,7 @@ const TaxCode = mongoose.model("TaxCode", (function()
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
     schema.index("code");
-    schema.index("sub_codes");
+    schema.index("sub_codes", { sparse: true });
     return schema;
 })());
 

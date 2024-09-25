@@ -6,8 +6,7 @@ module.exports = function(api)
     {
         try
         {
-            let query = TaxCode.find({}, [ "-sub_codes", "-keywords" ], req.pagination);
-            res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
+            res.send(await req.paginatedAggregatePipelineWithFilters(TaxCode));
         }
         catch(x) { next(x) }
     });
