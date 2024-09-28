@@ -1,4 +1,5 @@
 const express = require("express"), jwt = require("express-jwt").expressjwt, bodyParser = require("body-parser"), cookieParser = require("cookie-parser");
+const swaggerUi = require("swagger-ui-express"), swaggerjsdoc = require("swagger-jsdoc");
 require("dotenv").config();
 
 // start web server and serve web gui
@@ -18,6 +19,26 @@ app.use(cookieParser());
 
 // authentication routes
 require("./api/auth.js")(app);
+
+// api swagger documentation
+app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
+    swaggerDefinition: {
+        openapi: "3.0.0",
+        info: {
+            title: "YaBooks Core API",
+            description: "API documentation for all core features",
+            contact: {
+                name: "Leopold M. Regner"
+            },
+        },
+        servers: [
+            { url: process.env.base_url || `http://localhost:${process.env.port}` }
+        ],
+    },
+    apis: [
+        "./api/*.js"
+    ]
+})));
 
 // all other routes require to be authenticated
 app.use("/api/*", jwt({ secret: app.jwt_secret = process.env.secret || require("crypto").randomBytes(32), algorithms: [ "HS256" ] }), (err, req, res, next) =>
