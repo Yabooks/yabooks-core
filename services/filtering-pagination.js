@@ -63,13 +63,15 @@ module.exports = async function(req, res, next)
         }
     };
 
+    // make object id type available to all request handlers
+    req.ObjectId = mongoose.Types.ObjectId;
+
     // prepare method for aggregation pipeline stages for filtering, sorting and pagination
     req.paginatedAggregatePipelineWithFilters = async (model, pipeline = []) =>
     {
         const keywords = [ "skip", "limit", "sort_asc", "sort_desc" ];
         req.base_filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") === 0).map(parameterToFilter);
         req.filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") !== 0).map(parameterToFilter);
-        req.ObjectId = mongoose.Types.ObjectId;
 
         if(req.base_filters.length > 0)
             pipeline.unshift({ $match: { $and: [ ...req.base_filters ] } });
