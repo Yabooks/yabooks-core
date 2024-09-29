@@ -16,10 +16,13 @@ const LedgerTransaction = (function()
 
         alternate_currency: { type: String },
         alternate_currency_amount: { type: mongoose.Schema.Types.Decimal128 },
+        alternate_currency2: { type: String },
+        alternate_currency2_amount: { type: mongoose.Schema.Types.Decimal128 },
 
         tax_code: String,
         tax_code_base: String,
         tax_sub_code: String,
+        tax_sub_code_base: String,
         tax_percent: mongoose.Schema.Types.Decimal128,
         tax_number: String, // VAT number, TIN, etc.
         tax_date: Date
