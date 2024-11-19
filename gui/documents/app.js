@@ -5,7 +5,8 @@ new Vue(
     data:
     {
         docs: [],
-        error: null
+        error: null,
+        notifications: []
     },
 
     created()
@@ -15,15 +16,20 @@ new Vue(
 
     methods:
     {
-        async loadDocuments()
+        async loadDocuments(loadMore = false)
         {
             try
             {
                 let business = await getSelectedBusinessId();
                 if(business)
                 {
-                    res = await axios.get(`/api/v1/businesses/${business}/documents${self.location.search}`);
-                    this.docs = res.data.data;
+                    let params = self.location.search.substring(1);
+                    if(loadMore) params += `&skip=${this.docs.length}`;
+                    else if(this.docs.length > 100) params += `&limit=${this.docs.length}`;
+
+                    res = await axios.get(`/api/v1/businesses/${business}/documents?${params}`);
+                    if(loadMore) this.docs.push(...res.data.data);
+                    else this.docs = res.data.data;
                     this.error = null;
                     this.$forceUpdate();
                 }
@@ -71,6 +77,7 @@ new Vue(
                 try
                 {
                     await axios.delete(`/api/v1/documents/${doc._id}`);
+                    this.showNotification(`${doc.name} was successfully deleted.`, true);
                     this.loadDocuments();
                 }
                 catch(x)
@@ -84,32 +91,62 @@ new Vue(
         uploadFile()
         {
             let docSelector = document.querySelector("#upload_file_selector");
-            docSelector.click();
-
-            docSelector.onchange = async (event) =>
+            docSelector.onchange = async (event) => uploadFiles(event.target.files, doc =>
             {
-                for(let file of event.target.files)
-                    try
-                    {
-                        let doc = await axios.post(`/api/v1/businesses/${await getSelectedBusinessId()}/documents`, {
-                            name: file.name,
-                            mime_type: file.type
-                        });
+                this.showNotification(`${doc.name} was successfully uploaded.`, true);
+                this.loadDocuments();
+            });
+            docSelector.click();
+        },
 
-                        let reader = new FileReader();
-                        reader.onload = async () =>
-                        {
-                            const headers = { "Content-Type": "application/octet-stream" };
-                            await axios.put(`/api/v1/documents/${doc.data._id}/binary`, new Uint8Array(reader.result), { headers });
-                            this.loadDocuments();
-                        };
-                        reader.readAsArrayBuffer(file);
-                    }
-                    catch(x)
-                    {
-                        console.error(x);
-                    }
-            };
+        handleDrop(event)
+        {
+            event.preventDefault();
+            uploadFiles(event.dataTransfer.files, doc =>
+            {
+                this.showNotification(`${doc.name} was successfully uploaded.`, true);
+                this.loadDocuments();
+            });
+        },
+
+        showNotification(message, good = true)
+        {
+            this.notifications.push({ message, good });
+            this.$forceUpdate();
+
+            setTimeout(_ =>
+            {
+                for(let i in this.notifications)
+                    if(this.notifications[i].message === message)
+                        this.notifications.pop();
+                this.$forceUpdate();
+            }, 5000);
         }
     }
 });
+
+async function uploadFiles(files, callback)
+{
+    for(let file of files)
+        try
+        {
+            let doc = await axios.post(`/api/v1/businesses/${await getSelectedBusinessId()}/documents`, {
+                name: file.name,
+                mime_type: file.type
+            });
+
+            let reader = new FileReader();
+            reader.onload = async () =>
+            {
+                const headers = { "Content-Type": "application/octet-stream" };
+                await axios.put(`/api/v1/documents/${doc.data._id}/binary`, new Uint8Array(reader.result), { headers });
+                callback(doc.data);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        catch(x)
+        {
+            console.error(x);
+            alert("Could not upload file");
+        }
+}

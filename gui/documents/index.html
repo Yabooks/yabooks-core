@@ -7,9 +7,12 @@
         <script type="text/javascript" src="/js/vue/vue.min.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+        <script type="text/javascript" src="/_generic/components/filter-bar.js"></script>
+        <link rel="stylesheet" type="text/css" href="/_generic/components/filter-bar.css" />
     </head>
     <body>
         <div id="doc_list">
+            <!--<filter-bar></filter-bar>-->
             <div class="doc" v-for="doc in docs">
                 <img class="thumbnail" :src="'/api/v1/documents/' + doc._id + '/thumbnail'" height="50" />
                 <div class="description">
@@ -25,8 +28,8 @@
                     <span class="label name" v-if="doc.name">
                         {{ doc.name }}
                     </span>
-                    <span class="label date">
-                        {{ doc.date || doc.posting_date | formatDate }}
+                    <span class="label date" v-if="doc.date">
+                        {{ doc.date | formatDate }}
                     </span>
                     <span class="label tag" v-for="tag in doc.tags">
                         {{ tag }}
@@ -50,11 +53,20 @@
             <span v-if="error">
                 {{ error }}
             </span>
-            <div>
-                <input type="file" style="display: none" id="upload_file_selector" />
-                <button @click="uploadFile()">
+            <div v-if="!error">
+                <input type="file" multiple style="display: none" id="upload_file_selector" />
+                <button id="upload" @click="uploadFile()" @dragover.prevent @drop.prevent="handleDrop">
                     upload documents
                 </button>
+                <!--<button>
+                    show list on second screen and open in quick recorder
+                </button>-->
+                <button @click="loadDocuments(true)">load more</button>
+            </div>
+            <div id="notification" v-if="notifications?.length > 0" @click="notifications = []">
+                <span v-for="notification in notifications">
+                    {{ notification.message }}
+                </span>
             </div>
         </div>
         <script type="text/javascript" src="app.js"></script>
