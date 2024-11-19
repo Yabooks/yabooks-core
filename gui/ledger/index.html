@@ -59,6 +59,11 @@
                         </span>
                     </td>
                 </tr>
+                <tr v-if="records.length == 0">
+                    <td colspan="7">
+                        No records found.
+                    </td>
+                </tr>
             </table>
             <span v-if="error">
                 {{ error }}
