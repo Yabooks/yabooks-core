@@ -2,112 +2,56 @@
 <html>
     <head>
         <link rel="stylesheet" type="text/css" href="style.css" />
-        <link rel="stylesheet" type="text/css" href="/_generic/design.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.min.js"></script>
-        <script type="text/javascript" src="/_generic/session.js"></script>
-        <script type="text/javascript" src="/_generic/filters.js"></script>
+        <script type="text/javascript" src="/_generic/components/business-selector.js"></script>
+        <script type="text/javascript" src="tabs/general.js"></script>
+        <script type="text/javascript" src="tabs/ledger.js"></script>
     </head>
     <body>
         <main>
             <nav class="menubar">
-                <button class="menuitem">
-                    general
+                <button class="menuitem" @click="back()">
+                    <span class="icon">&#x2B05;&#xFE0F;</span>
+                    <label>Back</label>
                 </button>
-                <button class="menuitems">
-                    links
+                <button class="menuitem" :class="{ selected: tab === 'general' }" @click="selectTab('general')">
+                    <span class="icon">&#x2139;&#xFE0F;</span>
+                    <label>General</label>
                 </button>
-                <button class="menuitem">
-                    general ledger
+                <button class="menuitem" :class="{ selected: tab === 'ledger' }" @click="selectTab('ledger')">
+                    <span class="icon">&#x1F4D6;</span>
+                    <label>Ledger</label>
                 </button>
-                <button class="menuitem" @click="save" :disabled="getLedgerTxWarnings()">
-                    save changes
+                <!--<button class="menuitem" :class="{ selected: tab === 'costs' }" @click="selectTab('costs')">
+                    <span class="icon">&#x1F4B5;</span>
+                    <label>Costs</label>
+                </button>
+                <button class="menuitem" :class="{ selected: tab === 'inventory' }" @click="selectTab('inventory')">
+                    <span class="icon">&#x1F4E6;</span>
+                    <label>Inventory</label>
+                </button>-->
+                <button class="menuitem" @click="save()">
+                    <span class="icon">&#x1F4BE;</span>
+                    <label>Save</label>
                 </button>
             </nav>
-            <div class="banner" v-if="error">
-                &#x1f525; {{ error }}
-            </div>
-            <div class="tab" v-if="tab == 'general'">
-                <table>
-                    <tr>
-                        <td>Document Type</td>
-                        <td><input type="text" v-model="doc.type" /></td>
-                    </tr>
-                    <tr>
-                        <td>Document Date</td>
-                        <td><input type="date" v-model="doc.date" /></td>
-                    </tr>
-                    <tr>
-                        <td>Internal Document Reference</td>
-                        <td><input type="text" v-model="doc.internal_reference" /></td>
-                    </tr>
-                    <tr>
-                        <td>Business Partner</td>
-                        <td><input type="text" v-model="doc.business_partner" /></td>
-                    </tr>
-                    <tr>
-                        <td>Intracompany Business Transaction</td>
-                        <td><input type="checkbox" v-model="doc.intracompany" /></td>
-                    </tr>
-                    <tr>
-                        <td>File Name</td>
-                        <td><input type="text" v-model="doc.name" /></td>
-                    </tr>
-                    <tr>
-                        <td>Tags</td>
-                        <td><input type="text" :value="(doc.tags || []).join(',')" @onchange="doc.tags = this.value.split(',')" /></td>
-                    </tr>
-                    <tr>
-                        <td>Posting Date</td>
-                        <td><input type="datetime-local" v-model="doc.posting_date" /></td>
-                    </tr>
-                    <tr>
-                        <td>Posted?</td>
-                        <td><input type="checkbox" v-model="doc.posted" /></td>
-                    </tr>
-                    <tr>
-                        <td>Amount Receivable (Payable)</td>
-                        <td><input type="text" class="decimal" :value="parseDecimal(doc.receivable)" @onchange="doc.receivable = parseDecimal(this.value)" /></td>
-                    </tr>
-                    <tr>
-                        <td>Due Date</td>
-                        <td><input type="date" v-model="doc.due_date" /></td>
-                    </tr>
-                </table>
-            </div>
-            <div class="tab" v-if="tab == 'links'">
-                <div>
-                    <h2>Pays</h2>
+            <iframe v-if="doc._id" :src="`viewer/?transparent=true&doc_id=${doc._id}`" id="preview"></iframe>
+            <div id="tabs">
+                <div class="tab" v-if="tab === 'general'">
+                    <general-tab :doc="doc"></general-tab>
+                </div>
+                <div class="tab" v-if="tab === 'ledger'">
+                    <ledger-tab></ledger-tab>
+                </div>
+                <div class="tab" v-if="tab === 'costs'">
                     <!-- TODO -->
                 </div>
-                <!-- TODO document links -->
-            </div>
-            <div class="tab" v-if="tab == 'ledger_transactions'">
-                <span v-if="getLedgerTxWarnings()">
-                    &#x26a0;&#xfe0f; {{ getLedgerTxWarnings() }}
-                </span>
-                <table>
-                    <tr>
-                        <th>Account</th>
-                        <th>Text</th>
-                        <th>Amount Debit</th>
-                        <th>Amount Credit</th>
-                        <th>Tax Code Base</th>
-                        <th>Tax Code</th>
-                        <th>Tax Percent</th>
-                    </tr>
-                    <tr is="ledger-tx" v-for="tx in doc.ledger_transactions" :tx="tx" />
-                    <tr>
-                        <td align="right" colspan="7">
-                            <button @click="addLedgerTx()">
-                                +
-                            </button>
-                        </td>
-                    </tr>
-                </table>
+                <div class="tab" v-if="tab === 'inventory'">
+                    <!-- TODO -->
+                </div>
             </div>
         </main>
-        <script type="text/javascript" src="components/ledger-tx.js"></script>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

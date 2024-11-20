@@ -59,10 +59,13 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, [ "document_name", "mime_type" ]);
+            let doc = await Document.findOne({ _id: req.params.id }, [ "name", "mime_type" ]);
+            
             if(!doc)
                 res.status(404).send({ error: "not found" });
-            else res.header("content-type", doc["mime_type"]).header("content-disposition", `attachment; name="${doc.name}"`)
+            
+            else res.header("content-type", doc["mime_type"])
+                    .header("content-disposition", `attachment; filename="${doc.name}"`)
                     .send(await Document.readCurrentVersion(doc._id));
         }
         catch(x) { next(x) }
@@ -199,6 +202,68 @@ module.exports = function(api)
         catch(x)
         {
             res.status(400).json({ success: false, error: x?.response?.data || x?.message || x });
+        }
+    });
+
+    api.post("/api/v1/documents/:id/pdf-annotations", /* upload.single('pdf'), */ async (req, res, next) =>
+    {
+        // TODO npm install express body-parser multer pdf-lib
+
+        const express = require('express');
+        const multer = require('multer');
+        const { PDFDocument, rgb } = require('pdf-lib');
+        const fs = require('fs');
+
+        const hexToRgb = (hex) =>
+        {
+            const bigint = parseInt(hex.replace('#', ''), 16);
+            const r = ((bigint >> 16) & 255) / 255;
+            const g = ((bigint >> 8) & 255) / 255;
+            const b = (bigint & 255) / 255;
+            return [ r, g, b ];
+        };
+        
+        try
+        {/*
+            // Get the uploaded PDF and annotation data
+            const pdfBuffer = req.file.buffer; // PDF file
+            const annotations = JSON.parse(req.body.annotations); // Annotation data (paths, colors, etc.)
+
+            // Load the PDF document
+            const pdfDoc = await PDFDocument.load(pdfBuffer);
+
+            // Process each page's annotations
+            annotations.forEach(async (pageAnnotations, pageIndex) =>
+            {
+                const page = pdfDoc.getPage(pageIndex);
+                pageAnnotations.forEach(annotation =>
+                {
+                    const { paths, color, width } = annotation;
+                    paths.forEach(path =>
+                    {
+                        const { startX, startY, endX, endY } = path;
+                        page.drawLine(
+                        {
+                            start: { x: startX, y: page.getHeight() - startY }, // Flip Y-axis for PDF-lib
+                            end: { x: endX, y: page.getHeight() - endY },
+                            thickness: width,
+                            color: rgb(...hexToRgb(color)),
+                        });
+                    });
+                });
+            });
+
+            // Save the updated PDF
+            const updatedPdf = await pdfDoc.save();
+
+            // Respond with the updated PDF
+            res.setHeader('Content-Type', 'application/pdf');
+            res.send(updatedPdf);
+        */}
+        catch(error)
+        {
+            console.error('Error saving annotations:', error);
+            res.status(500).json({ error: 'Failed to save annotations to PDF' });
         }
     });
 

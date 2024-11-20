@@ -5,11 +5,10 @@ new Vue(
     data:
     {
         tab: "general",
-        doc: { ledger_transactions: [] },
-        error: null
+        doc: { ledger_transactions: [] }
     },
 
-    async created()
+    async mounted()
     {
         try
         {
@@ -20,11 +19,30 @@ new Vue(
         {
             this.error = x;
         }
+        
         this.$forceUpdate();
     },
 
     methods:
     {
+        back()
+        {
+            history.back();
+            history.back();
+        },
+
+        selectTab(tab)
+        {
+            this.tab = tab;
+            this.$forceUpdate();
+        },
+
+        /*togglePriceType()
+        {
+            this.price_type = (this.price_type == "net" ? "gross" : "net");
+            this.$forceUpdate();
+        },
+
         addLedgerTx()
         {
             let template = {};
@@ -63,17 +81,19 @@ new Vue(
             for(let code of [ ...Object.keys(tax_bases), ...Object.keys(taxes) ].filter((v, i, arr) => arr.indexOf(v) === i))
                 if((tax_bases[code] || 0) - (taxes[code] || 0) < -.05 || (tax_bases[code] || 0) - (taxes[code] || 0) > .05)
                      return "tax base and tax do not match one another";
-        },
+        },*/
 
         async save()
         {
             try
             {
                 await axios.patch(`/api/v1/documents/${this.doc._id}`, this.doc);
+                alert("Successfully saved changes!");
             }
             catch(x)
             {
-                this.error = "Could not save document: " + (x.message || "")
+                console.log(x);
+                alert("Could not save changes!");
             }
         }
     }

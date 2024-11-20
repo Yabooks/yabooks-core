@@ -1,33 +1,116 @@
-.menubar
+main
 {
     top: 0;
     left: 0;
     width: 100%;
-    height: 50px;
+    margin-top: 75px;
     position: absolute;
-    background: #EBE4DB;
+}
+
+nav.menubar
+{
+    left: 0;
+    top: -75px;
+    width: 100%;
+    height: 75px;
+    position: absolute;
+    text-align: center;
+    background: rgba(235,228,219, .6);
+}
+
+nav.menubar .menuitem
+{
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    margin: 10px 10px 10px 10px;
+}
+
+nav.menubar .menuitem:not(.selected)
+{
+    filter: grayscale();
+}
+
+nav.menubar .menuitem:hover
+{
+    filter: none;
+    background: rgba(255, 255, 255, .3);
+}
+
+nav.menubar .menuitem .icon
+{
+    font-size: 32px;
+}
+
+nav.menubar .menuitem label
+{
+    display: block;
+}
+
+main .item
+{
+    min-height: 50px;
+    position: relative;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    backdrop-filter: blur(30px);
+    margin: 40px 40px 40px 40px;
+    padding: 20px 20px 20px 20px;
+    background-color: rgba(255, 255, 255, .1);
+    box-shadow: 0px 0px 12px rgba(141, 75, 54, 0.5);
 }
 
 main
 {
-    top: 50px;
+
+    height: calc(100% - 75px);
+}
+
+@media screen and (min-width: 1500px)
+{
+    #preview
+    {
+        top: 0;
+        left: 0;
+        border: 0;
+        height: 100%;
+        position: absolute;
+        width: calc(100% - 800px);
+    }
+
+    #tabs
+    {
+        top: 0;
+        right: 0;
+        width: 800px;
+        height: 100%;
+        overflow-y: auto;
+        position: absolute;
+    }
+}
+
+@media screen and (max-width: 1499px)
+{
+    #preview
+    {
+        border: 0;
+        width: 100%;
+        min-height: 100%;
+    }
+
+    #tabs
+    {
+        width: 100%;
+        position: relative;
+        min-height: calc(100% + 75px);
+    }
+}
+
+.tab
+{
+    top: 0;
     left: 0;
     width: 100%;
+    height: 100%;
     position: absolute;
-    width: calc(100% - 30px);
-}
-
-.left
-{
-    text-align: left;
-}
-
-.right
-{
-    text-align: right;
-}
-
-input.number
-{
-    text-align: right;
 }
