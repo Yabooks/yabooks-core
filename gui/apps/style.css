@@ -1,0 +1,147 @@
+.container {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: DM Sans, sans-serif;
+    line-height: inherit;
+    color: inherit;
+    pointer-events: auto;
+    visibility: visible;
+    box-sizing: border-box;
+    border: 0 solid #e5e7eb;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    background-color: rgb(255, 255, 255);
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.container .app {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: DM Sans, sans-serif;
+    line-height: inherit;
+    color: inherit;
+    pointer-events: auto;
+    visibility: visible;
+    box-sizing: border-box;
+    border: 0 solid #e5e7eb;
+    margin-bottom: 1rem;
+    display: flex;
+}
+
+.app .description {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: DM Sans, sans-serif;
+    line-height: inherit;
+    color: inherit;
+    pointer-events: auto;
+    visibility: visible;
+    box-sizing: border-box;
+    border: 0 solid #e5e7eb;
+}
+
+.app .icon {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: DM Sans, sans-serif;
+    line-height: inherit;
+    color: inherit;
+    pointer-events: auto;
+    visibility: visible;
+    box-sizing: border-box;
+    border: 0 solid #e5e7eb;
+    display: block;
+    vertical-align: middle;
+    max-width: 100%;
+    margin-right: 1rem;
+    height: 6rem;
+    width: 6rem;
+    border-radius: 0.75rem;
+}
+
+.app h2 {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: DM Sans, sans-serif;
+    line-height: inherit;
+    color: inherit;
+    pointer-events: auto;
+    visibility: visible;
+    box-sizing: border-box;
+    border: 0 solid #e5e7eb;
+    margin: 0;
+    font-size: inherit;
+    font-weight: 800;
+}
+
+.app h3 {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: DM Sans, sans-serif;
+    line-height: inherit;
+    color: inherit;
+    pointer-events: auto;
+    visibility: visible;
+    box-sizing: border-box;
+    border: 0 solid #e5e7eb;
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: rgb(59, 130, 246);
+}
+
+.app span {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: DM Sans, sans-serif;
+    line-height: inherit;
+    color: inherit;
+    pointer-events: auto;
+    visibility: visible;
+    box-sizing: border-box;
+    border: 0 solid #e5e7eb;
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: rgb(148, 163, 184);
+    display: block;
+}
+
+.app button, .button {
+    tab-size: 4;
+    font-feature-settings: normal;
+    color-scheme: light;
+    font-family: inherit;
+    font-feature-settings: inherit;
+    margin: 0;
+    padding: 0.5rem 1rem;
+    text-transform: none;
+    background-color: rgb(59, 130, 246);
+    text-transform: uppercase;
+    text-decoration: none;
+    color: rgb(255, 255, 255);
+    display: inline-flex;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    border: none;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.app button:hover, .button:hover {
+    background-color: rgb(37, 99, 235);
+}
