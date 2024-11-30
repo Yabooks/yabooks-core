@@ -61,7 +61,7 @@ const Phone = (function()
     const schemaDefinition = (
     {
         number: { type: String, validate: { validator: (v) => /^\+[0-9]{6,14}$/.test(v) }, required: true },
-        additional_dial_tones: { type: String, validate: { validator: (v) => /^[0-9\*\#]$*/.test(v) } },
+        additional_dial_tones: { type: String, validate: { validator: (v) => /^[0-9\*\#]*$/.test(v) } },
         purpose: String,
         comment: String
     });
