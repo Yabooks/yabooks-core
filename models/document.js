@@ -146,7 +146,7 @@ const Document = mongoose.model("Document", (function()
 {
     const schemaDefinition = (
     {
-        business: { type: mongoose.Schema.Types.ObjectId, ref: "Business" }, // optional for global app config
+        business: { type: mongoose.Schema.Types.ObjectId, ref: "Business" }, // optional for global app config only
         posted: { type: Boolean, required: true, default: false },
 
         type: String,
