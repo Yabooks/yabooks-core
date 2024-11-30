@@ -118,7 +118,8 @@ App.startLocalApps = async function()
             };
 
             // start app as child process
-            const child = cmd.spawn(app.auto_start_command, { cwd: app.install_path, shell: true, env, stdio: "inherit" });
+            const app_script = (process.env.shell_init ? `${process.env.shell_init};` : "") + app.auto_start_command;
+            const child = cmd.spawn(app_script, { cwd: app.install_path, env, stdio: "inherit", shell: process.env.shell || true });
             child.on("exit", (code, signal) => console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} exited with signal ${signal}`));
             child.on("close", (code) => console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} closed with code ${code}`));
 
