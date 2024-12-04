@@ -6,8 +6,9 @@ module.exports = function(api)
     {
         try
         {
-            let query = LedgerAccount.find({ business: req.params.id }, null, req.pagination);
-            res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
+            res.send(await req.paginatedAggregatePipelineWithFilters(LedgerAccount, [
+                { $match: { business: new req.ObjectId(req.params.id) } }
+            ]));
         }
         catch(x) { next(x) }
     });
