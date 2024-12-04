@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+    <g>
+	    <rect width="100%" height="100%" fill="#fcba03" />
+        <style>.icon { font: 200px sanserif; fill: white }</style>
+        <text x="130" width="250" y="195" class="icon" text-anchor="middle">&#x1F5D2;&#xFE0F;</text>
+    </g>
+</svg>
