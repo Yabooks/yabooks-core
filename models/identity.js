@@ -15,8 +15,8 @@ const Identity = mongoose.model("Identity", (function()
         main_phone: Phone,
         more_phones: [ Phone ],
         website: String,
-        customer: { type: Boolean, required: true, default: false },
-        vendor: { type: Boolean, required: true, default: false },
+        iban: String,
+        bic: String,
         tax_numbers: mongoose.Schema.Types.Mixed,
         data: mongoose.Schema.Types.Mixed,
     });

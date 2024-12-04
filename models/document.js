@@ -6,13 +6,13 @@ const LedgerTransaction = (function()
     const schemaDefinition = (
     {
         posting_date: { type: Date, required: true, default: Date.now },
-        alternate_ledger: String,
+        alternate_ledger: { type: String },
 
-        account: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerAccount", required: true },
+        account: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerAccount" }, // required, but not enforced on model level to allow drafts
         override_default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false },
 
-        amount: { type: mongoose.Schema.Types.Decimal128, required: true },
-        text: { type: String, required: true },
+        amount: { type: mongoose.Schema.Types.Decimal128 }, // required, but not enforced on model level to allow drafts
+        text: { type: String },
 
         alternate_currency: { type: String },
         alternate_currency_amount: { type: mongoose.Schema.Types.Decimal128 },
@@ -40,7 +40,7 @@ const LedgerTransaction = (function()
 // make sure there cannot be a debit/credit difference on ledger transactions
 const debitCreditValidation = function(transactions)
 {
-    console.log("validation", transactions); // TODO make sure that debit and credit balances are the same for each posting date
+    // TODO make sure that debit and credit balances are the same for each posting date
     return true;
 };
 
