@@ -111,6 +111,7 @@ App.startLocalApps = async function()
         {
             // prepare environment variables for app
             let env = {
+                LOG_LEVEL: process.env.LOG_LEVEL || "INFO",
                 YABOOKS_CORE_BASE_URL: process.env.base_url || `http://localhost:${process.env.port}/`,
                 YABOOKS_IS_SECONDARY_INSTANCE: process.env.is_secondary_instance,
                 YABOOKS_APP_ID: app._id,
