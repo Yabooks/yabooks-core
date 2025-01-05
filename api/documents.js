@@ -15,6 +15,21 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    api.post("/api/v1/businesses/:id/documents/query", async (req, res, next) =>
+    {
+        try
+        {
+            if(!req.body || !Array.isArray(req.body))
+                res.status(400).json({ error: "expecting Mongo pipeline as array in request body" });
+            
+            res.json(await Document.aggregate([ // FIXME might allow security breach by joining other collections
+                { $match: { business: new req.ObjectId(req.params.id) } },
+                ...req.body
+            ]));
+        }
+        catch(x) { next(x) }
+    });
+
     api.post("/api/v1/businesses/:id/documents", async (req, res, next) =>
     {
         try
