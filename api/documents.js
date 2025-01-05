@@ -22,7 +22,7 @@ module.exports = function(api)
             if(!req.body || !Array.isArray(req.body))
                 res.status(400).json({ error: "expecting Mongo pipeline as array in request body" });
             
-            res.json(await Document.aggregate([ // FIXME might allow security breach by joining other collections
+            else res.json(await Document.aggregate([ // FIXME might allow security breach by joining other collections
                 { $match: { business: new req.ObjectId(req.params.id) } },
                 ...req.body
             ]));
