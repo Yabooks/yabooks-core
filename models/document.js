@@ -13,6 +13,7 @@ const LedgerTransaction = (function()
 
         amount: { type: mongoose.Schema.Types.Decimal128 }, // required, but not enforced on model level to allow drafts
         text: { type: String },
+        data: mongoose.Schema.Types.Mixed,
 
         alternate_currency: { type: String },
         alternate_currency_amount: { type: mongoose.Schema.Types.Decimal128 },
