@@ -10,7 +10,7 @@
     </head>
     <body>
         <main>
-            <iframe id="main" name="main" :src="getDefaultMainUrl()" @load="updateSessionData()"></iframe>
+            <iframe id="main" name="main" src="/login/" @load="updateSessionData()"></iframe>
             <nav>
                 <a :href="(loggedIn ? '/home/' : '/login/')" style="font-weight: bold">
                     Home
@@ -64,6 +64,8 @@
                     const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
                     this.notifications = counter.data.total;
                     this.reconnectWebsocket();
+
+                    frames.main.location = this.getDefaultMainUrl();
                 },
 
                 methods:
