@@ -44,6 +44,6 @@ window.addEventListener("message", async (event) =>
     {
         let url = event.data.main_url.split("http://").join("").split("https://").join("");
         if(url.indexOf(self.location.host) === 0) url = url.substring(self.location.host.length);
-        history.pushState(null, null, `#${url}`);
+        history.replaceState(null, null, `#${url}`);
     }
 });

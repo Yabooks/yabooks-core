@@ -30,7 +30,6 @@ Vue.createApp(
         back()
         {
             history.back();
-            history.back();
         },
 
         selectTab(tab)

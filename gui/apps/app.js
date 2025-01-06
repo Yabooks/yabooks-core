@@ -16,7 +16,7 @@ Vue.createApp(
         catch(x)
         {
             alert(x?.message || x);
-            history.back(1);
+            history.back();
         }
     },
 
