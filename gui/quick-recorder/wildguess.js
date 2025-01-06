@@ -32,6 +32,12 @@ async function wildguess(input) // e.g. 2020-10-08+Einkauf+5700,,2/3300+120
         else if(part.match(/^[0-9]{2}?[0-9]{2}\-[0-1]?[0-9]\-[0-3]?[0-9]$/))
             wildguess.date = part;
 
+        // document symbol and number
+        else if(part.match(/^\@.+\s.+$/)) {
+            wildguess.type = part.substring(1, part.indexOf(" "));
+            wildguess.document_number = part.substring(part.indexOf(" ") + 1);
+        }
+
         // comment
         else if(part.trim().length > 0)
             wildguess.text = part;
