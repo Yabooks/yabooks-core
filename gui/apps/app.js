@@ -34,13 +34,9 @@ Vue.createApp(
             this.$forceUpdate();
         },
 
-        async redeemVoucher()
+        openMarket()
         {
-            let code = prompt("Code:");
-            if(code)
-            {
-                // TODO decode input value, download app from destination part of the code and register it
-            }
+            window.open(`https://market.yabooks.net/?callback=${encodeURIComponent(self.location)}`);
         },
 
         async newApiKey()
