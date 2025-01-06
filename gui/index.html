@@ -10,7 +10,7 @@
     </head>
     <body>
         <main>
-            <iframe id="main" name="main" src="/login/" @load="updateSessionData()"></iframe>
+            <iframe id="main" name="main" :src="getDefaultMainUrl()" @load="updateSessionData()"></iframe>
             <nav>
                 <a :href="(loggedIn ? '/home/' : '/login/')" style="font-weight: bold">
                     Home
@@ -68,6 +68,18 @@
 
                 methods:
                 {
+                    getDefaultMainUrl()
+                    {
+                        if(self.location.hash)
+                        {
+                            let url = self.location.hash.substring(1);
+                            if(url.substring(0, 1) !== "/")
+                                url = "https://" + url;
+                            return url;
+                        }
+                        else return "/login/";
+                    },
+
                     reconnectWebsocket()
                     {
                         const notifier = new WebSocket(location.protocol.split("http").join("ws") +
@@ -91,10 +103,12 @@
                         this.modal = url;
                     },
 
+                    /** makes sure that after logging in the currently selected business is loaded from the session
+                      * and that this business is shown as selected in the top right corner */
                     async updateSessionData()
                     {
                         try {
-                            //  if URL access is not blocked by cross-origin restrictions
+                            // if URL access is not blocked by cross-origin restrictions, tell the URL to the app
                             window.postMessage({ main_url: frames.main.location.href });
                         }
                         catch(x) {}
@@ -108,7 +122,8 @@
 
                             if(this.selectedBusinessId)
                             {
-                                this.selectedBusinessName = (await axios.get(`/api/v1/businesses/${this.selectedBusinessId}`)).data.name;
+                                let business_data = await axios.get(`/api/v1/businesses/${this.selectedBusinessId}`);
+                                this.selectedBusinessName = business_data.data.name;
 
                                 // focus effect to gather user's attention
                                 if(oldSelectedBusinessId && this.selectedBusinessId !== oldSelectedBusinessId)
