@@ -60,7 +60,3 @@ const filters = (
         return window.taxCodes[tax_code] || tax_code;
     }
 });
-
-if(Vue)
-    for(let filter in filters)
-        Vue.filter(filter, filters[filter]);

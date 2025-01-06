@@ -3,7 +3,7 @@
     <head>
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
     </head>
     <body>
         <div id="app_screen">
@@ -23,30 +23,32 @@
                 <img class="icon" src="/balances/icon.svg" />
                 <span>Balances</span>
             </div>
-            <div class="app" v-for="app in apps" v-if="app.link" @click="navigate(app)">
-                <img class="icon" :src="app.icon" />
-                <span>{{ app.name }}</span>
-            </div>
+            <template v-for="app in apps">
+                <div class="app" v-if="app.link" @click="navigate(app)">
+                    <img class="icon" :src="app.icon" />
+                    <span>{{ app.name }}</span>
+                </div>
+            </template>
             <div class="app" @click="navigate({ link: '/apps/' })">
                 <img class="icon" src="/apps/icon.png" />
                 <span>Apps Market</span>
             </div>
-            <div class="app" @click="navigate({ link: '/settings/' })">
+            <!--<div class="app" @click="navigate({ link: '/settings/' })">
                 <img class="icon" src="/settings/icon.svg" />
                 <span>Settings</span>
-            </div>
+            </div>-->
         </div>
         <script type="text/javascript">
-            new Vue(
+            Vue.createApp(
             {
-                el: "#app_screen",
-
-                data:
+                data()
                 {
-                    apps: []
+                    return {
+                        apps: []
+                    };
                 },
 
-                async created()
+                async mounted()
                 {
                     let res = await axios.get("/api/v1/apps")
                     this.apps = res.data.data;
@@ -54,12 +56,12 @@
 
                 methods:
                 {
-                    navigate: (app) =>
+                    navigate(app)
                     {
                         self.location = app.link;
                     }
                 }
-            });
+            }).mount("#app_screen");
         </script>
     </body>
 </html>

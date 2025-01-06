@@ -1,15 +1,17 @@
-new Vue(
+let app = Vue.createApp(
 {
-    el: "#doc_list",
+    components: { FilterBar },
 
-    data:
+    data()
     {
-        docs: [],
-        error: null,
-        notifications: []
+        return {
+            docs: [],
+            error: null,
+            notifications: []
+        };
     },
 
-    created()
+    mounted()
     {
         this.loadDocuments();
     },
@@ -124,6 +126,9 @@ new Vue(
         }
     }
 });
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("#doc_list");
 
 async function uploadFiles(files, callback)
 {

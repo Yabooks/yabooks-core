@@ -2,7 +2,7 @@
 <html>
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
         <style type="text/css">
             .business .logo
             {
@@ -15,7 +15,7 @@
     <body>
         <main>
             <div>
-                <img :src="`/api/v1/identities/${individual._id}/picture`" />
+                <img v-if="individual?._id" :src="`/api/v1/identities/${individual._id}/picture`" />
                 <span>
                     {{ individual.full_name }}
                 </span>
@@ -66,17 +66,17 @@
             </div>
         </main>
         <script type="text/javascript">
-            new Vue(
+            Vue.createApp(
             {
-                el: "main",
-
-                data:
+                data()
                 {
-                    individual: {},
-                    businesses: []
+                    return {
+                        individual: {},
+                        businesses: []
+                    };
                 },
 
-                async created()
+                async mounted()
                 {
                     try
                     {
@@ -111,7 +111,7 @@
                         window.parent.document.app.updateSessionData();
                     }
                 }
-            });
+            }).mount("main");
         </script>
     </body>
 </html>

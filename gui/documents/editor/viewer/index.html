@@ -2,15 +2,15 @@
 <html>
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
     </head>
     <body>
         <main>
             <span v-if="!isPdf()">
-                {{ doc.name }}
+                {{ doc?.name }}
                 <button @click="downloadDocument">download</button>
             </span>
-            <iframe v-if="isPdf()" :src="`pdf/?${doc._id}`" :class="{ transparent }"></iframe>
+            <iframe v-if="isPdf()" :src="`pdf/?${doc?._id}`" :class="{ transparent }"></iframe>
         </main>
         <style type="text/css">
             iframe
@@ -28,10 +28,8 @@
             }
         </style>
         <script type="text/javascript">
-            new Vue(
+            Vue.createApp(
             {
-                el: "main",
-
                 mounted()
                 {
                     const reqParams = new URLSearchParams(self.location.search);
@@ -46,11 +44,13 @@
                         ;// TODO
                 },
 
-                data:
+                data()
                 {
-                    pdf: null,
-                    doc: null,
-                    transparent: false
+                    return {
+                        pdf: null,
+                        doc: null,
+                        transparent: false
+                    };
                 },
 
                 methods:
@@ -64,15 +64,15 @@
 
                     isPdf()
                     {
-                        return this.doc.mime_type === 'application/pdf';
+                        return this.doc?.mime_type === 'application/pdf';
                     },
 
                     downloadDocument()
                     {
-                        self.location = `/api/v1/documents/${this.doc._id}/binary`;
+                        self.location = `/api/v1/documents/${this.doc?._id}/binary`;
                     }
                 }
-            });
+            }).mount("main");
         </script>
     </body>
 </html>

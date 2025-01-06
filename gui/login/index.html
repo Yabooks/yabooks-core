@@ -11,15 +11,15 @@
             <button type="submit" @click="login">login</button>
         </form>
         <script type="text/javascript">
-            new Vue(
+            Vue.createApp(
             {
-                el: "#login_form",
-
-                data:
+                data()
                 {
-                    params: {},
-                    email: "",
-                    password: ""
+                    return {
+                        params: {},
+                        email: "",
+                        password: ""
+                    };
                 },
 
                 async mounted()
@@ -98,7 +98,7 @@
                         else self.location = "/home/";
                     }
                 }
-            });
+            }).mount("#login_form");
         </script>
     </body>
 </html>

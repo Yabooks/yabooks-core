@@ -1,6 +1,6 @@
 const tax_codes = [ "at.vst", "at.ust" ];// TODO
 
-Vue.component("LedgerTx",
+const LedgerTx = (
 {
     template: `
         <tr>
@@ -11,10 +11,12 @@ Vue.component("LedgerTx",
                 <input type="text" v-model="tx.text" />
             </td>
             <td>
-                <input type="text" class="number" :value="amount_debit" data-side="debit" @change="amountUpdated" :disabled="getAmount() < 0" />
+                <input type="text" class="number" :value="amount_debit" data-side="debit"
+                    @change="amountUpdated" :disabled="getAmount() < 0" />
             </td>
             <td>
-                <input type="text" class="number" :value="amount_credit" data-side="credit" @change="amountUpdated" :disabled="getAmount() > 0" />
+                <input type="text" class="number" :value="amount_credit" data-side="credit"
+                    @change="amountUpdated" :disabled="getAmount() > 0" />
             </td>
             <td>
                 <select v-model="tx.tax_code_base" @change="taxUpdated" :disabled="tx.tax_code">
@@ -33,7 +35,8 @@ Vue.component("LedgerTx",
                 </select>
             </td>
             <td>
-                <input type="text" class="number" :value="tax_percent" data-field="percent" @change="taxUpdated" :disabled="!tx.tax_code && !tx.tax_code_base" />
+                <input type="text" class="number" :value="tax_percent" data-field="percent"
+                    @change="taxUpdated" :disabled="!tx.tax_code && !tx.tax_code_base" />
             </td>
         </tr>
     `,
@@ -94,7 +97,9 @@ Vue.component("LedgerTx",
             {
                 if(event.srcElement.dataset.field === "percent")
                     this.tx.tax_percent = this.tax_percent = parseDecimal(event.srcElement.value) || 0;
-                else this.tax_percent = (this.tx.tax_percent ? this.tx.tax_percent.$numberDecimal : null) || this.tx.tax_percent || "";
+
+                else this.tax_percent = (this.tx.tax_percent ? this.tx.tax_percent.$numberDecimal : null) ||
+                    this.tx.tax_percent || "";
             }
         }
     }

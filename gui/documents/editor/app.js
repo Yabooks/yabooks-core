@@ -1,11 +1,13 @@
-new Vue(
+Vue.createApp(
 {
-    el: "main",
+    components: { GeneralTab, LedgerTab },
 
-    data:
+    data()
     {
-        tab: "general",
-        doc: { ledger_transactions: [] }
+        return {
+            tab: "general",
+            doc: { ledger_transactions: [] }
+        };
     },
 
     async mounted()
@@ -97,4 +99,4 @@ new Vue(
             }
         }
     }
-});
+}).mount("main");

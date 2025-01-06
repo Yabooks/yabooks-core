@@ -2,7 +2,7 @@
 <html>
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
         <style type="text/css">
             .identity .logo
             {
@@ -24,22 +24,22 @@
             </div>
         </main>
         <script type="text/javascript">
-            new Vue(
+            Vue.createApp(
             {
-                el: "main",
-
-                data:
+                data()
                 {
-                    identities: []
+                    return {
+                        identities: []
+                    };
                 },
 
-                async created()
+                async mounted()
                 {
                     let res = await axios.get(`/api/v1/identities`);
                     this.identities = res.data;
                     this.$forceUpdate();
                 }
-            });
+            }).mount("main");
         </script>
     </body>
 </html>

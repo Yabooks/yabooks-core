@@ -3,10 +3,7 @@
     <head>
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
-        <script type="text/javascript" src="/_generic/components/business-selector.js"></script>
-        <script type="text/javascript" src="tabs/general.js"></script>
-        <script type="text/javascript" src="tabs/ledger.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
     </head>
     <body>
         <main>
@@ -42,7 +39,7 @@
                     <general-tab :doc="doc"></general-tab>
                 </div>
                 <div class="tab" v-if="tab === 'ledger'">
-                    <ledger-tab></ledger-tab>
+                    <ledger-tab :doc="doc"></ledger-tab>
                 </div>
                 <div class="tab" v-if="tab === 'costs'">
                     <!-- TODO -->
@@ -52,6 +49,10 @@
                 </div>
             </div>
         </main>
+        <script type="text/javascript" src="/js/yabooks/searchable-dropdown.js"></script>
+        <script type="text/javascript" src="components/ledger-tx.js"></script>
+        <script type="text/javascript" src="tabs/general.js"></script>
+        <script type="text/javascript" src="tabs/ledger.js"></script>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

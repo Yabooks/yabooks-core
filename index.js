@@ -1,4 +1,5 @@
-const express = require("express"), jwt = require("express-jwt").expressjwt, bodyParser = require("body-parser"), cookieParser = require("cookie-parser");
+const express = require("express"), jwt = require("express-jwt").expressjwt;
+const bodyParser = require("body-parser"), cookieParser = require("cookie-parser");
 const swaggerUi = require("swagger-ui-express"), swaggerjsdoc = require("swagger-jsdoc");
 require("dotenv").config();
 
@@ -8,7 +9,9 @@ require("express-ws")(app);
 app.use(express.static("./gui"));
 app.use("/js/axios", express.static("./node_modules/axios/dist"));
 app.use("/js/vue", express.static("./node_modules/vue/dist"));
-process.env.port = app.listen(process.env.port || 8080).address().port;
+app.get("/js/vue/vue.js", (_, res) => res.redirect(`vue.global${process.env.NODE_ENV === 'development' ? ".prod" : ""}.js`));
+app.use("/js/yabooks", express.static("./node_modules/yabooks-app/public"));
+app.listen(process.env.port || 8080, function() { process.env.port = this.address().port; });
 
 // inject express middlewares
 const rawBodySaver = (req, res, buf, encoding) => { if(buf && buf.length) req.rawBody = buf };
@@ -41,7 +44,8 @@ app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
 })));
 
 // all other routes require to be authenticated
-app.use("/api/*", jwt({ secret: app.jwt_secret = process.env.secret || require("crypto").randomBytes(32), algorithms: [ "HS256" ] }), (err, req, res, next) =>
+app.jwt_secret = process.env.secret || require("crypto").randomBytes(32);
+app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err, req, res, next) =>
 {
     try
     {
@@ -83,7 +87,7 @@ for(let file of require("fs").readdirSync("./api"))
 // error handler
 app.use(async (err, req, res, next) =>
 {
-    console.error(`[${ new Date().toLocaleString() }]`, err);
+    console.error(`[${ new Date().toLocaleString() }]`, req.url, err);
     res.status(500).send({ error: err.message || "unknown error" });
 });
 

@@ -1,4 +1,4 @@
-Vue.component("GeneralTab",
+const GeneralTab = (
 {
     props: [ "doc" ],
 

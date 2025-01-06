@@ -1,15 +1,15 @@
-new Vue(
+Vue.createApp(
 {
-    el: "#table",
-
-    data:
+    data()
     {
-        records: [],
-        error: null,
-        session: null
+        return {
+            records: [],
+            error: null,
+            session: null
+        };
     },
 
-    async created()
+    async mounted()
     {
         try
         {
@@ -36,4 +36,4 @@ new Vue(
             self.location = `/ledger/?business=${await getSelectedBusinessId()}&document_id=${id}`;
         }
     }
-});
+}).mount("#table");

@@ -9,11 +9,16 @@
         <script type="text/javascript" src="wildguess.js"></script>
     <body>
         <main @dragover="acceptFile" @drop="fileDropped">
-            <input type="text" id="recorder" v-model="input" @keyup="guess" autocomplete="off" :class="input_status" placeholder="Type here..." autofocus />
+            <input type="text" id="recorder" v-model="input" @keyup="guess" autocomplete="off"
+                :class="input_status" placeholder="Type here..." autofocus />
             <table class="discovery">
+                <tr v-if="wildguess.type">
+                    <td>Document number</td>
+                    <td>{{ wildguess.type }} {{ wildguess.document_number }}</td>
+                </tr>
                 <tr v-if="wildguess.date">
                     <td>Date</td>
-                    <td>{{ wildguess.date | formatDate }}</td>
+                    <td>{{ $filters.formatDate(wildguess.date) }}</td>
                 </tr>
                 <tr v-if="wildguess.text">
                     <td>Text</td>
@@ -29,7 +34,7 @@
                 </tr>
                 <tr v-if="wildguess.amount">
                     <td>Amount</td>
-                    <td>{{ wildguess.amount | formatNumber }}</td>
+                    <td>{{ $filters.formatNumber(wildguess.amount) }}</td>
                 </tr>
                 <tr v-if="wildguess.tax_percent">
                     <td>Tax Percent</td>

@@ -1,10 +1,10 @@
-new Vue(
+Vue.createApp(
 {
-    el: "main",
-
-    data:
+    data()
     {
-        apps: []
+        return {
+            apps: []
+        };
     },
 
     async created()
@@ -22,6 +22,11 @@ new Vue(
 
     methods:
     {
+        formatDateFromId(objectId)
+        {
+            return new Date(parseInt(objectId.substring(0, 8), 16) * 1000).toLocaleString();
+        },
+
         async reloadList()
         {
             let res = await axios.get(`/api/v1/apps`);
@@ -57,13 +62,5 @@ new Vue(
                 await this.reloadList();
             }
         }
-    },
-
-    filters:
-    {
-        date(objectId)
-        {
-            return new Date(parseInt(objectId.substring(0, 8), 16) * 1000).toLocaleString();
-        }
     }
-});
+}).mount("main");

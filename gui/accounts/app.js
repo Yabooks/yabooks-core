@@ -1,14 +1,14 @@
-new Vue(
+let app = Vue.createApp(
 {
-    el: "main",
-
-    data:
+    data()
     {
-        business: null,
-        accounts: []
+        return {
+            business: null,
+            accounts: []
+        };
     },
 
-    async created()
+    async mounted()
     {
         try
         {
@@ -82,3 +82,6 @@ new Vue(
         }
     }
 });
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("main");

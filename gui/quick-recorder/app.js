@@ -1,21 +1,13 @@
-new Vue(
+let app = Vue.createApp(
 {
-    el: "main",
-
-    data:
+    data()
     {
-        input: "",
-        file: null,
-        wildguess: {},
-        input_status: {}
-    },
-
-    filters:
-    {
-        date(timestamp)
-        {
-            return new Date(timestamp).toLocaleDateString(getUserLanguage());
-        }
+        return {
+            input: "",
+            file: null,
+            wildguess: {},
+            input_status: {}
+        };
     },
 
     methods:
@@ -79,3 +71,6 @@ new Vue(
         }
     }
 });
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("main");

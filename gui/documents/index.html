@@ -2,17 +2,15 @@
 <html>
     <head>
         <link rel="stylesheet" type="text/css" href="style.css" />
-        <link rel="stylesheet" type="text/css" href="/_generic/design.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
-        <script type="text/javascript" src="/_generic/components/filter-bar.js"></script>
-        <link rel="stylesheet" type="text/css" href="/_generic/components/filter-bar.css" />
+        <script type="text/javascript" src="/js/yabooks/filter-bar.js"></script>
     </head>
     <body>
         <div id="doc_list">
-            <!--<filter-bar></filter-bar>-->
+            <filter-bar :keys="[]" :types="[]" @update=""></filter-bar>
             <div class="doc" v-for="doc in docs">
                 <img class="thumbnail" :src="'/api/v1/documents/' + doc._id + '/thumbnail'" height="50" />
                 <div class="description">
@@ -29,7 +27,7 @@
                         {{ doc.name }}
                     </span>
                     <span class="label date" v-if="doc.date">
-                        {{ doc.date | formatDate }}
+                        {{ $filters.formatDate(doc.date) }}
                     </span>
                     <span class="label tag" v-for="tag in doc.tags">
                         {{ tag }}

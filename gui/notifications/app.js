@@ -1,13 +1,13 @@
-new Vue(
+Vue.createApp(
 {
-    el: "#notification_center",
-
-    data:
+    data()
     {
-        notifications: []
+        return {
+            notifications: []
+        };
     },
 
-    created()
+    mounted()
     {
         this.loadNotifications();
     },
@@ -46,4 +46,4 @@ new Vue(
             return new Date(parseInt(id.substring(0, 8), 16) * 1000).toLocaleString();
         }
     }
-});
+}).mount("#notification_center");

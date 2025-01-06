@@ -1,15 +1,15 @@
-new Vue(
+let app = Vue.createApp(
 {
-    el: "#acc_list",
-
-    data:
+    data()
     {
-        profit: 0,
-        accounts: [],
-        error: null
+        return {
+            profit: 0,
+            accounts: [],
+            error: null
+        };
     },
 
-    async created()
+    async mounted()
     {
         try
         {
@@ -40,3 +40,6 @@ new Vue(
         }
     }
 });
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("#acc_list");

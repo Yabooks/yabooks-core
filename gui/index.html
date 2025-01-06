@@ -28,10 +28,12 @@
                     </span>
                 </a>
                 <span id="session">
-                    <img v-if="loggedIn" src="/api/v1/session/profile-picture" id="picture" @click="openModal('/profile/')" />
+                    <img v-if="loggedIn" src="/api/v1/session/profile-picture" id="picture"
+                        @click="openModal('/profile/')" />
                     <a :href="`/people/#/businesses/${selectedBusinessId}`">
                         <img v-if="selectedBusinessId" id="logo" :title="selectedBusinessName"
-                            :src="`/api/v1/businesses/${selectedBusinessId}/logo`" :class="{ recentlyChanged: selectedBusinessHasRecentlyChanged }" />
+                            :src="`/api/v1/businesses/${selectedBusinessId}/logo`"
+                            :class="{ recentlyChanged: selectedBusinessHasRecentlyChanged }" />
                     </a>
                 </span>
             </nav>
@@ -41,18 +43,18 @@
             </div>
         </main>
         <script type="text/javascript">
-            document.app = new Vue(
+            document.app = Vue.createApp(
             {
-                el: "main",
-
-                data:
+                data()
                 {
-                    modal: false,
-                    loggedIn: false,
-                    notifications: 0,
-                    selectedBusinessId: null,
-                    selectedBusinessName: null,
-                    selectedBusinessHasRecentlyChanged: false
+                    return {
+                        modal: false,
+                        loggedIn: false,
+                        notifications: 0,
+                        selectedBusinessId: null,
+                        selectedBusinessName: null,
+                        selectedBusinessHasRecentlyChanged: false
+                    };
                 },
 
                 async mounted()
@@ -68,7 +70,8 @@
                 {
                     reconnectWebsocket()
                     {
-                        const notifier = new WebSocket(location.protocol.split("http").join("ws") + "//" + location.host + "/api/v1/notifications/ws");
+                        const notifier = new WebSocket(location.protocol.split("http").join("ws") +
+                            "//" + location.host + "/api/v1/notifications/ws");
                         notifier.onclose = (_) => setTimeout(this.reconnectWebsocket, 1000);
                         notifier.onmessage = async (event) =>
                         {
@@ -139,7 +142,7 @@
                         self.location = "/";
                     }
                 }
-            });
+            }).mount("main");
         </script>
     </body>
 </html>

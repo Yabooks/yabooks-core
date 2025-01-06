@@ -2,7 +2,7 @@
 <html>
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
-        <script type="text/javascript" src="/js/vue/vue.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
     </head>
@@ -17,16 +17,16 @@
                         <th>Credit</th>
                         <th />
                     </tr>
-                    <tr v-for="account in accounts" v-if="account.type == type">
+                    <tr v-for="account in accounts" v-if="account?.type == type">
                         <td>{{ account.display_name }}</td>
                         <td align="right">
                             <span v-if="(account.balance.$numberDecimal || account.balance) > 0">
-                                {{ account.balance | absolute | formatNumber }}
+                                {{ $filters.formatNumber($filters.absolute(account.balance)) }}
                             </span>
                         </td>
                         <td align="right">
-                            <span v-if="(account.balance.$numberDecimal || account.balance) < 0">
-                                {{ account.balance | absolute | formatNumber }}
+                            <span v-if="(account.balance.$numberDecimal || account.balance) <= 0">
+                                {{ $filters.formatNumber($filters.absolute(account.balance)) }}
                             </span>
                         </td>
                         <td>
@@ -39,12 +39,12 @@
                         <td>P&amp;L of current period</td>
                         <td align="right">
                             <span v-if="profit > 0">
-                                {{ profit | absolute | formatNumber }}
+                                {{ $filters.formatNumber($filters.absolute(profit)) }}
                             </span>
                         </td>
                         <td align="right">
-                            <span  v-if="profit < 0">
-                                {{ profit | absolute | formatNumber }}
+                            <span  v-if="profit <= 0">
+                                {{ $filters.formatNumber($filters.absolute(profit)) }}
                             </span>
                         </td>
                         <td />
