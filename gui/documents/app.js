@@ -29,7 +29,7 @@ let app = Vue.createApp(
                     if(loadMore) params += `&skip=${this.docs.length}`;
                     else if(this.docs.length > 100) params += `&limit=${this.docs.length}`;
 
-                    res = await axios.get(`/api/v1/businesses/${business}/documents?${params}`);
+                    let res = await axios.get(`/api/v1/businesses/${business}/documents?${params}`);
                     if(loadMore) this.docs.push(...res.data.data);
                     else this.docs = res.data.data;
                     this.error = null;

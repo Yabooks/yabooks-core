@@ -65,7 +65,7 @@ const LedgerTx = (
     {
         getAmount()
         {
-            return parseDecimal(this.tx.amount);
+            return parseDecimal(this.tx.amount); // FIXME
         },
 
         amountUpdated(event)

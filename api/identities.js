@@ -2,7 +2,7 @@ const { Identity, Individual, Organization } = require("../models/identity.js");
 
 module.exports = function(api)
 {
-    api.get("/api/v1/identities", async (req, res) =>
+    api.get("/api/v1/identities", async (req, res, next) =>
     {
         try
         {

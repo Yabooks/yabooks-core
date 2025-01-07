@@ -12,6 +12,11 @@ const parseDecimal = function(number)
     return parseFloat(number);
 };
 
+const getUserLanguage = function()
+{
+    return "de-AT"; // TODO
+};
+
 const filters = (
 {
     absolute: (number) =>

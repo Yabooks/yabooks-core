@@ -16,7 +16,7 @@ let app = Vue.createApp(
             let business = await getSelectedBusinessId();
             if(!business) throw "Please select a buiness first.";
 
-            res = await axios.get(`/api/v1/businesses/${business}/general-ledger-balances`);
+            let res = await axios.get(`/api/v1/businesses/${business}/general-ledger-balances`);
             this.accounts = res.data.data;
             this.error = null;
 

@@ -14,7 +14,7 @@ Vue.createApp(
         try
         {
             let business = await getSelectedBusinessId();
-            res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
+            let res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
             this.records = res.data.data;
         }
         catch(x)
