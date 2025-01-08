@@ -1,3 +1,5 @@
+/* global parseDecimal */
+
 const tax_codes = [ "at.vst", "at.ust" ];// TODO
 
 const LedgerTx = (
