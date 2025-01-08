@@ -60,7 +60,7 @@
 
                 async mounted()
                 {
-                    loadTranslations({});
+                    loadTranslations({ "code*": "start." });
                     Notification.requestPermission();
 
                     const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
