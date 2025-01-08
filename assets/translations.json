@@ -1,0 +1,8 @@
+[
+    { "code": "start.home", "language": "en", "text": "Home" },
+    { "code": "start.home", "language": "de", "text": "Start" },
+    { "code": "start.logout", "language": "en", "text": "Logout" },
+    { "code": "start.logout", "language": "de", "text": "Ausloggen" },
+    { "code": "start.notifications", "language": "en", "text": "Ausloggen" },
+    { "code": "start.notifications", "language": "de", "text": "Benachrichtigungen" }
+]

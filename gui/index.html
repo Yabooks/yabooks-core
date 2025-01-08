@@ -7,22 +7,23 @@
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
     </head>
     <body>
         <main>
             <iframe id="main" name="main" src="/login/" @load="updateSessionData()"></iframe>
             <nav>
                 <a :href="(loggedIn ? '/home/' : '/login/')" style="font-weight: bold">
-                    Home
+                    {{ $filters.translate("start.home") }}
                 </a>
                 <a @click="logout">
-                    Logout
+                    {{ $filters.translate("start.logout") }}
                 </a>
-                <a @click="openModal('/quick-recorder')">
+                <!--<a @click="openModal('/quick-recorder')">
                     Quick Recorder
-                </a>
+                </a>-->
                 <a @click="openModal('/notifications/')">
-                    Notifications
+                    {{ $filters.translate("start.notifications") }}
                     <span class="badge" v-if="notifications">
                         {{ notifications }}
                     </span>
@@ -59,6 +60,7 @@
 
                 async mounted()
                 {
+                    loadTranslations({});
                     Notification.requestPermission();
 
                     const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
@@ -159,7 +161,10 @@
                         self.location = "/";
                     }
                 }
-            }).mount("main");
+            });
+            
+            document.app.config.globalProperties.$filters = { ...filters };
+            document.app.mount("main");
         </script>
     </body>
 </html>

@@ -14,6 +14,16 @@ const parseDecimal = function(number)
     return parseFloat(number);
 };
 
+const loadTranslations = async (filters = {}) =>
+{
+    window.translations = window.translations || [];
+
+    let data = await axios.get("/api/v1/translations?" +
+        Object.keys(filters).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(filters[key])}`).join("&"));
+    
+    window.translations.push(...data.data.data);
+};
+
 const filters = (
 {
     absolute: (number) =>
@@ -45,6 +55,17 @@ const filters = (
             return String.fromCodePoint(...codePoints);
         }
         return "";
+    },
+
+    translate: (code, language = getUserLanguage()) =>
+    {
+        window.translations = window.translations || [];
+
+        const matches = window.translations.filter(t => t.code === code);
+        return matches.find(t => t.language === language)?.text // exact match
+            || matches.find(t => t.language.split("-")[0] === language.split("-")[0])?.text // base language match
+            || matches.find(t => t.language.split("-")[0] === "en")?.text // fall back to English
+            || code; // if no translation is found at all, show the code
     },
 
     toTaxName: (tax_code) =>
