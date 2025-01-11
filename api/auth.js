@@ -55,7 +55,7 @@ module.exports = function(api)
             if(!user || !await bcrypt.compare(password, user.password_hash))
                 return res.status(401).send({ error: "unauthorized", error_description: "invalid user credentials provided" });
 
-            let session = new Session({ user: user._id });
+            let session = new Session({ user: user._id, data: { language: user.preferred_language } });
             await session.save();
 
             let user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });

@@ -4,5 +4,21 @@
     { "code": "start.logout", "language": "en", "text": "Logout" },
     { "code": "start.logout", "language": "de", "text": "Ausloggen" },
     { "code": "start.notifications", "language": "en", "text": "Ausloggen" },
-    { "code": "start.notifications", "language": "de", "text": "Benachrichtigungen" }
+    { "code": "start.notifications", "language": "de", "text": "Benachrichtigungen" },
+    { "code": "home.apps.people", "language": "en", "text": "People" },
+    { "code": "home.apps.people", "language": "de", "text": "Personen" },
+    { "code": "home.apps.accounts", "language": "en", "text": "Accounts" },
+    { "code": "home.apps.accounts", "language": "de", "text": "Konten" },
+    { "code": "home.apps.documents", "language": "en", "text": "Documents" },
+    { "code": "home.apps.documents", "language": "de", "text": "Dokumente" },
+    { "code": "home.apps.balances", "language": "en", "text": "Balances" },
+    { "code": "home.apps.balances", "language": "de", "text": "Salden" },
+    { "code": "home.apps.market", "language": "en", "text": "Apps Market" },
+    { "code": "home.apps.market", "language": "de", "text": "App-Marktplatz" },
+    { "code": "profile.email", "language": "en", "text": "E-mail address" },
+    { "code": "profile.email", "language": "de", "text": "E-Mail-Adresse" },
+    { "code": "profile.language", "language": "en", "text": "Language" },
+    { "code": "profile.language", "language": "de", "text": "Sprache" },
+    { "code": "profile.save", "language": "en", "text": "Save" },
+    { "code": "profile.save", "language": "de", "text": "Speichern" }
 ]

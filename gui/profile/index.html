@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/js/yabooks/searchable-dropdown.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+    <body>
+        <main>
+            <div>
+
+            </div>
+            <table>
+                <tr>
+                    <td>{{ $filters.translate("profile.email") }}</td>
+                    <td>{{ profile?.email }}</td>
+                </tr>
+                <tr>
+                    <td>{{ $filters.translate("profile.language") }}</td>
+                    <td>
+                        <searchable-dropdown :options="languages"
+                            v-model:selected="profile.preferred_language"></searchable-dropdown>
+                    </td>
+                </tr>
+            </table>
+            <button @click="save()">
+                {{ $filters.translate("profile.save") }}
+            </button>
+        </main>
+        <script type="text/javascript" src="app.js"></script>
+    </body>
+</html>

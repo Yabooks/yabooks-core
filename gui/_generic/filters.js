@@ -57,15 +57,16 @@ const filters = (
         return "";
     },
 
-    translate: (code, language = getUserLanguage()) =>
+    translate: (code, language, fallback) =>
     {
         window.translations = window.translations || [];
+        language = language || getUserLanguage();
 
-        const matches = window.translations.filter(t => t.code === code);
+        const matches = Array.isArray(code) ? code : window.translations.filter(t => t.code === code);
         return matches.find(t => t.language === language)?.text // exact match
             || matches.find(t => t.language.split("-")[0] === language.split("-")[0])?.text // base language match
             || matches.find(t => t.language.split("-")[0] === "en")?.text // fall back to English
-            || code; // if no translation is found at all, show the code
+            || fallback || code; // if no translation is found at all, show the code
     },
 
     toTaxName: (tax_code) =>

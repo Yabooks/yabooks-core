@@ -4,42 +4,46 @@
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
     </head>
     <body>
         <div id="app_screen">
             <div class="app" @click="navigate({ link: '/people/' })">
                 <img class="icon" src="/people/icon.svg" />
-                <span>People</span>
+                <span>{{ $filters.translate("home.apps.people") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/accounts/' })">
                 <img class="icon" src="/accounts/icon.svg" />
-                <span>Accounts</span>
+                <span>{{ $filters.translate("home.apps.accounts") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/documents/' })">
                 <img class="icon" src="/documents/icon.svg" />
-                <span>Documents</span>
+                <span>{{ $filters.translate("home.apps.documents") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/balances/' })">
                 <img class="icon" src="/balances/icon.svg" />
-                <span>Balances</span>
+                <span>{{ $filters.translate("home.apps.balances") }}</span>
             </div>
             <template v-for="app in apps">
                 <div class="app" v-if="app.link" @click="navigate(app)">
                     <img class="icon" :src="app.icon" />
-                    <span>{{ app.name }}</span>
+                    <span :alt="$filters.translate(app.translated_names, null, app.name)">
+                        {{ $filters.translate(app.translated_names, null, app.name) }}
+                    </span>
                 </div>
             </template>
             <div class="app" @click="navigate({ link: '/apps/' })">
                 <img class="icon" src="/apps/icon.png" />
-                <span>Apps Market</span>
+                <span>{{ $filters.translate("home.apps.market") }}</span>
             </div>
             <!--<div class="app" @click="navigate({ link: '/settings/' })">
                 <img class="icon" src="/settings/icon.svg" />
-                <span>Settings</span>
+                <span>{{ $filters.translate("home.apps.settings") }}</span>
             </div>-->
         </div>
         <script type="text/javascript">
-            Vue.createApp(
+            let app = Vue.createApp(
             {
                 data()
                 {
@@ -50,6 +54,8 @@
 
                 async mounted()
                 {
+                    loadTranslations({ "code*": "home." });
+
                     let res = await axios.get("/api/v1/apps")
                     this.apps = res.data.data;
                 },
@@ -61,7 +67,10 @@
                         self.location = app.link;
                     }
                 }
-            }).mount("#app_screen");
+            });
+
+            app.config.globalProperties.$filters = { ...filters };
+            app.mount("#app_screen");
         </script>
     </body>
 </html>

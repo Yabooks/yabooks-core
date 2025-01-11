@@ -20,7 +20,7 @@ const App = mongoose.model("App", (function()
         bundle_id: { type: String, unique: true },
         secret: { type: String, required: true, default: () => require("crypto").randomBytes(48).toString("hex") },
         name: { type: String, required: true },
-        translated_name: [],
+        translated_names: [ translationSchema ],
         description: String,
         icon: String,
         link: String,
