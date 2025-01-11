@@ -7,7 +7,7 @@ module.exports = function(api)
     {
         try
         {
-            let query = App.find({}, [ "id", "bundle_id", "name", "translated_name", "icon", "link" ], req.pagination);
+            let query = App.find({}, [ "id", "bundle_id", "name", "translated_names", "icon", "link" ], req.pagination);
             res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
         }
         catch(x) { next(x) }

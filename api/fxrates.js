@@ -8,6 +8,8 @@ module.exports = function(api)
      *   get:
      *     summary: Get currency exchange rate
      *     description: Get the currency exchange rate between any two currencies for a specific date
+     *     tags:
+     *       - currency exchange
      *     parameters:
      *       - in: path
      *         name: base

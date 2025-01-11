@@ -29,6 +29,7 @@ app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
         openapi: "3.0.0",
         info: {
             title: "YaBooks Core API",
+            version: require("./package.json").version,
             description: "API documentation for all core features",
             contact: {
                 name: "Leopold M. Regner"
