@@ -1,4 +1,6 @@
-Vue.createApp(
+/* global loadTranslations, filters */
+
+let app = Vue.createApp(
 {
     data()
     {
@@ -11,6 +13,7 @@ Vue.createApp(
     {
         try
         {
+            await loadTranslations({ "code*": "apps-registry." });
             await this.reloadList();
         }
         catch(x)
@@ -41,7 +44,7 @@ Vue.createApp(
 
         async newApiKey()
         {
-            let name = prompt("App name:");
+            let name = prompt(this.$filters.translate("apps-registry.new-app-name"));
             if(name)
             {
                 let data = await axios.post("/api/v1/apps", { name });
@@ -52,11 +55,14 @@ Vue.createApp(
 
         async unregister(app)
         {
-            if(confirm(`Are you sure that you would like to shut down ${app.name}?`))
+            if(confirm(this.$filters.translate("apps-registry.confirm-shutdown").split("APP_NAME").join(app.name)))
             {
                 await axios.delete(`/api/v1/apps/${app._id}`);
                 await this.reloadList();
             }
         }
     }
-}).mount("main");
+});
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("main");
