@@ -4,13 +4,16 @@
   "version": "1.0.0",
   "description": "An easily extendable ERP system for businesses of any size",
   "main": "desktop.js",
+  "build": {
+    "appId": "net.yabooks.core"
+  },
   "scripts": {
     "server": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --quiet --ignore-pattern 'dist/' .",
     "desktop": "electron desktop.js",
-    "package-mac": "electron-packager . YaBooks --platform=darwin --arch=arm64,x64 --out=dist --overwrite --icon=assets/icon.icns",
-    "package-win": "electron-packager . YaBooks --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico"
+    "package-mac": "electron-packager . YaBooks --platform=darwin --arch=arm64,x64 --out=dist --overwrite --icon=assets/icon.icns --overwrite",
+    "package-win": "electron-packager . YaBooks --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico --overwrite"
   },
   "keywords": [],
   "author": "Leopold M. Regner",
