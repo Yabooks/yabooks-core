@@ -1,4 +1,4 @@
-/* global loadTranslations, loadSession, getUserLanguage */
+/* global loadTranslations */
 
 const extractCountryCode = function(languageCode)
 {
@@ -38,25 +38,29 @@ const app = Vue.createApp(
     data()
     {
         return {
-            profile: {},
+            profile: {
+                preferred_language: "en"
+            },
             languages: []
         };
     },
 
     async mounted()
     {
-        loadTranslations({ "code*": "profile." });
-
-        // load user profile data
-        let data = await axios.get("/api/v1/users/me");
-        this.profile = data.data;console.log(this.profile);
+        await loadTranslations({ "code*": "profile." });
 
         // load a list of all languages for which translations are available and map them to a label with flag emojis
-        data = await axios.get("/api/v1/translations/languages");
+        let data = await axios.get("/api/v1/translations/languages");
         this.languages = data.data.data.map(language => ({
             value: language.language,
             label: `${toFlagEmoji(extractCountryCode(language.language))} ${language.language}`
         }));
+
+        // load user profile data
+        data = await axios.get("/api/v1/users/me");
+        this.profile = data.data;
+
+        this.$forceUpdate();
     },
 
     methods:
@@ -69,7 +73,8 @@ const app = Vue.createApp(
             // update session language
             await axios.patch("/api/v1/session", { language: this.profile.preferred_language });
 
-            parent.document.app.openModal(false); // FIXME
+            parent.document.app.openModal(false);
+            parent.document.app.reloadLanguageFromSession();
         }
     }
 });

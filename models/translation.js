@@ -26,7 +26,20 @@ for(let knownTranslation of require("../assets/translations.json"))
     new FieldTranslation(knownTranslation).save().catch(x =>
     {
         if(!x?.message || !x.message.includes("duplicate key error"))
-            console.error(`[${new Date().toLocaleString()}]`, "could not import translations from file", x?.message || x);
+            console.error(`[${new Date().toLocaleString()}]`, "could not import translation from file", x?.message || x);
+
+        else FieldTranslation.findOne({}).then(existingTranslation => // replace if changes have occurred
+        {
+            if(existingTranslation.text != knownTranslation.text)
+                FieldTranslation.updateOne({
+                    code: knownTranslation.code,
+                    language: knownTranslation.language
+                }, knownTranslation).catch(x =>
+                    console.error(`[${new Date().toLocaleString()}]`, "could not update translation", x?.message || x)
+                );
+        }).catch(x =>
+            console.error(`[${new Date().toLocaleString()}]`, "could not replace translation", x?.message || x)
+        );
     });
 
 module.exports = { FieldTranslation };

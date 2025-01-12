@@ -1,4 +1,4 @@
-/* global getUserLanguage */
+/* global loadSession, getUserLanguage */
 
 const parseDecimal = function(number)
 {
@@ -16,6 +16,7 @@ const parseDecimal = function(number)
 
 const loadTranslations = async (filters = {}) =>
 {
+    await loadSession();
     window.translations = window.translations || [];
 
     let data = await axios.get("/api/v1/translations?" +

@@ -22,6 +22,7 @@
                     <td>
                         <searchable-dropdown :options="languages"
                             v-model:selected="profile.preferred_language"></searchable-dropdown>
+                        <span :title="$filters.translate('profile.language.change-warning')">&#x26A0;&#xFE0F;</span>
                     </td>
                 </tr>
             </table>

@@ -54,7 +54,7 @@
 
                 async mounted()
                 {
-                    loadTranslations({ "code*": "home." });
+                    await loadTranslations({ "code*": "home." });
 
                     let res = await axios.get("/api/v1/apps")
                     this.apps = res.data.data;

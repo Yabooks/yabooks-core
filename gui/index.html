@@ -45,7 +45,7 @@
             </div>
         </main>
         <script type="text/javascript">
-            document.app = Vue.createApp(
+            let app = Vue.createApp(
             {
                 data()
                 {
@@ -61,7 +61,7 @@
 
                 async mounted()
                 {
-                    loadTranslations({ "code*": "start." });
+                    await loadTranslations({ "code*": "start." });
                     Notification.requestPermission();
 
                     const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
@@ -108,6 +108,20 @@
                         this.modal = url;
                     },
 
+                    async reloadLanguageFromSession()
+                    {
+                        await loadSession();
+                        this.$forceUpdate();
+
+                        try
+                        {
+                            // reload main frame if home screen is shown, otherwise input data might get lost
+                            if(frames.main.location.pathname === "/home/")
+                                frames.main.location.reload();
+                        }
+                        catch(x) {}
+                    },
+
                     /** makes sure that after logging in the currently selected business is loaded from the session
                       * and that this business is shown as selected in the top right corner */
                     async updateSessionData()
@@ -122,7 +136,8 @@
                         {
                             let oldSelectedBusinessId = this.selectedBusinessId;
 
-                            this.loggedIn = (await loadSession())?.user;
+                            let session = await loadSession();
+                            this.loggedIn = session?.user;
                             this.selectedBusinessId = await getSelectedBusinessId();
 
                             if(this.selectedBusinessId)
@@ -164,8 +179,8 @@
                 }
             });
             
-            document.app.config.globalProperties.$filters = { ...filters };
-            document.app.mount("main");
+            app.config.globalProperties.$filters = { ...filters };
+            document.app = app.mount("main");
         </script>
     </body>
 </html>
