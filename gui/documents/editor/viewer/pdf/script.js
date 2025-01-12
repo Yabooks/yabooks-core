@@ -1,3 +1,5 @@
+/* global fabric */
+
 const pdfUrl = `/api/v1/documents/${self.location.search.substring(1)}/binary`; // Path to your PDF
 const container = document.getElementById('pdfContainer');
 const saveButton = document.getElementById('saveButton');

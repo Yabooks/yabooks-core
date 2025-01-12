@@ -1,3 +1,5 @@
+/* global getSelectedBusinessId, filters, FilterBar */
+
 let app = Vue.createApp(
 {
     components: { FilterBar },

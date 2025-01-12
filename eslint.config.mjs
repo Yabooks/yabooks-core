@@ -17,15 +17,7 @@ export default [
             globals: {
                 ...globals.browser,
                 axios: "readonly",
-                Vue: "readonly",
-                filters: "readonly",
-                getSelectedBusinessId: "readonly",
-                fabric: "readonly",
-                FilterBar: "readonly",
-                GeneralTab: "readonly",
-                LedgerTab: "readonly",
-                LedgerTx: "readonly",
-                wildguess: "readonly"
+                Vue: "readonly"
             }
         },
         rules: {

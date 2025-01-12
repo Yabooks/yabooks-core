@@ -1,3 +1,5 @@
+/* global LedgerTx */
+
 const LedgerTab = (
 {
     props: [ "doc" ],

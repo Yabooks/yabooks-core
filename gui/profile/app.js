@@ -1,4 +1,4 @@
-/* global loadTranslations */
+/* global loadTranslations, SearchableDropdown, filters */
 
 const extractCountryCode = function(languageCode)
 {

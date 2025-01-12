@@ -1,3 +1,5 @@
+/* global getSelectedBusinessId */
+
 Vue.createApp(
 {
     data()

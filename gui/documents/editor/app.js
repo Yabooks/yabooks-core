@@ -1,3 +1,5 @@
+/* global GeneralTab, LedgerTab */
+
 Vue.createApp(
 {
     components: { GeneralTab, LedgerTab },
