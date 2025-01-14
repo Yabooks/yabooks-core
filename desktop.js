@@ -1,11 +1,12 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 
 // start YaBooks core
+process.chdir(__dirname);
 require("./index.js");
 
 // display web app in electron window
 let mainWindow = null;
-app.whenReady().then(_ =>
+app.whenReady().then(function() // do not replace with arrow function
 {
     mainWindow = new BrowserWindow({
         width: 1200,
