@@ -70,8 +70,8 @@
                         {
                             // authenticate against api
                             let res = await axios.post("/api/v1/session", {
-                                email: email || this.email,
-                                password: password || this.password
+                                email: (typeof email === "string") ? email : this.email,
+                                password: (typeof password === "string") ? password : this.password
                             });
 
                             // successful authentication
