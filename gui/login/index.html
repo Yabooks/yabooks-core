@@ -11,7 +11,7 @@
             <button type="submit" @click="login">login</button>
         </form>
         <script type="text/javascript">
-            Vue.createApp(
+            let app = Vue.createApp(
             {
                 data()
                 {
@@ -64,12 +64,15 @@
 
                 methods:
                 {
-                    login: async function()
+                    login: async function(email = null, password = null) // arguments for single user mode only
                     {
                         try
                         {
                             // authenticate against api
-                            let res = await axios.post("/api/v1/session", { email: this.email, password: this.password });
+                            let res = await axios.post("/api/v1/session", {
+                                email: email || this.email,
+                                password: password || this.password
+                            });
 
                             // successful authentication
                             if(res.data.user_token)
@@ -98,7 +101,9 @@
                         else self.location = "/home/";
                     }
                 }
-            }).mount("#login_form");
+            });
+            
+            window.app = app.mount("#login_form");
         </script>
     </body>
 </html>

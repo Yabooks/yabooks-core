@@ -17,7 +17,7 @@
                 <a :href="(loggedIn ? '/home/' : '/login/')" style="font-weight: bold">
                     {{ $filters.translate("start.home") }}
                 </a>
-                <a @click="logout">
+                <a @click="logout" v-if="!isInSingleUserMode">
                     {{ $filters.translate("start.logout") }}
                 </a>
                 <!--<a @click="openModal('/quick-recorder')">
@@ -55,6 +55,7 @@
                         notifications: 0,
                         selectedBusinessId: null,
                         selectedBusinessName: null,
+                        isInSingleUserMode: false,
                         selectedBusinessHasRecentlyChanged: false
                     };
                 },
@@ -106,6 +107,12 @@
                     openModal(url)
                     {
                         this.modal = url;
+                    },
+
+                    activateSingleUserMode(email, pw) // called from electron desktop.js
+                    {
+                        this.isInSingleUserMode = true;
+                        frames.main.window.app.login(email, pw);
                     },
 
                     async reloadLanguageFromSession()
