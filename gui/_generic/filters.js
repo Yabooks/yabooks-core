@@ -16,7 +16,11 @@ const parseDecimal = function(number)
 
 const loadTranslations = async (filters = {}) =>
 {
-    await loadSession();
+    try {
+        await loadSession();
+    }
+    catch(x) {}
+
     window.translations = window.translations || [];
 
     let data = await axios.get("/api/v1/translations?" +

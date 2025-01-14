@@ -62,6 +62,10 @@ app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err
     }
     catch(x)
     {
+        // allow user interface translations retrieval without being logged in
+        if(req?.method === "GET" && req?.originalUrl?.substring?.(0, 20) === "/api/v1/translations")
+            return next();
+
         // error response in case of unauthenticated request
         res.status(401).send({ error: "unauthorized" });
         return;
