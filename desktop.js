@@ -6,7 +6,7 @@ const { URL } = require("node:url"), os = require("node:os"), fs = require("node
 process.chdir(__dirname);
 
 // display web app in electron window
-let mainWindow = null;
+let mainWindow = null, dbReady = false;
 app.whenReady().then(function() // do not replace with arrow function
 {
     mainWindow = new BrowserWindow({
@@ -22,7 +22,9 @@ app.whenReady().then(function() // do not replace with arrow function
 
     mainWindow.setMenu(null);
     mainWindow.on("closed", _ => mainWindow = null);
-    mainWindow.loadFile("./gui/splash.html");
+
+    if(dbReady) mainWindow.loadURL(dbReady);
+    else mainWindow.loadFile("./gui/splash.html");
 
     // open another browser window if app is reactivated on macOS
     app.on("activate", () =>
@@ -95,7 +97,7 @@ app.on("window-all-closed", () =>
             await single_user.save();
 
         // navigate to web app
-        mainWindow.loadURL(process.env.base_url || `http://localhost:${process.env.port}`);
+        mainWindow.loadURL(dbReady = process.env.base_url || `http://localhost:${process.env.port}`);
 
         // activate single user mode
         mainWindow.webContents.on('did-finish-load', async () =>
