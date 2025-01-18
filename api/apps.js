@@ -3,6 +3,33 @@ const appToAppTokenSecret = process.env.secret || require("crypto").randomBytes(
 
 module.exports = function(api)
 {
+    api.get("/api/v1/info", async (req, res, next) => // provide system information
+    {
+        try
+        {
+            const package = require("../package.json"), os = require("os");
+
+            res.send({
+                core: {
+                    name: package?.productName,
+                    version: package?.version
+                },
+                node: {
+                    release: process?.release,
+                    versions: process?.versions,
+                    macAppStore: process?.mas, // https://www.electronjs.org/docs/latest/api/process
+                    windowsStore: process?.windowsStore
+                },
+                os: {
+                    arch: process?.arch,
+                    platform: process.platform,
+                    release: process?.getSystemVersion?.() || os.release()
+                }
+            });
+        }
+        catch(x) { next(x) }
+    });
+
     api.get("/api/v1/apps", async (req, res, next) => // lists currently registered apps
     {
         try
