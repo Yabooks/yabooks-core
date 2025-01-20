@@ -68,4 +68,37 @@ module.exports = function(api)
         }
         catch(x) { next(x) }
     });
+
+    // configure use of authenticator app as mfa
+    api.post("/api/v1/users/:id/mfa", async (req, res, next) =>
+    {
+        let _id = req.params.id;
+        if(_id === "me")
+            try
+            {
+                let session = await Session.findOne({ _id: req.auth.session_id });
+                _id = session.user;
+            }
+            catch(x)
+            {
+                next(x);
+                return;
+            }
+
+        try
+        {
+            let user = await User.findOne({ _id });
+
+            if(!req.query.token) // initialize configuration
+                res.send({
+                    qr_code_url: await user.configureAuthenticator()
+                });
+
+            else // finalize configuration
+                res.send({
+                    success: await user.finalizeAuthenticatorConfiguration(req.query.token)
+                });
+        }
+        catch(x) { next(x) }
+    });
 };

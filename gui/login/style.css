@@ -1,0 +1,51 @@
+#login_form
+{
+    width: 400px;
+    height: 100px;
+    position: fixed;
+    background: white;
+    border-radius: 20px;
+    top: calc(50% - 50px);
+    left: calc(50% - 200px);
+    padding: 10px 0 10px 0;
+}
+
+#login_form.larger
+{
+    height: 150px;
+    top: calc(50% - 75px);
+}
+
+#login_form #header, #login_form input, #login_form button
+{
+    border: 0;
+    width: 360px;
+    height: 30px;
+    padding: 0 0 0 0;
+    margin: 10px 20px 10px 20px;
+}
+
+#login_form #header
+{
+    color: gray;
+}
+
+#login_form #header a
+{
+    color: gray;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+#login_form input
+{
+    border-bottom: 1px solid gray;
+}
+
+#login_form button
+{
+    color: white;
+    border: none;
+    border-radius: 10px;
+    background: orange;
+}

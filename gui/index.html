@@ -23,7 +23,7 @@
                 <!--<a @click="openModal('/quick-recorder')">
                     Quick Recorder
                 </a>-->
-                <a @click="openModal('/notifications/')">
+                <a @click="openModal('/notifications/')" v-if="loggedIn">
                     {{ $filters.translate("start.notifications") }}
                     <span class="badge" v-if="notifications">
                         {{ notifications }}

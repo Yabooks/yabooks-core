@@ -1,4 +1,4 @@
-const jwt = require("jsonwebtoken"), bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const { App, OAuthCode } = require("../models/app.js"), { User, Session } = require("../models/user.js");
 
 module.exports = function(api)
@@ -26,15 +26,30 @@ module.exports = function(api)
         try
         {
             if(req.query.response_type != "code")
-                return void res.status(400).send({ error: "bad request", error_description: "response_type `code` required" });
+                return void res.status(400).send({
+                    error: "bad request",
+                    error_description: "response_type `code` required"
+                });
 
             let app = await App.findOne({ _id: req.query.client_id });
-            if(!app) return void res.status(400).send({ error: "bad request", error_description: "client_id does not exist" });
+            if(!app)
+                return void res.status(400).send({
+                    error: "bad request",
+                    error_description: "client_id does not exist"
+                });
 
             if(!app.redirect_uris || app.redirect_uris.indexOf(req.query.redirect_uri) < 0)
-                return void res.status(403).send({ error: "forbidden", error_description: "redirect_uri is not allowed for this client" });
+                return void res.status(403).send({
+                    error: "forbidden",
+                    error_description: "redirect_uri is not allowed for this client"
+                });
 
-            let context = { client_id: req.query.client_id, redirect_uri: req.query.redirect_uri, state: req.query.state };
+            let context = {
+                client_id: req.query.client_id,
+                redirect_uri: req.query.redirect_uri,
+                state: req.query.state
+            };
+
             res.redirect("/login/?context_token=" + jwt.sign(context, api.jwt_secret, { algorithm: "HS256" }));
         }
         catch(x) { next(x) }
@@ -47,13 +62,29 @@ module.exports = function(api)
         {
             let email = req.body.email;
             let password = req.body.password;
+            let authenticator_token = req.body.authenticator_token;
 
-            if(!email || !password)
+            if(!email)
                 return res.status(401).send({ error: "unauthorized", error_description: "no credentials provided" });
 
-            let user = await User.findOne({ email });
-            if(!user || !await bcrypt.compare(password, user.password_hash))
-                return res.status(401).send({ error: "unauthorized", error_description: "invalid user credentials provided" });
+            const user = await User.findOne({ email });
+            const msg_unauthorized = { error: "unauthorized", error_description: "invalid user credentials provided" };
+
+            if(!user || !user?.auth_type)
+                return res.status(401).send(msg_unauthorized);
+
+            if(user.auth_type === "password" || user.auth_type === "password-authenticator")
+                if(!password || !await user.verifyPassword(password))
+                    return res.status(401).send(msg_unauthorized);
+            
+            if(user.auth_type === "authenticator" || user.auth_type === "password-authenticator")
+                if(!authenticator_token)
+                    return res.status(412).send({ error: "authenticator token mising" });
+                else if(!user.verifyAuthenticatorToken(authenticator_token))
+                    return res.status(401).send(msg_unauthorized);
+            
+            if(![ "authenticator", "password", "password-authenticator", ].includes(user.auth_type)) // TODO oauth, saml
+                return res.status(501).send({ error: "not implemented", error_description: `type ${user.auth_type}` });
 
             let session = new Session({ user: user._id, data: { language: user.preferred_language } });
             await session.save();

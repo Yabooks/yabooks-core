@@ -3,107 +3,32 @@
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+        <link rel="stylesheet" type="text/css" href="style.css" />
     </head>
     <body>
-        <form id="login_form" onsubmit="return false">
-            <input type="email" v-model="email" placeholder="email address" />
-            <input type="password" v-model="password" placeholder="password" />
-            <button type="submit" @click="login">login</button>
-        </form>
-        <script type="text/javascript">
-            let app = Vue.createApp(
-            {
-                data()
-                {
-                    return {
-                        params: {},
-                        email: "",
-                        password: ""
-                    };
-                },
-
-                async mounted()
-                {
-                    try
-                    {
-                        // parse request url query parameters
-                        this.params = new Proxy(new URLSearchParams(window.location.search), { get: (searchParams, prop) =>
-                            typeof prop === "string" ? searchParams.get(prop) : false });
-
-                        // check if user is already logged in using an existing cookie
-                        let session = await axios.get("/api/v1/session");
-                        if(session.data.user_token)
-                            return this.proceed(session.data.user_token);
-                    }
-                    catch(x) {}
-
-                    try
-                    {
-                        // otherwise ask parent window for user's token to work with the same session
-                        window.addEventListener("message", (event) =>
-                        {
-                            if(event.source === window.top && event.data?.user_token)
-                            {
-                                console.info("received user token from top window");
-                                return this.proceed(event.data.user_token);
-                            }
-                        });
-
-                        if(window !== window.top)
-                        {
-                            console.info("asking top window for a user token");
-                            window.top.postMessage("what_is_user_session_token", "*");
-                        }
-                    }
-                    catch(x)
-                    {
-                        console.error(x);
-                        reject(x);
-                    }
-                },
-
-                methods:
-                {
-                    login: async function(email = null, password = null) // arguments for single user mode only
-                    {
-                        try
-                        {
-                            // authenticate against api
-                            let res = await axios.post("/api/v1/session", {
-                                email: (typeof email === "string") ? email : this.email,
-                                password: (typeof password === "string") ? password : this.password
-                            });
-
-                            // successful authentication
-                            if(res.data.user_token)
-                                this.proceed(res.data.user_token);
-
-                            // unsuccessful authentication
-                            else throw false;
-                        }
-                        catch(x)
-                        {
-                            alert("Error!");
-                        }
-                    },
-
-                    proceed: async function(user_token)
-                    {
-                        // if user was redirected here for oauth, proceed with oauth flow
-                        if(this.params.context_token)
-                            self.location = "/oauth/code?context_token=" + this.params.context_token + "&user_token=" + user_token;
-
-                        // if user was redirected here from some specific page, go back there
-                        else if(this.params.redir)
-                            self.location = this.params.redir;
-
-                        // if no context was provided, redirect to home page
-                        else self.location = "/home/";
-                    }
-                }
-            });
-            
-            window.app = app.mount("#login_form");
-        </script>
+        <main>
+            <div id="login_form" :class="{ larger: (stage !== 'email') }">
+                <form onsubmit="return false">
+                    <div v-if="stage !== 'email'" id="header">
+                        <a href="#" @click="resetLogin()">
+                            &#xFF1C;
+                        </a>
+                        <span>{{ email }}</span>
+                    </div>
+                    <input v-if="stage === 'email'" type="email" v-model="email"
+                        :placeholder="$filters.translate('start.login.email')" />
+                    <input v-if="stage === 'password'" type="password" v-model="password"
+                        :placeholder="$filters.translate('start.login.password')" />
+                    <input v-if="stage === 'authenticator'" type="number" v-model="authenticator_token"
+                        :placeholder="$filters.translate('start.login.token')" />
+                    <button type="submit" @click="login">
+                        {{ $filters.translate('start.login.login') }}
+                    </button>
+                </form>
+            </div>
+        </main>
+        <script type="text/javascript" src="app.js"></script>
     </body>
 </html>
