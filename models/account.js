@@ -6,7 +6,7 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
     const schemaDefinition = (
     {
         business: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: true },
-        type: { type: String, enum: [ "assets", "liabilities", "equity", "revenues", "expenses" ], required: true },
+        type: { type: String, enum: [ "assets", "liabilities", "equity", "revenues", "expenses", "oci" ], required: true },
         display_number: { type: String, required: true },
         display_name: { type: String, required: true },
 
