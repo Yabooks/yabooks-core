@@ -41,7 +41,7 @@ const LedgerTransaction = (function()
 // make sure there cannot be a debit/credit difference on ledger transactions
 const debitCreditValidation = function(transactions)
 {
-    // TODO make sure that debit and credit balances are the same for each posting date
+    // TODO make sure that debit and credit balances are the same for each posting date once posted
     return true;
 };
 
