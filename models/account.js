@@ -10,6 +10,7 @@ const BalanceSheetStructure = mongoose.model("BalanceSheetStructure", (function(
 {
     let schemaDefinition = (
     {
+        code: { type: String, required: true, unique: true },
         name: { type: String, required: true },
         translated_names: [ translationSchema ]
     });
@@ -25,7 +26,7 @@ const BalanceSheetStructureItem = mongoose.model("BalanceSheetStructureItem", (f
         name: { type: String, required: true },
         translated_names: [ translationSchema ],
         parent: { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" },
-        older_brother: { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" }
+        order: Number
     });
     
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
@@ -51,6 +52,7 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
 
         tags: [ { type: String, enum: [ "fixed", "current", "liquid funds", "raw materials and supplies", "long-term", "short-term" ] } ],
         balanceSheetStructureItems: [ { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" } ],
+        alternativeBalanceSheetStructureItems: [ { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" } ],
 
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },
         tax_number: String,

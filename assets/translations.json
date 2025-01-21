@@ -46,5 +46,17 @@
     { "code": "profile.language.change-warning", "language": "en", "text": "Change might require reloading window" },
     { "code": "profile.language.change-warning", "language": "de", "text": "\u00c4nderung erfordert mitunter ein Refresh" },
     { "code": "profile.save", "language": "en", "text": "Save" },
-    { "code": "profile.save", "language": "de", "text": "Speichern" }
+    { "code": "profile.save", "language": "de", "text": "Speichern" },
+    { "code": "accounts.types.assets", "language": "en", "text": "assets" },
+    { "code": "accounts.types.assets", "language": "de", "text": "Verm\u00f6gen" },
+    { "code": "accounts.types.liabilities", "language": "en", "text": "liabilities" },
+    { "code": "accounts.types.liabilities", "language": "de", "text": "Verbindlichkeiten" },
+    { "code": "accounts.types.equity", "language": "en", "text": "equity" },
+    { "code": "accounts.types.equity", "language": "de", "text": "Eigenkapital" },
+    { "code": "accounts.types.revenues", "language": "en", "text": "revenues" },
+    { "code": "accounts.types.revenues", "language": "de", "text": "Ertr\u00e4ge" },
+    { "code": "accounts.types.expenses", "language": "en", "text": "expenses" },
+    { "code": "accounts.types.expenses", "language": "de", "text": "Aufwendungen" },
+    { "code": "accounts.types.oci", "language": "en", "text": "other comprehensive income" },
+    { "code": "accounts.types.oci", "language": "de", "text": "sonstiges Ergebnis (OCI)" }
 ]

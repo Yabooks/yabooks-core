@@ -5,6 +5,7 @@
         <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+        <script type="text/javascript" src="structure-item.js"></script>
         <link rel="stylesheet" type="text/css" href="style.css" />
     </head>
     <body>
@@ -22,11 +23,12 @@
                         <input type="text" placeholder="Account Number" v-model="account.display_number" />
                         <input type="text" placeholder="Account Name" v-model="account.display_name" />
                         <select v-model="account.type">
-                            <option>assets</option>
-                            <option>liabilities</option>
-                            <option>equity</option>
-                            <option>revenues</option>
-                            <option>expenses</option>
+                            <option value="assets">{{ $filters.translate("accounts.types.assets") }}</option>
+                            <option value="liabilities">{{ $filters.translate("accounts.types.liabilities") }}</option>
+                            <option value="equity">{{ $filters.translate("accounts.types.equity") }}</option>
+                            <option value="revenues">{{ $filters.translate("accounts.types.revenues") }}</option>
+                            <option value="expenses">{{ $filters.translate("accounts.types.expenses") }}</option>
+                            <option value="oci">{{ $filters.translate("accounts.types.oci") }}</option>
                         </select>
                         <!-- TODO account.tags, valid_from, valid_to -->
                         <span class="buttons">
@@ -42,6 +44,17 @@
                 <button @click="newAccount()" id="newButton">
                     &#x2795;
                 </button>
+            </div>
+            <button @click="toggleStructures()">
+                &lt;&gt;
+            </button>
+            <div id="structure" v-if="structures">
+                <select v-model="selectedStructure">
+                    <option v-for="structure in structures" :value="structure">
+                        {{ structure.name }}
+                    </option>
+                </select>
+                <structure-item :parent_id="selectedStructure._id"></structure-item>
             </div>
         </main>
         <script type="text/javascript" src="app.js"></script>

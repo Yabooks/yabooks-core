@@ -1,12 +1,16 @@
-/* global getSelectedBusinessId, filters */
+/* global getSelectedBusinessId, filters, StructureItem */
 
 let app = Vue.createApp(
 {
+    components: { StructureItem },
+
     data()
     {
         return {
             business: null,
-            accounts: []
+            accounts: [],
+            structures: null,
+            selectedStructure: null
         };
     },
 
@@ -14,6 +18,9 @@ let app = Vue.createApp(
     {
         try
         {
+            loadTranslations({ "code*": "accounts." })
+                .then(this.$forceUpdate);
+            
             this.business = await getSelectedBusinessId();
             if(!this.business)
                 throw "Please select a buiness first.";
@@ -31,6 +38,21 @@ let app = Vue.createApp(
 
     methods:
     {
+        async toggleStructures()
+        {
+            if(this.structures)
+                this.structures = null;
+
+            else
+            {
+                let data = await axios.get("/api/v1/balance-sheet-structures");
+                this.structures = data.data.data;
+                this.selectedStructure = this.structures[0];
+            }
+
+            this.$forceUpdate();
+        },
+
         async newAccount()
         {
             this.accounts.push({
