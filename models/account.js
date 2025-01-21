@@ -1,5 +1,40 @@
 const mongoose = require("../services/connector.js");
 
+const translationSchema = new mongoose.Schema(
+{
+    language: { type: String, required: true },
+    text: { type: String, required: true }
+});
+
+const BalanceSheetStructure = mongoose.model("BalanceSheetStructure", (function()
+{
+    let schemaDefinition = (
+    {
+        name: { type: String, required: true },
+        translated_names: [ translationSchema ]
+    });
+    
+    return new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+})());
+
+const BalanceSheetStructureItem = mongoose.model("BalanceSheetStructureItem", (function()
+{
+    const schemaDefinition = (
+    {
+        structure: { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructure", required: true },
+        name: { type: String, required: true },
+        translated_names: [ translationSchema ],
+        parent: { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" },
+        older_brother: { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" }
+    });
+    
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    schema.path("structure");
+    schema.path("parent");
+    schema.path("older_brother");
+    return schema;
+})());
+
 // ledger account schema
 const LedgerAccount = mongoose.model("LedgerAccount", (function()
 {
@@ -15,6 +50,8 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
         default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false }, // null if not a cost transaction
 
         tags: [ { type: String, enum: [ "fixed", "current", "liquid funds", "raw materials and supplies", "long-term", "short-term" ] } ],
+        balanceSheetStructureItems: [ { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" } ],
+
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },
         tax_number: String,
         credit_card_number_ending: String,
@@ -35,4 +72,4 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
     return schema;
 })());
 
-module.exports = { LedgerAccount };
+module.exports = { LedgerAccount, BalanceSheetStructure, BalanceSheetStructureItem };

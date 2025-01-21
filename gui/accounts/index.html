@@ -9,38 +9,40 @@
     </head>
     <body>
         <main>
-            <div v-for="account in accounts" class="container">
-                <div v-if="!account.editing && !account.deleted">
-                    <span>{{ account.display_number }}</span>
-                    <span>{{ account.display_name }}</span>
-                    <span class="buttons">
-                        <button @click="editAccount(account)">&#x270F;&#xFE0F;</button>
-                    </span>
+            <div id="accounts">
+                <div v-for="account in accounts" class="container" draggable="true">
+                    <div v-if="!account.editing && !account.deleted">
+                        <span>{{ account.display_number }}</span>
+                        <span>{{ account.display_name }}</span>
+                        <span class="buttons">
+                            <button @click="editAccount(account)">&#x270F;&#xFE0F;</button>
+                        </span>
+                    </div>
+                    <div v-else-if="!account.deleted" class="editor">
+                        <input type="text" placeholder="Account Number" v-model="account.display_number" />
+                        <input type="text" placeholder="Account Name" v-model="account.display_name" />
+                        <select v-model="account.type">
+                            <option>assets</option>
+                            <option>liabilities</option>
+                            <option>equity</option>
+                            <option>revenues</option>
+                            <option>expenses</option>
+                        </select>
+                        <!-- TODO account.tags, valid_from, valid_to -->
+                        <span class="buttons">
+                            <button @click="saveChanges(account)">&#x1F4BE;</button>
+                            <button @click="cancelEditing(account)">&#x274C;</button>
+                            <button @click="deleteAccount(account)">&#x1F5D1;&#xFE0F;</button>
+                        </span>
+                    </div>
                 </div>
-                <div v-else-if="!account.deleted" class="editor">
-                    <input type="text" placeholder="Account Number" v-model="account.display_number" />
-                    <input type="text" placeholder="Account Name" v-model="account.display_name" />
-                    <select v-model="account.type">
-                        <option>assets</option>
-                        <option>liabilities</option>
-                        <option>equity</option>
-                        <option>revenues</option>
-                        <option>expenses</option>
-                    </select>
-                    <!-- TODO account.tags, valid_from, valid_to -->
-                    <span class="buttons">
-                        <button @click="saveChanges(account)">&#x1F4BE;</button>
-                        <button @click="cancelEditing(account)">&#x274C;</button>
-                        <button @click="deleteAccount(account)">&#x1F5D1;&#xFE0F;</button>
-                    </span>
+                <div v-if="accounts.length === 0" class="message">
+                    no accounts available
                 </div>
+                <button @click="newAccount()" id="newButton">
+                    &#x2795;
+                </button>
             </div>
-            <div v-if="accounts.length === 0" class="message">
-                no accounts available
-            </div>
-            <button @click="newAccount()" id="newButton">
-                &#x2795;
-            </button>
         </main>
         <script type="text/javascript" src="app.js"></script>
     </body>
