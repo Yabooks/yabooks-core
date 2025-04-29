@@ -53,7 +53,7 @@ let app = Vue.createApp(
             this.profit = 0;
             for(let i in this.accounts)
                 if([ "revenues", "expenses" ].indexOf(this.accounts[i].type) > -1)
-                    this.profit += parseFloat(this.accounts[i].balance.$numberDecimal);
+                    this.profit += val(this.accounts[i].balance);
         }
         catch(x)
         {
@@ -135,7 +135,7 @@ let app = Vue.createApp(
             for(let i in assetAccounts)
                 datasets.push({
                     label: assetAccounts[i].display_name,
-                    data: [ parseFloat(assetAccounts[i].balance.$numberDecimal || assetAccounts[i].balance), 0 ],
+                    data: [ val(assetAccounts[i].balance), 0 ],
                     backgroundColor: shade([ 176, 224, 230, .8 ], [ 135, 206, 250, .8 ], assetAccounts.length, i)
                 });
 
