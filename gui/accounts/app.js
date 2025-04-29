@@ -1,8 +1,8 @@
-/* global getSelectedBusinessId, filters, StructureItem */
+/* global getSelectedBusinessId, filters, StructureItem, TagInput */
 
 let app = Vue.createApp(
 {
-    components: { StructureItem },
+    components: { StructureItem, TagInput },
 
     data()
     {
@@ -72,7 +72,7 @@ let app = Vue.createApp(
         {
             if(account._id) // update existing account
             {
-                await axios.put(`/api/v1/businesses/ledger-accounts/${account._id}`, account);
+                await axios.patch(`/api/v1/ledger-accounts/${account._id}`, account);
                 account.editing = false;
             }
 
@@ -101,8 +101,11 @@ let app = Vue.createApp(
 
         async deleteAccount(account)
         {
-            account.deleted = true;
-            await axios.delete(`/api/v1/ledger-accounts/${account._id}`);
+            if(confirm("?"))
+            {
+                account.deleted = true;
+                await axios.delete(`/api/v1/ledger-accounts/${account._id}`);
+            }
         }
     }
 });

@@ -1,14 +1,24 @@
 <!DOCTYPE HTML>
 <html>
     <head>
+        <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/js/chart.js/chart.umd.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+        <script type="text/javascript" src="chart-component.js"></script>
     </head>
     <body>
-        <div id="acc_list">
-            <div v-for="type in [ 'assets', 'equity', 'liabilities', 'revenues', 'expenses' ]">
+        <center>
+            <nav>
+                <input type="date" v-model="date" />
+            </nav>
+            <div class="container" align="center">
+                <chart-component :config="getAssetChartConfig()"></chart-component>
+                <chart-component :config="getRevenueExpenseChartConfig()"></chart-component>
+            </div>
+            <div v-for="type in [ 'assets', 'equity', 'liabilities', 'revenues', 'expenses' ]" class="container">
                 <h1>{{ type }}</h1>
                 <table>
                     <tr>
@@ -17,23 +27,25 @@
                         <th>Credit</th>
                         <th />
                     </tr>
-                    <tr v-for="account in accounts" v-if="account?.type == type">
-                        <td>{{ account.display_name }}</td>
-                        <td align="right">
-                            <span v-if="(account.balance.$numberDecimal || account.balance) > 0">
-                                {{ $filters.formatNumber($filters.absolute(account.balance)) }}
-                            </span>
-                        </td>
-                        <td align="right">
-                            <span v-if="(account.balance.$numberDecimal || account.balance) <= 0">
-                                {{ $filters.formatNumber($filters.absolute(account.balance)) }}
-                            </span>
-                        </td>
-                        <td>
-                            <button @click="showLedgerRecords(account)">
-                                show ledger sheet
-                            </button>
-                        </td>
+                    <tr v-for="account in accounts">
+                        <template v-if="account?.type == type">
+                            <td>{{ account.display_name }}</td>
+                            <td align="right">
+                                <span v-if="(account.balance.$numberDecimal || account.balance) > 0">
+                                    {{ $filters.formatNumber($filters.absolute(account.balance)) }}
+                                </span>
+                            </td>
+                            <td align="right">
+                                <span v-if="(account.balance.$numberDecimal || account.balance) <= 0">
+                                    {{ $filters.formatNumber($filters.absolute(account.balance)) }}
+                                </span>
+                            </td>
+                            <td>
+                                <button @click="showLedgerRecords(account)" title="show account records">
+                                    &#x1F4CB;
+                                </button>
+                            </td>
+                        </template>
                     </tr>
                     <tr v-if="type == 'equity'">
                         <td>P&amp;L of current period</td>
@@ -49,9 +61,15 @@
                         </td>
                         <td />
                     </tr>
+                    <tr v-if="type != 'equity' && accounts.filter(a => a.type == type).length == 0">
+                        <td>n/a</td>
+                        <td />
+                        <td />
+                        <td />
+                    </tr>
                 </table>
             </div>
-        </div>
+        </center>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

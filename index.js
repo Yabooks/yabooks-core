@@ -8,6 +8,7 @@ const app = express();
 require("express-ws")(app);
 app.use(express.static("./gui"));
 app.use("/js/axios", express.static("./node_modules/axios/dist"));
+app.use("/js/chart.js", express.static("./node_modules/chart.js/dist"));
 app.use("/js/vue", express.static("./node_modules/vue/dist"));
 app.get("/js/vue/vue.js", (_, res) => res.redirect(`vue.global${process.env.NODE_ENV === 'development' ? ".prod" : ""}.js`));
 app.use("/js/yabooks", express.static("./node_modules/yabooks-app/public"));

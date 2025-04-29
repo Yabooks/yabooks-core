@@ -21,7 +21,7 @@
                 </tr>
                 <tr v-for="record in records">
                     <td>
-                        {{ record.display_data || record.date || record.posting_date | formatDate }}
+                        {{ $filters.formatDate(record.display_data || record.date || record.posting_date) }}
                     </td>
                     <td>
                         <a class="link" @click="goToDocument(record.document_id)">
@@ -39,22 +39,22 @@
                     </td>
                     <td align="right">
                         <span v-if="(record.amount.$numberDecimal || record.amount) > 0">
-                            {{ record.amount | formatNumber }}
+                            {{ $filters.formatNumber(record.amount) }}
                         </span>
                     </td>
                     <td align="right">
                         <span v-if="(record.amount.$numberDecimal || record.amount) < 0">
-                            {{ record.amount | absolute | formatNumber }}
+                            {{ $filters.formatNumber($filters.absolute(record.amount)) }}
                         </span>
                     </td>
                     <td :title="record.tax_code || record.tax_code_base">
                         <span v-if="record.tax_code || record.tax_code_base">
-                            {{ record.tax_code || record.tax_code_base | formatTaxCode }}
+                            {{ $filters.formatTaxCode(record.tax_code || record.tax_code_base) }}
                             <span v-if="record.tax_code_base">
-                                {{ record.tax_percent | formatNumber }}%
+                                {{ $filters.formatNumber(record.tax_percent) }}%
                             </span>
                             <span v-if="record.tax_code">
-                                {{ record.tax_code | toTaxName }}
+                                {{ $filters.toTaxName(record.tax_code) }}
                             </span>
                         </span>
                     </td>

@@ -1,0 +1,31 @@
+html, body
+{
+    font-family: "Roboto", sans-serif;
+}
+
+.container
+{
+    width: 900px;
+    max-width: 100%;
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.container table td
+{
+    width: 200px;
+}
+
+.container table td:first-child
+{
+    width: 650px;
+}
+
+.container table td:last-child
+{
+    width: 50px;
+    padding-left: 10px;
+}

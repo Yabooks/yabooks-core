@@ -38,18 +38,18 @@ module.exports = async function(req, res, next)
             return value;
         };
 
-        if(key.indexOf("*") === key.length - 1) // e.g. ?tax_code*=at --> { tax_code: { $startsWith: "at" } }
+        if(name.indexOf("*") === name.length - 1) // e.g. ?tax_code*=at --> { tax_code: { $startsWith: "at" } }
         {
             let filter = {};
-            name = key.substring(0, key.length - 1);
+            name = name.substring(0, name.length - 1);
             filter[name] = { $regex: new RegExp("^" + req.query[key].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) };
             return filter;
         }
 
-        else if(key.indexOf("__") > -1) // e.g. ?date__gte=2022-10-10 --> { date: { $gte: "2022-10-10" } }
+        else if(name.indexOf("__") > -1) // e.g. ?date__gte=2022-10-10 --> { date: { $gte: "2022-10-10" } }
         {
             let filter = {};
-            name = key.split("__")[0];
+            name = name.split("__")[0];
             filter[name] = {};
             filter[name]["$" + key.split("__")[1]] = guessType(req.query[key]);
             return filter;

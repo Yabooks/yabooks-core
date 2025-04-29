@@ -44,6 +44,8 @@ module.exports = function(api)
 
     api.delete("/api/v1/ledger-accounts/:id", async (req, res) =>
     {
+        // TODO do not allow deleting an account which has ever been booked on
+
         await LedgerAccount.deleteOne({ _id: req.params.id });
         res.send({ success: true });
     });

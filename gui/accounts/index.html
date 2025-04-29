@@ -3,6 +3,7 @@
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/js/yabooks/tags-input.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
         <script type="text/javascript" src="structure-item.js"></script>
@@ -30,7 +31,9 @@
                             <option value="expenses">{{ $filters.translate("accounts.types.expenses") }}</option>
                             <option value="oci">{{ $filters.translate("accounts.types.oci") }}</option>
                         </select>
-                        <!-- TODO account.tags, valid_from, valid_to -->
+                        <tag-input v-model="account.tags"></tag-input>
+                        <input type="date" placeholder="" v-model="account.valid_from" />
+                        <input type="date" placeholder="" v-model="account.valid_to" />
                         <span class="buttons">
                             <button @click="saveChanges(account)">&#x1F4BE;</button>
                             <button @click="cancelEditing(account)">&#x274C;</button>
@@ -45,7 +48,7 @@
                     &#x2795;
                 </button>
             </div>
-            <button @click="toggleStructures()">
+            <!--<button @click="toggleStructures()">
                 &lt;&gt;
             </button>
             <div id="structure" v-if="structures">
@@ -55,7 +58,7 @@
                     </option>
                 </select>
                 <structure-item :parent_id="selectedStructure._id"></structure-item>
-            </div>
+            </div>-->
         </main>
         <script type="text/javascript" src="app.js"></script>
     </body>

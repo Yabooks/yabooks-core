@@ -1,6 +1,6 @@
 /* global getSelectedBusinessId */
 
-Vue.createApp(
+let app = Vue.createApp(
 {
     data()
     {
@@ -38,4 +38,7 @@ Vue.createApp(
             self.location = `/ledger/?business=${await getSelectedBusinessId()}&document_id=${id}`;
         }
     }
-}).mount("#table");
+});
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("#table");
