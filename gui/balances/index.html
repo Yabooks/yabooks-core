@@ -18,13 +18,13 @@
                 <chart-component :config="getAssetChartConfig()"></chart-component>
                 <chart-component :config="getRevenueExpenseChartConfig()"></chart-component>
             </div>
-            <div v-for="type in [ 'assets', 'equity', 'liabilities', 'revenues', 'expenses' ]" class="container">
-                <h1>{{ type }}</h1>
+            <div v-for="type in [ 'assets', 'equity', 'liabilities', 'revenues', 'expenses', 'oci' ]" class="container">
+                <h1>{{ $filters.translate("accounts.types." + type) }}</h1>
                 <table>
                     <tr>
                         <th></th>
-                        <th>Debit</th>
-                        <th>Credit</th>
+                        <th>{{ $filters.translate("balances.debit") }}</th>
+                        <th>{{ $filters.translate("balances.credit") }}</th>
                         <th />
                     </tr>
                     <tr v-for="account in accounts">
@@ -41,14 +41,14 @@
                                 </span>
                             </td>
                             <td>
-                                <button @click="showLedgerRecords(account)" title="show account records">
+                                <button @click="showLedgerRecords(account)" :title="$filters.translate('balances.show-records')">
                                     &#x1F4CB;
                                 </button>
                             </td>
                         </template>
                     </tr>
                     <tr v-if="type == 'equity'">
-                        <td>P&amp;L of current period</td>
+                        <td>{{ $filters.translate("balances.current-pl") }}</td>
                         <td align="right">
                             <span v-if="profit > 0">
                                 {{ $filters.formatNumber($filters.absolute(profit)) }}
@@ -62,7 +62,7 @@
                         <td />
                     </tr>
                     <tr v-if="type != 'equity' && accounts.filter(a => a.type == type).length == 0">
-                        <td>n/a</td>
+                        <td>{{ $filters.translate("balances.none") }}</td>
                         <td />
                         <td />
                         <td />

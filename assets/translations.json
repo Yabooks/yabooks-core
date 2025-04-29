@@ -58,5 +58,15 @@
     { "code": "accounts.types.expenses", "language": "en", "text": "expenses" },
     { "code": "accounts.types.expenses", "language": "de", "text": "Aufwendungen" },
     { "code": "accounts.types.oci", "language": "en", "text": "other comprehensive income" },
-    { "code": "accounts.types.oci", "language": "de", "text": "sonstiges Ergebnis (OCI)" }
+    { "code": "accounts.types.oci", "language": "de", "text": "sonstiges Ergebnis (OCI)" },
+    { "code": "balances.debit", "language": "de", "text": "Soll" },
+    { "code": "balances.debit", "language": "en", "text": "Debit" },
+    { "code": "balances.credit", "language": "de", "text": "Haben" },
+    { "code": "balances.credit", "language": "en", "text": "Credit" },
+    { "code": "balances.none", "language": "de", "text": "Keine Salden" },
+    { "code": "balances.none", "language": "en", "text": "No balances" },
+    { "code": "balances.current-pl", "language": "de", "text": "Gewinn/Verlust der Periode" },
+    { "code": "balances.current-pl", "language": "en", "text": "P&L of current period" },
+    { "code": "balances.show-records", "language": "de", "text": "Buchungen des Kontos anzeigen" },
+    { "code": "balances.show-records", "language": "en", "text": "show account records" }
 ]

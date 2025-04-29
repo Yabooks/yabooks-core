@@ -34,6 +34,10 @@ let app = Vue.createApp(
     {
         try
         {
+            loadTranslations({ "code*": "accounts." })
+                .then(loadTranslations({ "code*": "balances." }))
+                .then(this.$forceUpdate);
+
             let business = await getSelectedBusinessId();
             if(!business) throw "Please select a buiness first.";
 
@@ -95,7 +99,10 @@ let app = Vue.createApp(
             return {
                 type: "bar",
                 data: {
-                    labels: [ "Expenses", "Revenue" ],
+                    labels: [
+                        this.$filters.translate("accounts.types.expenses"),
+                        this.$filters.translate("accounts.types.revenues")
+                    ],
                     datasets
                 },
                 options: {
@@ -135,7 +142,9 @@ let app = Vue.createApp(
             return {
                 type: "pie",
                 data: {
-                    labels: [ "Assets" ],
+                    labels: [
+                        this.$filters.translate("accounts.types.assets")
+                    ],
                     datasets
                 },
                 options: {
