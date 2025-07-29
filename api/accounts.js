@@ -6,25 +6,30 @@ module.exports = function(api)
      * @openapi
      * /api/v1/businesses/{id}/ledger-accounts:
      *   get:
-     *     summary: Liste aller Ledger-Konten eines Unternehmens
+     *     summary: Get all ledger accounts of a business
      *     tags:
-     *       - LedgerAccount
+     *       - ledger-accounts
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
      *         schema:
      *           type: string
-     *         description: Die ID des Unternehmens
+     *         description: ID of the business
      *     responses:
      *       200:
-     *         description: Erfolgreiche Antwort mit Liste der Ledger-Konten
+     *         description: Successful response
      *         content:
      *           application/json:
      *             schema:
-     *               type: array
-     *               items:
-     *                 $ref: '#/components/schemas/LedgerAccount'
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/LedgerAccount'
      */
     api.get("/api/v1/businesses/:id/ledger-accounts", async (req, res, next) =>
     {
@@ -41,16 +46,16 @@ module.exports = function(api)
      * @openapi
      * /api/v1/businesses/{id}/ledger-accounts:
      *   post:
-     *     summary: Erstelle ein neues Ledger-Konto für ein Unternehmen
+     *     summary: Create a new ledger account for a business
      *     tags:
-     *       - LedgerAccount
+     *       - ledger-accounts
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
      *         schema:
      *           type: string
-     *         description: Die ID des Unternehmens
+     *         description: ID of the business
      *     requestBody:
      *       required: true
      *       content:
@@ -59,7 +64,7 @@ module.exports = function(api)
      *             $ref: '#/components/schemas/LedgerAccount'
      *     responses:
      *       200:
-     *         description: Das erstellte Ledger-Konto
+     *         description: The created ledger account
      *         content:
      *           application/json:
      *             schema:
@@ -80,19 +85,19 @@ module.exports = function(api)
      * @openapi
      * /api/v1/ledger-accounts/{id}:
      *   get:
-     *     summary: Hole ein Ledger-Konto per ID
+     *     summary: Get details of a specific ledger account
      *     tags:
-     *       - LedgerAccount
+     *       - ledger-accounts
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
      *         schema:
      *           type: string
-     *         description: Die ID des Ledger-Kontos
+     *         description: ID of the ledger account
      *     responses:
      *       200:
-     *         description: Das Ledger-Konto
+     *         description: Successful response
      *         content:
      *           application/json:
      *             schema:
@@ -116,16 +121,16 @@ module.exports = function(api)
      * @openapi
      * /api/v1/ledger-accounts/{id}:
      *   patch:
-     *     summary: Aktualisiere ein Ledger-Konto
+     *     summary: Update a ledger account
      *     tags:
-     *       - LedgerAccount
+     *       - ledger-accounts
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
      *         schema:
      *           type: string
-     *         description: Die ID des Ledger-Kontos
+     *         description: ID of the ledger account to be updated
      *     requestBody:
      *       required: true
      *       content:
@@ -134,7 +139,7 @@ module.exports = function(api)
      *             $ref: '#/components/schemas/LedgerAccount'
      *     responses:
      *       200:
-     *         description: Konto erfolgreich aktualisiert
+     *         description: Successful response
      *         content:
      *           application/json:
      *             schema:
@@ -153,19 +158,19 @@ module.exports = function(api)
      * @openapi
      * /api/v1/ledger-accounts/{id}:
      *   delete:
-     *     summary: Lösche ein Ledger-Konto
+     *     summary: Delete a ledger account
      *     tags:
-     *       - LedgerAccount
+     *       - ledger-accounts
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
      *         schema:
      *           type: string
-     *         description: Die ID des Ledger-Kontos
+     *         description: ID of the ledger account to be deleted
      *     responses:
      *       200:
-     *         description: Konto erfolgreich gelöscht
+     *         description: Successful response
      *         content:
      *           application/json:
      *             schema:
@@ -173,6 +178,11 @@ module.exports = function(api)
      *               properties:
      *                 success:
      *                   type: boolean
+     *                   default: true
+     *                 warning:
+     *                   type: string
+     *                   nullable: true
+     *                   example: could not delete account, deactivated it instead
      */
     api.delete("/api/v1/ledger-accounts/:id", async (req, res) =>
     {
