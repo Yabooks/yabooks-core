@@ -1,4 +1,4 @@
-const express = require("express"), jwt = require("express-jwt").expressjwt;
+const express = require("express"), jwt = require("express-jwt").expressjwt, m2s = require("mongoose-to-swagger");
 const bodyParser = require("body-parser"), cookieParser = require("cookie-parser");
 const swaggerUi = require("swagger-ui-express"), swaggerjsdoc = require("swagger-jsdoc");
 require("dotenv").config();
@@ -33,12 +33,41 @@ app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
             version: require("./package.json").version,
             description: "API documentation for all core features",
             contact: {
-                name: "Leopold M. Regner"
+                name: "Leopold M. Regner",
+                email: "leo@yabooks.net",
+                url: "https://www.yabooks.net/"
             },
+            license: {
+                name: require("./package.json").license
+            }
         },
         servers: [
             { url: process.env.base_url || `http://localhost:${process.env.port}` }
         ],
+        components: {
+            schemas: Object.assign.apply(null, [ {
+                    PaginatedResponse: {
+                        type: "object",
+                        properties: {
+                            skip: { type: "integer", description: "number of records skipped in response", default: 0 },
+                            limit: { type: "integer", description: "maximum number of records in response", default: 100 },
+                            total: { type: "integer", description: "total number of records available", example: 1234 }
+                        }
+                }},
+
+                // read all mongoose schemas and models from modesl folder and convert them to swagger component schemas
+                ...require("fs").readdirSync("./models")
+                    .filter(fileName => fileName.includes(".js"))
+                    .map(fileName => {
+                        const models = require(`./models/${fileName}`), schemas = {};
+                        for(let name in models)
+                            if(models[name].schema)
+                                schemas[name] = m2s(models[name]);
+                            else if(models[name].tree)
+                                schemas[name] = m2s({ schema: models[name] });
+                        return schemas;
+                    })])
+        }
     },
     apis: [
         "./api/*.js"
