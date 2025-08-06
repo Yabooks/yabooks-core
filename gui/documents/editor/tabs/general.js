@@ -12,7 +12,7 @@ const GeneralTab = (
                 </tr>
                 <tr>
                     <td>Document Date</td>
-                    <td><input type="datetime" v-model="doc.date" /></td>
+                    <td><input type="datetime-local" v-model="doc.date" /></td>
                 </tr>
                 <tr>
                     <td>External Invoice Number</td>

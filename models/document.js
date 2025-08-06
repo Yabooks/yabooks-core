@@ -1,11 +1,22 @@
 const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
 
+const omitTimezone = (date) =>
+{
+    if(date instanceof Date)
+        date = date.toISOString();
+
+    if(typeof date === "string")
+        return date.split("Z")[0];
+
+    return null;
+};
+
 // ledger transaction schema
 const LedgerTransaction = (function()
 {
     const schemaDefinition = (
     {
-        posting_date: { type: Date, required: true, default: Date.now },
+        posting_date: { type: Date, required: true, default: Date.now, get: omitTimezone, set: omitTimezone },
         alternate_ledger: { type: String },
 
         account: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerAccount" }, // required, but not enforced on model level to allow drafts
@@ -27,7 +38,7 @@ const LedgerTransaction = (function()
         tax_sub_code_base: String,
         tax_percent: mongoose.Schema.Types.Decimal128,
         tax_number: String, // VAT number, TIN, etc.
-        tax_date: Date
+        tax_date: { type: Date, get: omitTimezone, set: omitTimezone }
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
@@ -51,6 +62,7 @@ const CostTransaction = (function()
 {
     const schemaDefinition = (
     {
+        posting_date: { type: Date, required: true, default: Date.now, get: omitTimezone, set: omitTimezone },
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: true },
         corresponding_ledger_transaction: mongoose.Schema.Types.ObjectId,
         is_budget: { type: Boolean, required: true, default: false },
@@ -70,6 +82,7 @@ const TimeTransaction = (function()
 {
     const schemaDefinition = (
     {
+        posting_date: { type: Date, required: true, default: Date.now, get: omitTimezone, set: omitTimezone },
         staff: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter" },
         minutes: { type: Number, required: true, default: 0 },
@@ -90,6 +103,7 @@ const StockTransaction = (function()
 {
     const schemaDefinition = (
     {
+        posting_date: { type: Date, required: true, default: Date.now, get: omitTimezone, set: omitTimezone },
         article: { type: mongoose.Schema.Types.ObjectId, ref: "Article", required: true },
         store: { type: mongoose.Schema.Types.ObjectId, ref: "Store", required: true },
         amount: { type: mongoose.Schema.Types.Decimal128, required: true },
@@ -108,6 +122,7 @@ const ShippingTransaction = (function()
 {
     const schemaDefinition = (
     {
+        posting_date: { type: Date, required: true, default: Date.now, get: omitTimezone, set: omitTimezone },
         text: String,
         kn8_code: String,
         hts_code: String,
@@ -152,7 +167,7 @@ const Document = mongoose.model("Document", (function()
         posted: { type: Boolean, required: true, default: false },
 
         type: String,
-        date: Date,
+        date: { type: Date, get: omitTimezone, set: omitTimezone },
         internal_reference: String,
 
         external_reference: String,
@@ -183,7 +198,7 @@ const Document = mongoose.model("Document", (function()
         owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
     });
 
-    const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, autoIndex: false });
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, toJSON: { getters: true }, autoIndex: false });
     schema.path("ledger_transactions").validate(debitCreditValidation, "debit credit difference");
     schema.path("business").index(true);
     schema.path("type").index(true);
