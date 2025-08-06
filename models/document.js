@@ -177,7 +177,7 @@ const Document = mongoose.model("Document", (function()
         stock_transactions: [ StockTransaction ],
         shipping_transactions: [ ShippingTransaction ],
 
-        classification: { type: String, enum: [ "top secret", "secret", "confidential", "restricted", "official" ], default: "official" },
+        classification: { type: String, enum: [ "top secret", "secret", "confidential", "restricted", "official" ], default: "restricted" },
         created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was created by an app
         last_updated_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was updated by an app
         owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
