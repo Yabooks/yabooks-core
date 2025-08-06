@@ -8,7 +8,7 @@ let fabricCanvases = []; // To store Fabric.js instances for all pages
 
 // Initialize PDF.js
 const pdfjsLib = window['pdfjs-dist/build/pdf'];
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@2.6.347/build/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@2.6.347/build/pdf.worker.min.js`; // TODO do not use cdn, host self
 
 // Load and render the PDF
 (async function renderPDF()
@@ -159,7 +159,7 @@ saveButton.addEventListener('click', async () =>
     formData.append('pdf', new Blob([pdfBuffer], { type: 'application/pdf' }));
     formData.append('annotations', JSON.stringify(annotations));
 
-    const response = await fetch('http://localhost:3000/save-annotations',
+    const response = await fetch('http://localhost:3000/save-annotations', // FIXME
     {
         method: 'POST',
         body: formData,
