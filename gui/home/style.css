@@ -28,7 +28,7 @@ html, body
     height: 125px;
     display: block;
     border-radius: 20%;
-    background-color: white;
+    /*background-color: white;*/
     margin: 20px 20px 5px 20px;
 }
 
