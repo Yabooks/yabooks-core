@@ -18,6 +18,26 @@ const LedgerTab = (
         togglePriceType()
         {
             this.price_type = (this.price_type === "gross") ? "net" : "gross";
+        },
+
+        addInvoiceItem()
+        {
+            this.doc.ledger_transactions.push({});
+        },
+
+        removeLedgerTransaction(index)
+        {
+            this.doc.ledger_transactions.splice(index, 1);
+        },
+
+        addPaymentMethod()
+        {
+
+        },
+
+        removePaymentMethod(index)
+        {
+
         }
     },
 
@@ -30,12 +50,25 @@ const LedgerTab = (
                     <th>Text</th>
                     <th @dblclick="togglePriceType()">Price {{ price_type }}</th>
                     <th>Tax</th>
+                    <th />
                 </tr>
                 <tr v-for="(item, i) in (doc?.ledger_transactions || [])">
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <template v-if="true">
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>
+                            <button @click="removeLedgerTransaction(i)">
+                                &#x1F5D1;&#xFE0F;
+                            </button>
+                        </td>
+                    </template>
+                </tr>
+                <tr>
+                    <td colspan="4" @click="addInvoiceItem">
+                        <button>+</button>
+                    </td>
                 </tr>
             </table>
         </div>
@@ -46,12 +79,25 @@ const LedgerTab = (
                     <th>Account</th>
                     <th>Amount</th>
                     <th>Due</th>
+                    <th />
                 </tr>
                 <tr v-for="(item, i) in (doc?.payments || [])">
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <template>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>
+                            <button @click="removePaymentMethod(i)">
+                                &#x1F5D1;&#xFE0F;
+                            </button>
+                        </td>
+                    </template>
+                </tr>
+                <tr>
+                    <td colspan="4" @click="addPaymentMethod">
+                        <button>+</button>
+                    </td>
                 </tr>
             </table>
         </div>
