@@ -20,7 +20,7 @@ const LedgerTab = (
             this.price_type = (this.price_type === "gross") ? "net" : "gross";
         },
 
-        addInvoiceItem()
+        addLedgerTransaction()
         {
             this.doc.ledger_transactions.push({});
         },
@@ -28,22 +28,12 @@ const LedgerTab = (
         removeLedgerTransaction(index)
         {
             this.doc.ledger_transactions.splice(index, 1);
-        },
-
-        addPaymentMethod()
-        {
-
-        },
-
-        removePaymentMethod(index)
-        {
-
         }
     },
 
     template: `
         <div class="item">
-            <h3>Invoice Items</h3>
+            <h3>General Ledger Transactions</h3>
             <table>
                 <tr>
                     <th>Account</th>
@@ -66,36 +56,7 @@ const LedgerTab = (
                     </template>
                 </tr>
                 <tr>
-                    <td colspan="4" @click="addInvoiceItem">
-                        <button>+</button>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        <div class="item">
-            <h3>Payment Methods</h3>
-            <table>
-                <tr>
-                    <th>Account</th>
-                    <th>Amount</th>
-                    <th>Due</th>
-                    <th />
-                </tr>
-                <tr v-for="(item, i) in (doc?.payments || [])">
-                    <template>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td>
-                            <button @click="removePaymentMethod(i)">
-                                &#x1F5D1;&#xFE0F;
-                            </button>
-                        </td>
-                    </template>
-                </tr>
-                <tr>
-                    <td colspan="4" @click="addPaymentMethod">
+                    <td colspan="4" @click="addLedgerTransaction()">
                         <button>+</button>
                     </td>
                 </tr>
