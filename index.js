@@ -112,6 +112,14 @@ app.use("/api/*", async (req, _, next) =>
     next();
 });
 
+// inject permission handler
+app.use(async (req, _, next) =>
+{
+    const loadHandler = require("./services/casbin.js");
+    req.permissions = await loadHandler();
+    next();
+});
+
 // inject filtering and pagination preparations
 app.use(require("./services/filtering-pagination.js"));
 
@@ -120,8 +128,11 @@ for(let file of require("fs").readdirSync("./api"))
     require("./api/" + file)(app);
 
 // error handler
-app.use(async (err, req, res, next) =>
+app.use(async (err, req, res, _) =>
 {
+    if(err === "handled")
+        return;
+
     console.error(`[${ new Date().toLocaleString() }]`, req.url, err);
     res.status(500).send({ error: err.message || err || "unknown error" });
 });
