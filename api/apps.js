@@ -44,6 +44,10 @@ module.exports = function(api)
     {
         try
         {
+            // require "mainain apps" permission to register an app
+            await req.permissions.requirePermission(req, "maintain", "apps", res);
+
+            // create app and return info to client
             let app = new App(req.body);
             await app.save();
             res.send(app);
@@ -99,8 +103,13 @@ module.exports = function(api)
     {
         try
         {
-            // TODO shutdown app
+            // require "maintain apps" permission to remove an app
+            await req.permissions.requirePermission(req, "maintain", "apps", res);
 
+            // shutdown app
+            // TODO
+
+            // delete app
             await App.deleteOne({ _id: req.params.id });
             res.send({ success: true });
         }
