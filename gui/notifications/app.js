@@ -1,4 +1,6 @@
-Vue.createApp(
+/* global filters */
+
+let app = Vue.createApp(
 {
     data()
     {
@@ -22,28 +24,52 @@ Vue.createApp(
             this.$forceUpdate();
         },
 
-        async toggleRead(notification, read)
+        isTask(notification)
         {
+            return notification.type === "user_task";
+        },
+
+        async toggleRead(notification, read = undefined)
+        {
+            // determine opposite state
             if(typeof read === "undefined")
                 read = !notification.read;
 
-            // TODO
-
+            // set notification's read state in user interface
             notification.read = read;
             this.$forceUpdate();
+
+            try
+            {
+                // send new read state to backend
+                await axios.put(`/api/v1/notifications/${notification._id}/${read ? "read" : "unread"}`);
+            }
+            catch(x)
+            {
+                console.error(x);
+                alert(x?.message ?? x);
+            }
         },
 
-        async deleteNotification(id)
+        async deleteNotification(notification)
         {
-            // TODO
-        }
-    },
+            // hide notification in user interface
+            notification.deleted = true;
+            this.$forceUpdate();
 
-    filters:
-    {
-        id2timestamp(id)
-        {
-            return new Date(parseInt(id.substring(0, 8), 16) * 1000).toLocaleString();
+            try
+            {
+                // delete notification from database
+                await axios.delete(`/api/v1/notifications/${notification._id}`);
+            }
+            catch(x)
+            {
+                console.error(x);
+                alert(x?.message ?? x);
+            }
         }
     }
-}).mount("#notification_center");
+});
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("#notification_center");

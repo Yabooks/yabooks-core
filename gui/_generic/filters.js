@@ -47,11 +47,21 @@ const filters = (
         return Intl.NumberFormat(getUserLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
     },
 
+    id2timestamp(id)
+    {
+        return new Date(parseInt(id.substring(0, 8), 16) * 1000);
+    },
+
     formatDate: (timestamp, language = getUserLanguage()) =>
     {
         return new Date(timestamp).toLocaleDateString(language);
     },
 
+    formatDateTime: (timestamp, language = getUserLanguage()) =>
+    {
+        return new Date(timestamp).toLocaleString(language);
+    },
+    
     formatTaxCode: (tax_code) =>
     {
         if(tax_code && tax_code.length > 1)

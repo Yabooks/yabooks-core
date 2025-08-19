@@ -9,8 +9,8 @@ const Notification = mongoose.model("Notification",
     icon: String,
     link: String,
     read: Date,
-    type: { type: String, enum: [ "app_notification", "user_notification" ], default: "user_notification" },
-    is_task_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
+    type: { type: String, enum: [ "app_notification", "user_notification", "user_task" ], default: "user_notification" },
+    owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
 });
 
 module.exports = { Notification };

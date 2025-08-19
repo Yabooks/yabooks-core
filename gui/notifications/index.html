@@ -5,29 +5,33 @@
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
     </head>
     <body>
         <div id="notification_center">
-            <div class="item" v-for="notification in notifications" :class="{ read: !!notification.read }">
-                <h1>
-                    {{ notification.title }}
-                </h1>
-                <span class="timestamp">
-                    {{ notification._id | id2timestamp }}
-                </span>
-                <div>
-                    {{ notification.text }}
+            <template v-for="notification in notifications">
+                <div class="item" v-if="!notification.deleted" :class="{ read: !!notification.read }">
+                    <h1>
+                        {{ notification.read ? "⚪" : "🔵" }}
+                        {{ notification.title }}
+                    </h1>
+                    <span class="timestamp">
+                        {{ $filters.formatDateTime($filters.id2timestamp(notification._id)) }}
+                    </span>
+                    <div>
+                        {{ notification.text }}
+                    </div>
+                    <a v-if="notification.link" :href="notification.link" target="_parent" @click="toggleRead(notification._id, true)">
+                        open
+                    </a>
+                    <button @click="toggleRead(notification)">
+                        toggle read
+                    </button>
+                    <button v-if="!isTask(notification)" @click="deleteNotification(notification)">
+                        delete
+                    </button>
                 </div>
-                <a v-if="notification.link" :href="notification.link" target="_parent" @click="toggleRead(notification._id, true)">
-                    open
-                </a>
-                <button @click="toggleRead(notification)">
-                    toggle read
-                </button>
-                <button v-if="!notification.task_by_app" @click="deleteNotification(notification._id)">
-                    delete
-                </button>
-            </div>
+            </template>
         </div>
         <script type="text/javascript" src="app.js"></script>
     </body>

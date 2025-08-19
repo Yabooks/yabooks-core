@@ -10,6 +10,9 @@ module.exports = function(api)
         {
             let session = await Session.findOne({ _id: req.auth?.session_id });
 
+            if(!session)
+                throw "no session found";
+
             // register web socket connection as listener for new notification
             if(listeners[session.user])
                 listeners[session.user].push(ws);
@@ -18,7 +21,32 @@ module.exports = function(api)
             // listen to incoming web socket messages (required to keep connection alive)
             ws.on("message", async (msg) => { /* do nothing */ });
         }
-        catch(x) {}
+        catch(x) 
+        {
+            ws?._socket?.destroy?.();
+        }
+    });
+
+    api.post("/api/v1/notifications", async (req, res, next) =>
+    {
+        try
+        {
+            // store notification in database
+            let msg = new Notification(req.body);
+            await msg.validate();
+            await msg.save();
+            res.send(msg);
+
+            // notify all registered listeners of receiver
+            if(listeners[req.body.user] && (!req.query.type || req.query.type == msg.type))
+                for(let ws of listeners[req.body.user])
+                    if(ws.readyState == 1) // connected and open
+                        ws.send(JSON.stringify({ id: msg._id, title: msg.title, link: msg.link }));
+                    else ;// TODO remove listener
+
+            await Logger.logRecordCreated("notification", msg);
+        }
+        catch(x) { next(x) }
     });
 
     api.get("/api/v1/notifications", async (req, res, next) =>
@@ -45,7 +73,7 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.get("/api/v1/notifications/:id", async (req, res, next ) =>
+    api.get("/api/v1/notifications/:id", async (req, res, next) =>
     {
         try
         {
@@ -57,24 +85,32 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.post("/api/v1/notifications", async (req, res, next) =>
+    api.put("/api/v1/notifications/:id/read", async (req, res, next) =>
     {
         try
         {
-            // store notification in database
-            let msg = new Notification(req.body);
-            await msg.validate();
-            await msg.save();
-            res.send(msg);
+            await Notification.updateOne({ _id: req.params.id }, { read: new Date() });
+            await res.status(204).send();
+        }
+        catch(x) { next(x) }
+    });
 
-            // notify all registered listeners of receiver
-            if(listeners[req.body.user] && (!req.query.type || req.query.type == msg.type))
-                for(let ws of listeners[req.body.user])
-                    if(ws.readyState == 1) // connected and open
-                        ws.send(JSON.stringify({ id: msg._id, title: msg.title, link: msg.link }));
-                    else ;// TODO remove listener
+    api.put("/api/v1/notifications/:id/unread", async (req, res, next) =>
+    {
+        try
+        {
+            await Notification.updateOne({ _id: req.params.id }, { read: null });
+            await res.status(204).send();
+        }
+        catch(x) { next(x) }
+    });
 
-            await Logger.logRecordCreated("notification", msg);
+    api.delete("/api/v1/notifications/:id", async (req, res, next) =>
+    {
+        try
+        {
+            await Notification.findOneAndDelete({ _id: req.params.id });
+            await res.status(204).send();
         }
         catch(x) { next(x) }
     });
