@@ -4,7 +4,7 @@ const { Document } = require("../models/document.js"), { Business } = require(".
 
 module.exports = function(api)
 {
-    api.get("/api/v1/businesses/:id/tax-balances", async (req, res, next) => // ?from=&to=
+    api.get("/api/v1/businesses/:id/tax-balances", async (req, res, next) => // ?from=&until=
     {
         try
         {
@@ -16,7 +16,7 @@ module.exports = function(api)
 
             const useAppropriateCurrency = function(default_currency, amount,
                                                     alternate_currency, alternate_currency_amount,
-                                                    alternate_currency2, alternate_currency2_amount,
+                                                    alternate_currency2, alternate_currency2_amount, // TODO
                                                     req_currency, tax_code_currency)
             {
                 if(req_currency)
