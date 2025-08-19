@@ -22,8 +22,10 @@ let app = Vue.createApp(
                 .then(this.$forceUpdate);
             
             this.business = await getSelectedBusinessId();
-            if(!this.business)
-                throw "Please select a buiness first.";
+            if(!business) {
+                await loadTranslations({ "code": "home.alerts.select-business" });
+                throw this.$filters.translate("home.alerts.select-business");
+            }
 
             let res = await axios.get(`/api/v1/businesses/${this.business}/ledger-accounts`);
             this.accounts = res.data.data;

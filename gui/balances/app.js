@@ -39,7 +39,10 @@ let app = Vue.createApp(
                 .then(this.$forceUpdate);
 
             let business = await getSelectedBusinessId();
-            if(!business) throw "Please select a buiness first.";
+            if(!business) {
+                await loadTranslations({ "code": "home.alerts.select-business" });
+                throw this.$filters.translate("home.alerts.select-business");
+            }
 
             let filters = [
                 // TODO "base_ledger_transactions.posting_date__gte=" + encodeURIComponent("2024-12-31")

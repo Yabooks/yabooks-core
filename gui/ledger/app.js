@@ -22,7 +22,9 @@ let app = Vue.createApp(
         catch(x)
         {
             this.docs = [];
-            this.error = "Please select a business first.";
+
+            await loadTranslations({ "code": "home.alerts.select-business" });
+            this.error = this.$filters.translate("home.alerts.select-business");
         }
     },
 
