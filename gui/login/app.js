@@ -97,7 +97,13 @@ let app = Vue.createApp(
             }
             finally
             {
-                this.$forceUpdate();
+                await this.$forceUpdate();
+
+                if(this.stage == "authenticator")
+                        document.querySelector("#login_form input[type=number]").focus();
+
+                if(this.stage == "password")
+                    document.querySelector("#login_form input[type=password]").focus();
             }
         },
 
