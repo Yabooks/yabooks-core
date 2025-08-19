@@ -32,10 +32,15 @@ module.exports = async function()
 */
 async function requirePermission(subject, action, object, res)
 {
-    if(subject?.auth?.session_id && subject?.auth?.app_id) // an express request object with a session_id and an app_id was provided as subject
-        ;// TODO
+    // an express request object with a session_id and an app_id was provided as subject
+    if(subject?.auth?.session_id && subject?.auth?.app_id)
+        return this.requireAnyPermission([
+            [ `user::${session.user}`, action, object ],
+            [ `app::${subject.auth.app_id}`, action, object ]
+        ], res);
 
-    else if(subject?.auth?.session_id) // an express request object with a session_id was provided as subject
+    // an express request object with a session_id was provided as subject
+    else if(subject?.auth?.session_id)
     {
         let session = await Session.findOne({ _id: subject.auth.session_id });
 
@@ -45,9 +50,11 @@ async function requirePermission(subject, action, object, res)
         subject = `user::${session.user}`;
     }
 
-    else if(subject?.auth?.app_id) // an express request object with an app_id was provided as subject
+    // an express request object with an app_id was provided as subject
+    else if(subject?.auth?.app_id)
         subject = `app::${subject.auth.app_id}`;
 
+    // check if permission is given using casbin enforcer
     let allowed = await this.enforce(subject, object, action);
     return _respond(allowed, res);
 }
