@@ -1,10 +1,136 @@
-.item
+.notification
 {
-    background: white;
-    border-radius: 15px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+        "indicator title timestamp"
+        "indicator description description"
+        "indicator link link";
+    gap: 0.4rem 1rem;
+
+    background: #1e1e1e;
+    border: 1px solid #2c2c2c;
+    border-radius: 1rem;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+    color: #f0f0f0;
+    font-family: "Inter", system-ui, sans-serif;
+
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.item.read
+.notification:hover
 {
-    background: lightgray;
+    background: #242424;
+    border-color: #3a3a3a;
+}
+
+.notification .statusIndicator
+{
+    grid-area: indicator;
+    align-self: start;
+    justify-self: center;
+
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    margin-top: 0.3rem;
+
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notification .statusIndicator.unread
+{
+    background: #4cafef;
+    box-shadow: 0 0 6px rgba(76, 175, 239, 0.8);
+}
+
+.notification .statusIndicator.read
+{
+    background: #555;
+}
+
+.notification .title
+{
+    grid-area: title;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: #ffffff;
+}
+
+.notification .timestamp
+{
+    grid-area: timestamp;
+    font-size: 0.8rem;
+    color: #aaaaaa;
+    align-self: center;
+}
+
+.notification .description
+{
+    grid-area: description;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: #cccccc;
+}
+
+.notification .link
+{
+    grid-area: link;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #4cafef;
+    text-decoration: none;
+    align-self: center;
+
+    transition: color 0.2s ease;
+}
+
+.notification .link:hover
+{
+    color: #82d0ff;
+    text-decoration: underline;
+}
+
+.notification .delete
+{
+    cursor: pointer;
+}
+
+.notification .delete, .notification .taskIcon
+{
+    grid-area: indicator; /* same area as indicator */
+    justify-self: center;
+    align-self: end;
+
+    margin-top: 1.2rem; /* spacing under circle */
+    filter: grayscale(100%);
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 1.1rem;
+
+    transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.notification .delete:hover
+{
+    filter: none;
+    transform: scale(1.1);
+}
+
+.notification .delete:active
+{
+    transform: scale(0.95);
+}
+
+.notification.read
+{
+    opacity: 0.7;
 }

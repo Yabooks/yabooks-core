@@ -1,0 +1,38 @@
+/* General scrollbar styling */
+::-webkit-scrollbar
+{
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track
+{
+    background: #1a1a1a;   /* dark track */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb
+{
+    background: #4cafef;   /* same blue as unread indicator */
+    border-radius: 10px;
+    border: 2px solid #1a1a1a; /* creates spacing effect */
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover
+{
+    background: #82d0ff; /* lighter on hover */
+}
+
+/* Corner between vertical/horizontal scrollbar */
+::-webkit-scrollbar-corner
+{
+    background: #1a1a1a;
+}
+
+/* Firefox support */
+* 
+{
+    scrollbar-width: thin;
+    scrollbar-color: #4cafef #1a1a1a;
+}

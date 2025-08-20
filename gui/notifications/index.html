@@ -2,6 +2,7 @@
 <html>
     <head>
         <link rel="stylesheet" type="text/css" href="style.css" />
+        <link rel="stylesheet" type="text/css" href="scrollbars.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
@@ -10,25 +11,28 @@
     <body>
         <div id="notification_center">
             <template v-for="notification in notifications">
-                <div class="item" v-if="!notification.deleted" :class="{ read: !!notification.read }">
-                    <h1>
-                        {{ notification.read ? "⚪" : "🔵" }}
+                <div v-if="!notification.deleted" :class="{ notification: true, read: !!notification.read }">
+                    <div :class="{ statusIndicator: true, read: notification.read, unread: !notification.read }"
+                        @click="toggleRead(notification)"></div>
+                    <h1 class="title">
                         {{ notification.title }}
                     </h1>
                     <span class="timestamp">
                         {{ $filters.formatDateTime($filters.id2timestamp(notification._id)) }}
                     </span>
-                    <div>
+                    <div class="description">
                         {{ notification.text }}
                     </div>
-                    <a v-if="notification.link" :href="notification.link" target="_parent" @click="toggleRead(notification._id, true)">
-                        open
+                    <a class="link" v-if="notification.link" @click="hideNotificationsModal()"
+                        :href="notification.link" :target="isLocalLink(notification.link) ? 'main' : '_blank'">
+                        {{ $filters.translate("home.notifications.open") }}
                     </a>
-                    <button @click="toggleRead(notification)">
-                        toggle read
+                    <button class="taskIcon" v-if="isTask(notification)" :title="$filters.translate('home.notifications.task')">
+                        &#x1F939;
                     </button>
-                    <button v-if="!isTask(notification)" @click="deleteNotification(notification)">
-                        delete
+                    <button class="delete" :title="$filters.translate('home.notifications.delete')" v-else
+                        @click="deleteNotification(notification)">
+                        &#x1F5D1;&#xFE0F;
                     </button>
                 </div>
             </template>
