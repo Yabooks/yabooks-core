@@ -29,6 +29,32 @@ const loadTranslations = async (filters = {}) =>
     window.translations.push(...data.data.data);
 };
 
+const beep = () => // play a sound to gain the user's attention
+{
+    try
+    {
+        const audio = new AudioContext();
+        const oscillator = audio.createOscillator();
+        const gainNode = audio.createGain();
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(880, audio.currentTime); // start tone
+        oscillator.frequency.exponentialRampToValueAtTime(660, audio.currentTime + 0.2); // sweep down
+
+        // fade in and out
+        gainNode.gain.setValueAtTime(0, audio.currentTime);
+        gainNode.gain.linearRampToValueAtTime(.3, audio.currentTime + .01);
+        gainNode.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .4);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audio.destination);
+
+        oscillator.start(audio.currentTime);
+        oscillator.stop(audio.currentTime + .4);
+    }
+    catch(x) {}
+};
+
 const filters = (
 {
     absolute: (number) =>

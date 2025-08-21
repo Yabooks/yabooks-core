@@ -63,13 +63,18 @@
                 async mounted()
                 {
                     await loadTranslations({ "code*": "start." });
-                    Notification.requestPermission();
+                    frames.main.location = this.getDefaultMainUrl();
 
+                    // load count of currently unread notifications to show counter badge
                     const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
                     this.notifications = counter.data.total;
+
+                    // connect to web socket to subscribe to incoming notifications
                     this.reconnectWebsocket();
 
-                    frames.main.location = this.getDefaultMainUrl();
+                    // ask if application may show system notifications
+                    if("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied")
+                        Notification.requestPermission();
                 },
 
                 methods:
@@ -93,14 +98,20 @@
                         notifier.onclose = (_) => setTimeout(this.reconnectWebsocket, 1000);
                         notifier.onmessage = async (event) =>
                         {
-                            // show system notification
-                            let msg = JSON.parse(event.data);
-                            let notification = new Notification(msg.title);
-                            notification.onclick = (_) => self.location = msg.link;
-
                             // count up badge and check if user is still logged in
                             ++this.notifications;
                             this.updateSessionData();
+
+                            // play sound
+                            beep();
+
+                            // show system notification if supported
+                            if("Notification" in window && Notification.permission === "granted")
+                            {
+                                let msg = JSON.parse(event.data);
+                                let notification = new Notification(msg.title);
+                                notification.onclick = (_) => self.location = msg.link;
+                            }
                         };
                     },
 
