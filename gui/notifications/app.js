@@ -78,7 +78,8 @@ let app = Vue.createApp(
                 await axios.delete(`/api/v1/notifications/${notification._id}`);
 
                 // update notification counter in main frame
-                this.updateNotificationCounterBadge(-1);
+                if(!notification.read)
+                    this.updateNotificationCounterBadge(-1);
             }
             catch(x)
             {
