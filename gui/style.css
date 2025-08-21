@@ -64,7 +64,18 @@ nav a
 
 #logo.recentlyChanged
 {
-    border: 2px solid red;
+    animation: blur-effect 2.5s normal forwards;
+}
+
+@keyframes blur-effect
+{
+    0% {
+        filter: blur(5px);
+        box-shadow: 0 0 60px 30px orange;
+    }
+    100% {
+        filter: blur(0);
+    }
 }
 
 #picture

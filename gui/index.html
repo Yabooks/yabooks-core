@@ -166,6 +166,7 @@
                                 // focus effect to gather user's attention
                                 if(oldSelectedBusinessId && this.selectedBusinessId !== oldSelectedBusinessId)
                                 {
+                                    beep();
                                     this.selectedBusinessHasRecentlyChanged = true;
                                     setTimeout(async () => {
                                         this.selectedBusinessHasRecentlyChanged = false;
