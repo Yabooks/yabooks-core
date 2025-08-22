@@ -134,7 +134,7 @@ app.use(async (err, req, res, _) =>
         return;
 
     console.error(`[${ new Date().toLocaleString() }]`, req.url, err);
-    res.status(500).send({ error: err.message || err || "unknown error" });
+    res.status(err?.statusCode ?? 500).send({ error: err?.message || err || "unknown error" });
 });
 
 // start up all locally installed apps with a start command set
