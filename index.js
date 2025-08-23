@@ -133,8 +133,15 @@ app.use(async (err, req, res, _) =>
     if(err === "handled")
         return;
 
-    console.error(`[${ new Date().toLocaleString() }]`, req.url, err);
-    res.status(err?.statusCode ?? 500).send({ error: err?.message || err || "unknown error" });
+    let statusCode = err?.statusCode ?? 500;
+
+    if(err?.name === "ValidationError")
+        statusCode = 400; // Bad Request
+
+    if(statusCode === 500)
+        console.error(`[${ new Date().toLocaleString() }]`, req.url, err);
+
+    res.status(statusCode).send({ error: err?.message || err || "unknown error" });
 });
 
 // start up all locally installed apps with a start command set
