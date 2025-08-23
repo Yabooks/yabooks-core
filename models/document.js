@@ -88,6 +88,15 @@ const debitCreditValidation = function(transactions)
     return true;
 };
 
+const assetValidation = function(transactions)
+{
+    for(let tx of transactions)
+        if(tx.asset && !tx.asset_alteration || !tx.asset && tx.asset_alteration)
+            return false;
+    
+    return true;
+};
+
 // cost transaction schema
 const CostTransaction = (function()
 {
