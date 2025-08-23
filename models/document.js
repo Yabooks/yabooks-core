@@ -22,7 +22,7 @@ const LedgerTransaction = (function()
         account: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerAccount" }, // required, but not enforced on model level to allow drafts
         override_default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false },
 
-        amount: { type: mongoose.Schema.Types.Decimal128 }, // required, but not enforced on model level to allow drafts
+        amount: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
         text: { type: String },
         asset: { type: mongoose.Schema.Types.ObjectId, ref: "Asset", required: false },
         asset_alteration: { type: String, enum: [ "acquisition", "depreciation", "disposal" ], required: false }, // required if asset is referenced
@@ -38,12 +38,12 @@ const LedgerTransaction = (function()
         tax_sub_code: String,
         tax_sub_code_base: String,
         tax_percent: mongoose.Schema.Types.Decimal128,
-        tax_number: String, // VAT number, TIN, etc.
-        tax_date: { type: Date, get: omitTimezone, set: omitTimezone }
+        tax_number: String // VAT number, TIN, etc.
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
     schema.path("alternate_ledger").index(true);
+    schema.path("amount").index(true);
     schema.path("account").index(true);
     schema.path("tax_code").index(true);
     schema.path("tax_code_base").index(true);
@@ -54,7 +54,37 @@ const LedgerTransaction = (function()
 // make sure there cannot be a debit/credit difference on ledger transactions
 const debitCreditValidation = function(transactions)
 {
-    // TODO make sure that debit and credit balances are the same for each posting date once posted
+    const val = (field) => this[field] ?? this?._update?.$set?.[field];
+
+    const posted = val("posted");
+
+    if(typeof posted !== "boolean")
+        throw new Error(`validation failed: could not determine posting status`);
+
+    if(posted) // make sure that debit and credit balances are the same for each posting date once posted
+    {
+        let totals = {};
+
+        for(let tx of transactions)
+        {
+            if(!tx.account)
+                return false;
+
+            if(tax.asset && !tx.asset_alteration)
+                return false;
+
+            if(!totals[tx.posting_date])
+                totals[tx.posting_date] = 0;
+            
+            totals[tx.posting_date] += amount;
+        }
+
+        console.log(total); // FIXME
+
+        if(total < .01 || total > .01)
+            return false;
+    }
+    
     return true;
 };
 
