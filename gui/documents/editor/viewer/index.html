@@ -1,60 +1,112 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <title>PDF Preview</title>
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: #f2f2f2;
+            }
+
+            main {
+                padding-bottom: 70px; /* space for toolbar */
+            }
+
+            #preview {
+                width: 100%;
+                text-align: center;
+                margin-top: 20px;
+            }
+
+            #preview .scaled {
+                display: inline-block;
+                transform-origin: top center;
+            }
+
+            .page {
+                display: block;
+                margin: 20px auto;
+                max-width: 90%;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                border-radius: 8px;
+                background: white;
+            }
+
+            #toolbar {
+                position: fixed;
+                bottom: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 10px;
+                padding: 5px 15px;
+                height: 50px;
+                background: rgba(50,50,50,0.9);
+                border-radius: 25px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                align-items: center;
+                z-index: 1000;
+            }
+
+            .toolButton {
+                background: #ffffff20;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 15px;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                transition: background 0.2s, transform 0.2s;
+            }
+
+            .toolButton:hover {
+                background: #ffffff40;
+                transform: scale(1.1);
+            }
+
+            .toolButton:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        </style>
     </head>
     <body>
         <main>
             <div id="preview">
                 <div class="scaled" :style="{ transform: `scale(${zoom})` }">
                     <template class="page" v-for="page in pages" :key="page">
-                        <img :src="pagePreviewSrc(page)" />
+                        <img :src="pagePreviewSrc(page)" class="page" />
                     </template>
                 </div>
             </div>
+
             <div id="toolbar">
-                <button class="toolButton" @click="chooseTool('pencil')">
-                    &#x270F;&#xFE0F;
+                <button class="toolButton" @click="chooseTool('pencil')" title="Draw">
+                    ✏️
                 </button>
-                <button class="toolButton" @click="chooseTool('eraser')">
-                    &#x1F5D1;&#xFE0F;
+                <button class="toolButton" @click="chooseTool('eraser')" title="Erase">
+                    🗑️
                 </button>
-                <button class="toolButton" @click="adaptZoomLevel(-.1)" :disabled="zoom <= .2">
-                    -
+                <button class="toolButton" @click="adaptZoomLevel(-0.1)" :disabled="zoom <= 0.2" title="Zoom Out">
+                    ➖
                 </button>
-                <button class="toolButton" @click="adaptZoomLevel(.1)" :disabled="zoom > 1.5">
-                    +
+                <button class="toolButton" @click="adaptZoomLevel(0.1)" :disabled="zoom > 1.5" title="Zoom In">
+                    ➕
                 </button>
-                <button class="toolButton" @click="downloadDocument()">
-                    &#x1F4E9;
+                <button class="toolButton" @click="downloadDocument()" title="Download PDF">
+                    📩
                 </button>
             </div>
         </main>
-        <style type="text/css">
-            #preview {
-                width: 100%;
-                text-align: center;
-            }
-            #preview .scaled {
-                /* TODO */
-            }
-            #toolbar {
-                position: fixed;
-                bottom: 10px;
-                left: 10px;
-                height: 40px;
-                width: calc(100% - 20px);
-                background: gray;
-                border-radius: 20px;
-                text-align: center;
-            }
-        </style>
+
         <script type="text/javascript">
-            Vue.createApp(
-            {
-                mounted()
-                {
+            Vue.createApp({
+                mounted() {
                     const reqParams = new URLSearchParams(self.location.search);
 
                     if(reqParams.get("doc_id"))
@@ -64,24 +116,22 @@
                         this.transparent = true;
 
                     if(reqParams.get("websocket"))
-                        ;// TODO
+                        ; // TODO
                 },
 
-                data()
-                {
+                data() {
                     return {
                         _id: null,
                         annotations_supported: false,
-                        annotations: [], // [ [ { points: [ {x,y} ], color: [r,g,b], opacity, lineWidth } ] ]
+                        annotations: [],
                         pages: 0,
-                        zoom: .5
+                        zoom: 0.5,
+                        transparent: false
                     };
                 },
 
-                methods:
-                {
-                    async loadDocument(doc_id)
-                    {
+                methods: {
+                    async loadDocument(doc_id) {
                         let doc = await axios.get(`/api/v1/documents/${doc_id}/preview`);
                         this._id = doc_id;
                         this.annotations_supported = doc.data.annotations_supported;
@@ -90,24 +140,20 @@
                         this.$forceUpdate();
                     },
 
-                    downloadDocument()
-                    {
+                    downloadDocument() {
                         self.location = `/api/v1/documents/${this._id}/binary`;
                     },
 
-                    pagePreviewSrc(page)
-                    {
+                    pagePreviewSrc(page) {
                         return `/api/v1/documents/${this._id}/preview/pages/${page}`;
                     },
 
-                    adaptZoomLevel(change)
-                    {
-                        this.zoom += change;
+                    adaptZoomLevel(change) {
+                        this.zoom = Math.min(Math.max(this.zoom + change, 0.2), 1.5);
                     },
 
-                    chooseTool(tool)
-                    {
-                        // TODO
+                    chooseTool(tool) {
+                        // TODO: implement tool selection
                     }
                 }
             }).mount("main");
