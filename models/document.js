@@ -55,6 +55,7 @@ const LedgerTransaction = (function()
 const debitCreditValidation = function(transactions)
 {
     const val = (field) => this[field] ?? this?._update?.$set?.[field];
+    const num = (dec) => parseFloat(dec.toString()), day = (iso) => iso.split("T")[0];
 
     const posted = val("posted");
 
@@ -67,22 +68,20 @@ const debitCreditValidation = function(transactions)
 
         for(let tx of transactions)
         {
+            let context = `${day(tx.posting_date)}|${tx.alternate_ledger ?? "default"}`;
+
             if(!tx.account)
                 return false;
 
-            if(tax.asset && !tx.asset_alteration)
-                return false;
-
-            if(!totals[tx.posting_date])
-                totals[tx.posting_date] = 0;
+            if(!totals[context])
+                totals[context] = 0;
             
-            totals[tx.posting_date] += amount;
+            totals[context] += num(tx.amount);
         }
 
-        console.log(total); // FIXME
-
-        if(total < .01 || total > .01)
-            return false;
+        for(let context in totals)
+            if(totals[context] > .01 || totals[context] < -.01)
+                return false;
     }
     
     return true;
@@ -93,7 +92,17 @@ const assetValidation = function(transactions)
     for(let tx of transactions)
         if(tx.asset && !tx.asset_alteration || !tx.asset && tx.asset_alteration)
             return false;
-    
+
+    return true;
+};
+
+const noTaxOnAlternateLedgerValidation = function(transactions)
+{
+    for(let tx of transactions)
+        if(tx.alternate_ledger)
+            if(tx.tax_code || tx.tax_code_base || tx.tax_sub_code)
+                return false;
+
     return true;
 };
 
@@ -240,6 +249,8 @@ const Document = mongoose.model("Document", (function()
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, toJSON: { getters: true }, autoIndex: false });
     schema.path("ledger_transactions").validate(debitCreditValidation, "debit credit difference");
+    schema.path("ledger_transactions").validate(assetValidation, "asset_alteration must be set iff asset is mentioned");
+    schema.path("ledger_transactions").validate(noTaxOnAlternateLedgerValidation, "may not record withholding tax on alternate ledger only");
     schema.path("business").index(true);
     schema.path("type").index(true);
     schema.path("internal_reference").index(true);
