@@ -6,25 +6,48 @@
     </head>
     <body>
         <main>
-            <span v-if="!isPdf()">
-                {{ doc?.name }}
-                <button @click="downloadDocument">download</button>
-            </span>
-            <iframe v-if="isPdf()" :src="`pdf/?${doc?._id}`" :class="{ transparent }"></iframe>
+            <div id="preview">
+                <div class="scaled" :style="{ transform: `scale(${zoom})` }">
+                    <template class="page" v-for="page in pages" :key="page">
+                        <img :src="pagePreviewSrc(page)" />
+                    </template>
+                </div>
+            </div>
+            <div id="toolbar">
+                <button class="toolButton" @click="chooseTool('pencil')">
+                    &#x270F;&#xFE0F;
+                </button>
+                <button class="toolButton" @click="chooseTool('eraser')">
+                    &#x1F5D1;&#xFE0F;
+                </button>
+                <button class="toolButton" @click="adaptZoomLevel(-.1)" :disabled="zoom <= .2">
+                    -
+                </button>
+                <button class="toolButton" @click="adaptZoomLevel(.1)" :disabled="zoom > 1.5">
+                    +
+                </button>
+                <button class="toolButton" @click="downloadDocument()">
+                    &#x1F4E9;
+                </button>
+            </div>
         </main>
         <style type="text/css">
-            iframe
-            {
-                top: 0;
-                left: 0;
-                border: 0;
+            #preview {
                 width: 100%;
-                height: 100%;
-                position: absolute;
+                text-align: center;
             }
-            iframe:not(.transparent)
-            {
-                background-color: #414447;
+            #preview .scaled {
+                /* TODO */
+            }
+            #toolbar {
+                position: fixed;
+                bottom: 10px;
+                left: 10px;
+                height: 40px;
+                width: calc(100% - 20px);
+                background: gray;
+                border-radius: 20px;
+                text-align: center;
             }
         </style>
         <script type="text/javascript">
@@ -47,9 +70,11 @@
                 data()
                 {
                     return {
-                        pdf: null,
-                        doc: null,
-                        transparent: false
+                        _id: null,
+                        annotations_supported: false,
+                        annotations: [], // [ [ { points: [ {x,y} ], color: [r,g,b], opacity, lineWidth } ] ]
+                        pages: 0,
+                        zoom: .5
                     };
                 },
 
@@ -57,19 +82,32 @@
                 {
                     async loadDocument(doc_id)
                     {
-                        let doc = await axios.get(`/api/v1/documents/${doc_id}`);
-                        this.doc = doc.data;
+                        let doc = await axios.get(`/api/v1/documents/${doc_id}/preview`);
+                        this._id = doc_id;
+                        this.annotations_supported = doc.data.annotations_supported;
+                        this.annotations = doc.data.annotations ?? [];
+                        this.pages = doc.data.pages;
                         this.$forceUpdate();
-                    },
-
-                    isPdf()
-                    {
-                        return this.doc?.mime_type === 'application/pdf';
                     },
 
                     downloadDocument()
                     {
-                        self.location = `/api/v1/documents/${this.doc?._id}/binary`;
+                        self.location = `/api/v1/documents/${this._id}/binary`;
+                    },
+
+                    pagePreviewSrc(page)
+                    {
+                        return `/api/v1/documents/${this._id}/preview/pages/${page}`;
+                    },
+
+                    adaptZoomLevel(change)
+                    {
+                        this.zoom += change;
+                    },
+
+                    chooseTool(tool)
+                    {
+                        // TODO
                     }
                 }
             }).mount("main");
