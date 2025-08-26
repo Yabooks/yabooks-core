@@ -1,5 +1,6 @@
 const { Document, DocumentLink } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
 const fs = require("node:fs").promises, sqlite = require("sqlite"), sqlite3 = require("sqlite3");
+const pdfjsLib = require("pdfjs-dist"), { createCanvas } = require("canvas"), { PDFDocument, PDFArray, PDFName } = require("pdf-lib");
 
 module.exports = function(api)
 {
@@ -141,6 +142,151 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    api.get("/api/v1/documents/:id/preview", async (req, res, next) =>
+    {
+        try
+        {
+            const doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+
+            if(!doc)
+                res.status(404).send({ error: "not found" });
+                
+            else if(doc.mime_type == "application/pdf")
+            {
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)) }).promise;
+
+                const annotations = [];
+                for(let page = 1; page <= pdf.numPages; ++page)
+                {
+                    const pageAnnotations = [];
+
+                    for(let annotation of ((await (await pdf.getPage(page)).getAnnotations())
+                            .filter(annotation => annotation.subtype == "Ink")))
+                        for(let inkList of annotation.inkLists)
+                            pageAnnotations.push({
+                                color: [ ...annotation.color ],
+                                points: inkList, // [ {x,y} ]
+                                opacity: annotation.opacity ?? 1,
+                                lineWidth: annotation.borderStyle?.width ?? 1
+                            });
+                    
+                    annotations.push(pageAnnotations);
+                }
+
+                res.json({ annotations_supported: true, pages: pdf.numPages, annotations });
+            }
+
+            else if(typeof doc.mime_type == "string" && doc.mime_type.indexOf("image/") === 0)
+                res.json({ annotations_supported: false, pages: 1 });
+            
+            else
+                res.json({ annotations_supported: false, pages: 0 });
+                
+        }
+        catch(x) { next(x) }
+    });
+
+    api.get("/api/v1/documents/:id/preview/pages/:page", async (req, res, next) =>
+    {
+        try
+        {
+            const doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+
+            if(!doc)
+                res.status(404).send({ error: "not found" });
+            
+            // render PDF document page to image preview
+            if(doc.mime_type == "application/pdf")
+            {
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)) }).promise;
+
+                if(isNaN(req.params.page) || req.params.page < 1 || req.params.page > pdf.numPages)
+                    res.status(404).send({ error: "page not found" });
+
+                else
+                {
+                    const page = await pdf.getPage(parseInt(req.params.page));
+                    const viewport = page.getViewport({ scale: 2.0 });
+
+                    const canvas = createCanvas(viewport.width, viewport.height);
+                    const context = canvas.getContext("2d");
+                    await page.render({ canvasContext: context, viewport }).promise;
+
+                    res.set("content-type", "image/png").send(canvas.toBuffer("image/png"));
+                }
+            }
+
+            // image preview is the image itself
+            else if(typeof doc.mime_type == "string" && doc.mime_type.indexOf("image/") === 0 && req.params.page == 1)
+                res.set("content-type", doc.mime_type).send(await Document.readCurrentVersion(doc._id));
+            
+            else
+                res.status(404).send({ error: "page not found" });
+        }
+        catch(x) { next(x) }
+    });
+
+    api.put("/api/v1/documents/:id/annotations", async (req, res, next) =>
+    {
+        try
+        {
+            const doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+
+            if(!doc)
+                res.status(404).send({ error: "not found" });
+                
+            else if(doc.mime_type != "application/pdf")
+                res.status(406).json({ error: `saving annotations not supported for documents of type ${doc.mime_type}` });
+
+            else
+            {
+                const pdf = await PDFDocument.load(new Uint8Array(await Document.readCurrentVersion(doc._id)));
+
+                for(let i = 0; i < Math.min(pdf.getPageCount(), req.body.length); ++i) // pages
+                {
+                    const page = pdf.getPage(i);
+                    let annotations = /*page.node.get("Annots")?.array ||*/ []; // overwrite existing annotations
+
+                    for(const stroke of req.body[i])
+                    {
+                        if(!stroke.points || stroke.points.length < 2)
+                            continue;
+
+                        const xs = stroke.points.map(point => point.x);
+                        const ys = stroke.points.map(point => point.y);
+
+                        const annotation = pdf.context.obj(
+                        {
+                            Type: "Annot",
+                            Subtype: "Ink",
+                            Rect: [
+                                Math.min(...xs),
+                                Math.min(...ys),
+                                Math.max(...xs),
+                                Math.max(...ys)
+                            ],
+                            InkList: [ stroke.points.flatMap(point => [ point.x, point.y ]) ],
+                            C: stroke.color.map(val => val / 255),
+                            CA: stroke.opacity,
+                            Border: [ 0, 0, stroke.lineWidth ]
+                        });
+
+                        annotations.push(pdf.context.register(annotation));
+                    }
+
+                    const pdfArray = PDFArray.withContext(pdf.context);
+                    annotations.forEach(ref => pdfArray.push(ref));
+                    page.node.set(PDFName.of("Annots"), pdfArray);
+                }
+
+                await Document.overwriteCurrentVersion(doc._id, await pdf.save());
+                res.status(204).send();
+            }
+
+        }
+        catch(x) { next(x) }
+    });
+
     api.delete("/api/v1/documents/:id", async (req, res, next) =>
     {
         try
@@ -217,68 +363,6 @@ module.exports = function(api)
         catch(x)
         {
             res.status(400).json({ success: false, error: x?.response?.data || x?.message || x });
-        }
-    });
-
-    api.post("/api/v1/documents/:id/pdf-annotations", /* upload.single('pdf'), */ async (req, res, next) =>
-    {
-        // TODO npm install express body-parser multer pdf-lib
-
-        const express = require('express');
-        const multer = require('multer');
-        const { PDFDocument, rgb } = require('pdf-lib');
-        const fs = require('fs');
-
-        const hexToRgb = (hex) =>
-        {
-            const bigint = parseInt(hex.replace('#', ''), 16);
-            const r = ((bigint >> 16) & 255) / 255;
-            const g = ((bigint >> 8) & 255) / 255;
-            const b = (bigint & 255) / 255;
-            return [ r, g, b ];
-        };
-        
-        try
-        {/*
-            // Get the uploaded PDF and annotation data
-            const pdfBuffer = req.file.buffer; // PDF file
-            const annotations = JSON.parse(req.body.annotations); // Annotation data (paths, colors, etc.)
-
-            // Load the PDF document
-            const pdfDoc = await PDFDocument.load(pdfBuffer);
-
-            // Process each page's annotations
-            annotations.forEach(async (pageAnnotations, pageIndex) =>
-            {
-                const page = pdfDoc.getPage(pageIndex);
-                pageAnnotations.forEach(annotation =>
-                {
-                    const { paths, color, width } = annotation;
-                    paths.forEach(path =>
-                    {
-                        const { startX, startY, endX, endY } = path;
-                        page.drawLine(
-                        {
-                            start: { x: startX, y: page.getHeight() - startY }, // Flip Y-axis for PDF-lib
-                            end: { x: endX, y: page.getHeight() - endY },
-                            thickness: width,
-                            color: rgb(...hexToRgb(color)),
-                        });
-                    });
-                });
-            });
-
-            // Save the updated PDF
-            const updatedPdf = await pdfDoc.save();
-
-            // Respond with the updated PDF
-            res.setHeader('Content-Type', 'application/pdf');
-            res.send(updatedPdf);
-        */}
-        catch(error)
-        {
-            console.error('Error saving annotations:', error);
-            res.status(500).json({ error: 'Failed to save annotations to PDF' });
         }
     });
 
