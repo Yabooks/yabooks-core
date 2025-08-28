@@ -1,162 +1,44 @@
 <!DOCTYPE HTML>
 <html lang="en">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document Editor</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
-        <title>PDF Preview</title>
-        <style>
-            body {
-                margin: 0;
-                font-family: Arial, sans-serif;
-                background: #f2f2f2;
-            }
-
-            main {
-                padding-bottom: 70px; /* space for toolbar */
-            }
-
-            #preview {
-                width: 100%;
-                text-align: center;
-                margin-top: 20px;
-            }
-
-            #preview .scaled {
-                display: inline-block;
-                transform-origin: top center;
-            }
-
-            .page {
-                display: block;
-                margin: 20px auto;
-                max-width: 90%;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                border-radius: 8px;
-                background: white;
-            }
-
-            #toolbar {
-                position: fixed;
-                bottom: 10px;
-                left: 50%;
-                transform: translateX(-50%);
-                display: flex;
-                gap: 10px;
-                padding: 5px 15px;
-                height: 50px;
-                background: rgba(50,50,50,0.9);
-                border-radius: 25px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                align-items: center;
-                z-index: 1000;
-            }
-
-            .toolButton {
-                background: #ffffff20;
-                border: none;
-                padding: 10px 15px;
-                border-radius: 15px;
-                color: white;
-                font-size: 18px;
-                cursor: pointer;
-                transition: background 0.2s, transform 0.2s;
-            }
-
-            .toolButton:hover {
-                background: #ffffff40;
-                transform: scale(1.1);
-            }
-
-            .toolButton:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
-        </style>
+        <script type="text/javascript" src="../components/page.js"></script>
     </head>
     <body>
         <main>
             <div id="preview">
                 <div class="scaled" :style="{ transform: `scale(${zoom})` }">
-                    <template class="page" v-for="page in pages" :key="page">
-                        <img :src="pagePreviewSrc(page)" class="page" />
+                    <template v-for="page in pages" :key="page">
+                        <Page :image="pagePreviewSrc(page)"
+                            :annotations="annotations[page-1]"
+                            :annotations-supported="annotations_supported"
+                            :tool="tool" @change="saveAnnotations"></Page>
                     </template>
                 </div>
             </div>
-
             <div id="toolbar">
                 <button class="toolButton" @click="chooseTool('pencil')" title="Draw">
-                    ✏️
+                    &#x270F;&#xFE0F;
                 </button>
                 <button class="toolButton" @click="chooseTool('eraser')" title="Erase">
-                    🗑️
+                    &#x1F5D1;&#xFE0F;
                 </button>
                 <button class="toolButton" @click="adaptZoomLevel(-0.1)" :disabled="zoom <= 0.2" title="Zoom Out">
-                    ➖
+                    &#x2796;
                 </button>
                 <button class="toolButton" @click="adaptZoomLevel(0.1)" :disabled="zoom > 1.5" title="Zoom In">
-                    ➕
+                    &#x2795;
                 </button>
                 <button class="toolButton" @click="downloadDocument()" title="Download PDF">
-                    📩
+                    &#x1F4E9;
                 </button>
             </div>
         </main>
-
-        <script type="text/javascript">
-            Vue.createApp({
-                mounted() {
-                    const reqParams = new URLSearchParams(self.location.search);
-
-                    if(reqParams.get("doc_id"))
-                        this.loadDocument(reqParams.get("doc_id"));
-
-                    if(reqParams.get("transparent"))
-                        this.transparent = true;
-
-                    if(reqParams.get("websocket"))
-                        ; // TODO
-                },
-
-                data() {
-                    return {
-                        _id: null,
-                        annotations_supported: false,
-                        annotations: [],
-                        pages: 0,
-                        zoom: 0.5,
-                        transparent: false
-                    };
-                },
-
-                methods: {
-                    async loadDocument(doc_id) {
-                        let doc = await axios.get(`/api/v1/documents/${doc_id}/preview`);
-                        this._id = doc_id;
-                        this.annotations_supported = doc.data.annotations_supported;
-                        this.annotations = doc.data.annotations ?? [];
-                        this.pages = doc.data.pages;
-                        this.$forceUpdate();
-                    },
-
-                    downloadDocument() {
-                        self.location = `/api/v1/documents/${this._id}/binary`;
-                    },
-
-                    pagePreviewSrc(page) {
-                        return `/api/v1/documents/${this._id}/preview/pages/${page}`;
-                    },
-
-                    adaptZoomLevel(change) {
-                        this.zoom = Math.min(Math.max(this.zoom + change, 0.2), 1.5);
-                    },
-
-                    chooseTool(tool) {
-                        // TODO: implement tool selection
-                    }
-                }
-            }).mount("main");
-        </script>
+        <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

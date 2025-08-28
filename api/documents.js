@@ -156,12 +156,12 @@ module.exports = function(api)
                 const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)) }).promise;
 
                 const annotations = [];
-                for(let page = 1; page <= pdf.numPages; ++page)
+                for(let i = 1; i <= pdf.numPages; ++i)
                 {
-                    const pageAnnotations = [];
+                    const page = await pdf.getPage(i), pageAnnotations = [];
 
-                    for(let annotation of ((await (await pdf.getPage(page)).getAnnotations())
-                            .filter(annotation => annotation.subtype == "Ink")))
+                    for(let annotation of (await page.getAnnotations())
+                            .filter(annotation => annotation.subtype == "Ink"))
                         for(let inkList of annotation.inkLists)
                             pageAnnotations.push({
                                 color: [ ...annotation.color ],
@@ -173,7 +173,11 @@ module.exports = function(api)
                     annotations.push(pageAnnotations);
                 }
 
-                res.json({ annotations_supported: true, pages: pdf.numPages, annotations });
+                res.json({
+                    annotations_supported: true,
+                    pages: pdf.numPages,
+                    annotations
+                });
             }
 
             else if(typeof doc.mime_type == "string" && doc.mime_type.indexOf("image/") === 0)
@@ -210,7 +214,19 @@ module.exports = function(api)
 
                     const canvas = createCanvas(viewport.width, viewport.height);
                     const context = canvas.getContext("2d");
-                    await page.render({ canvasContext: context, viewport }).promise;
+
+                    let renderOptions = {
+                        viewport,
+                        canvasContext: context,
+                    };
+
+                    if(req.query.annotations == "false" || req.query.annotations === false)
+                    {
+                        renderOptions.annotationMode = pdfjsLib.AnnotationMode.DISABLE;
+                        renderOptions.renderInteractiveForms = false;
+                    }
+
+                    await page.render(renderOptions).promise;
 
                     res.set("content-type", "image/png").send(canvas.toBuffer("image/png"));
                 }
