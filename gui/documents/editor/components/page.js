@@ -11,7 +11,7 @@ const Page = (
     template: `
         <span class="page">
             <img :src="image" ref="img" />
-            <canvas ref="canvas"
+            <canvas v-if="annotationsSupported" ref="canvas"
                 @pointerdown="onPointerDown"
                 @pointermove="onPointerMove"
                 @pointerup="onPointerUp"
@@ -55,7 +55,7 @@ const Page = (
                     return;
 
                 context.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
-                context.lineWidth = lineWidth;
+                context.lineWidth = lineWidth * 2;
                 context.lineCap = "round";
 
                 context.beginPath();
@@ -118,7 +118,7 @@ const Page = (
                 return;
 
             context.strokeStyle = `rgba(${this.tool.color.join(",")}, ${this.tool.opacity})`;
-            context.lineWidth = this.tool.lineWidth;
+            context.lineWidth = this.tool.lineWidth * 2;
             context.lineCap = 'round';
 
             context.beginPath();

@@ -22,10 +22,22 @@
                 </div>
             </div>
             <div id="toolbar">
-                <button class="toolButton" @click="chooseTool('pencil')" title="Draw">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('pencil')" title="Draw">
                     &#x270F;&#xFE0F;
                 </button>
-                <button class="toolButton" @click="chooseTool('eraser')" title="Erase">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('pen')" title="Draw">
+                    &#x1F58A;&#xFE0F;
+                </button>
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('fountain-pen')" title="Draw">
+                    &#x1F58B;&#xFE0F;
+                </button>
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('paintbrush')" title="Draw">
+                    &#x1F58C;&#xFE0F;
+                </button>
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('crayon')" title="Draw">
+                    &#x1F58D;&#xFE0F;
+                </button>
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('eraser')" title="Erase">
                     &#x1F5D1;&#xFE0F;
                 </button>
                 <button class="toolButton" @click="adaptZoomLevel(-0.1)" :disabled="zoom <= 0.2" title="Zoom Out">
@@ -33,6 +45,9 @@
                 </button>
                 <button class="toolButton" @click="adaptZoomLevel(0.1)" :disabled="zoom > 1.5" title="Zoom In">
                     &#x2795;
+                </button>
+                <button class="toolButton" @click="useSecondScreen()" title="Open on tablet">
+                    &#x1F4F2;
                 </button>
                 <button class="toolButton" @click="downloadDocument()" title="Download PDF">
                     &#x1F4E9;

@@ -221,10 +221,7 @@ module.exports = function(api)
                     };
 
                     if(req.query.annotations == "false" || req.query.annotations === false)
-                    {
                         renderOptions.annotationMode = pdfjsLib.AnnotationMode.DISABLE;
-                        renderOptions.renderInteractiveForms = false;
-                    }
 
                     await page.render(renderOptions).promise;
 

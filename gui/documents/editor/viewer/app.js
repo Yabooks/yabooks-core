@@ -63,12 +63,43 @@ Vue.createApp(
 
         chooseTool(tool)
         {
-            // TODO: implement tool selection
+            if(tool == "pencil")
+                this.tool = { color: [ 100, 100, 100 ], opacity: 1, lineWidth: 1 };
+
+            if(tool == "pen")
+                this.tool = { color: [ 0, 0, 255 ], opacity: 1, lineWidth: 2 };
+            
+            if(tool == "fountain-pen")
+                this.tool = { color: [ 0, 0, 100 ], opacity: 1, lineWidth: 4 };
+            
+            if(tool == "paintbrush")
+                this.tool = { color: [ 255, 0, 0 ], opacity: .8, lineWidth: 8 };
+            
+            if(tool == "crayon")
+                this.tool = { color: [ 255, 255, 0 ], opacity: .4, lineWidth: 16 };
+            
+            if(tool == "eraser")
+                this.tool = null; // TODO
+        },
+
+        useSecondScreen()
+        {
+            // TODO
         },
 
         async saveAnnotations()
         {
-            await axios.put(`/api/v1/documents/${this._id}/annotations`, this.annotations);
+            try
+            {
+                await axios.put(`/api/v1/documents/${this._id}/annotations`, this.annotations);
+            }
+            catch(x)
+            {
+                console.error(x);
+                
+                this.annotations_supported = false;
+                this.$forceUpdate();
+            }
         }
     }
 }).mount("main");
