@@ -1,20 +1,8 @@
+/* global loadSession, sleep */
+
 Vue.createApp(
 {
     components: { Page },
-
-    mounted()
-    {
-        const reqParams = new URLSearchParams(self.location.search);
-
-        if(reqParams.get("doc_id"))
-            this.loadDocument(reqParams.get("doc_id"));
-
-        if(reqParams.get("transparent"))
-            ; // TODO
-
-        if(reqParams.get("websocket"))
-            ; // TODO
-    },
 
     data()
     {
@@ -24,8 +12,29 @@ Vue.createApp(
             annotations: [],
             pages: 0,
             zoom: 0.5,
+            isSecondScreen: false,
+            isPreparingSecondScreen: false,
             tool: { color: [ 255, 255, 0 ], opacity: .5, lineWidth: 10 }
         };
+    },
+
+    mounted()
+    {
+        const reqParams = new URLSearchParams(self.location.search);
+
+        if(reqParams.get("second_screen"))
+        {
+            this.isSecondScreen = true;
+            document.cookie = `user_token=${reqParams.get("auth")}; path=/`;
+
+            document.title = "YaBooks Second Screen";
+            document.body.style.background = "#f2f2f2";
+
+            // TODO connect websocket and consume incoming app notifications
+        }
+
+        if(reqParams.get("doc_id"))
+            this.loadDocument(reqParams.get("doc_id"));
     },
 
     methods:
@@ -82,9 +91,42 @@ Vue.createApp(
                 this.tool = null; // TODO
         },
 
-        useSecondScreen()
+        async useSecondScreen()
         {
-            // TODO
+            try
+            {
+                this.isPreparingSecondScreen = true;
+                this.$forceUpdate();
+
+                const session = await loadSession();
+
+                // send app notification to second screen about which document should be opened in editor
+                let notification = await axios.post("/api/v1/notifications?optical_code=true", {
+                    link: `${self.location.href}&second_screen=true&auth=${encodeURIComponent(session.user_token)}`, // TODO security
+                    title: "open second screen",
+                    type: "app_notification",
+                    user: session.user
+                });
+
+                const optical_code = notification.data.optical_code;
+
+                // wait for three seconds
+                await sleep(3000);
+
+                // check if notification was consumed by an active second screen
+                notification = await axios.get(`/api/v1/notifications/${notification.data._id}`);
+                if(!notification.data.read)
+                    parent.parent.document.app.openModal(optical_code);
+            }
+            catch(x)
+            {
+                console.error(x);
+            }
+            finally
+            {
+                this.isPreparingSecondScreen = false;
+                this.$forceUpdate();
+            }
         },
 
         async saveAnnotations()
@@ -96,7 +138,7 @@ Vue.createApp(
             catch(x)
             {
                 console.error(x);
-                
+
                 this.annotations_supported = false;
                 this.$forceUpdate();
             }

@@ -55,6 +55,11 @@ const beep = () => // play a sound to gain the user's attention
     catch(x) {}
 };
 
+const sleep = (delay) =>
+{
+    return new Promise(resolve => setTimeout(resolve, delay));
+};
+
 const filters = (
 {
     absolute: (number) =>

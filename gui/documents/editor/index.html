@@ -33,7 +33,7 @@
                     <label>Save</label>
                 </button>
             </nav>
-            <iframe v-if="doc._id" :src="`viewer/?transparent=true&doc_id=${doc._id}`" id="preview"></iframe>
+            <iframe v-if="doc._id" :src="`viewer/?doc_id=${doc._id}`" id="preview"></iframe>
             <div id="tabs">
                 <div class="tab" v-if="tab === 'general'">
                     <general-tab :doc="doc"></general-tab>

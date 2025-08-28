@@ -1,4 +1,6 @@
-const { Notification } = require("../models/notification.js"), { Session } = require("../models/user.js"), { Logger } = require("../services/logger.js");
+const { Notification } = require("../models/notification.js");
+const { Session } = require("../models/user.js"), { Logger } = require("../services/logger.js");
+const QRCode = require("qrcode");
 
 const listeners = {};
 
@@ -35,13 +37,19 @@ module.exports = function(api)
             let msg = new Notification(req.body);
             await msg.validate();
             await msg.save();
-            res.send(msg);
+
+            // provide option to generate an optical code for the link
+            if(req.query.optical_code && msg.link)
+                res.json({ ...msg.toJSON(), optical_code: await QRCode.toDataURL(msg.link) });
+
+            // send notification object back to client
+            else res.json(msg);
 
             // notify all registered listeners of receiver
             if(listeners[req.body.user] && (!req.query.type || req.query.type == msg.type))
                 for(let ws of listeners[req.body.user])
                     if(ws.readyState == 1) // connected and open
-                        ws.send(JSON.stringify({ id: msg._id, title: msg.title, link: msg.link }));
+                        ws.send(JSON.stringify(msg));
                     else ;// TODO remove listener
 
             await Logger.logRecordCreated("notification", msg);

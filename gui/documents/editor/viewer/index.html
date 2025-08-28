@@ -3,10 +3,12 @@
     <head>
         <title>Document Editor</title>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
         <script type="text/javascript" src="../components/page.js"></script>
     </head>
     <body>
@@ -46,8 +48,13 @@
                 <button class="toolButton" @click="adaptZoomLevel(0.1)" :disabled="zoom > 1.5" title="Zoom In">
                     &#x2795;
                 </button>
-                <button class="toolButton" @click="useSecondScreen()" title="Open on tablet">
-                    &#x1F4F2;
+                <button class="toolButton" v-if="!isSecondScreen" :disabled="isPreparingSecondScreen" @click="useSecondScreen()" title="Open on tablet">
+                    <template v-if="isPreparingSecondScreen">
+                        &#x23F3;
+                    </template>
+                    <template v-else>
+                        &#x1F4F2;
+                    </template>
                 </button>
                 <button class="toolButton" @click="downloadDocument()" title="Download PDF">
                     &#x1F4E9;

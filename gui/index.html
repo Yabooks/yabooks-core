@@ -98,6 +98,12 @@
                         notifier.onclose = (_) => setTimeout(this.reconnectWebsocket, 1000);
                         notifier.onmessage = async (event) =>
                         {
+                            const msg = JSON.parse(event.data);
+
+                            // do not notify about app notifications as they are not meant to be handled by the user
+                            if(msg.type == "app_notification")
+                                return;
+
                             // count up badge and check if user is still logged in
                             ++this.notifications;
                             this.updateSessionData();
@@ -108,7 +114,6 @@
                             // show system notification if supported
                             if("Notification" in window && Notification.permission === "granted")
                             {
-                                let msg = JSON.parse(event.data);
                                 let notification = new Notification(msg.title);
                                 notification.onclick = (_) => self.location = msg.link;
                             }
