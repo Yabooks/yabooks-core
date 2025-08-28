@@ -4,6 +4,7 @@
         <title>Document Editor</title>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="icon" type="image/png" href="/_generic/icon.png"/>
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
@@ -14,13 +15,17 @@
     <body>
         <main>
             <div id="preview">
-                <div class="scaled" :style="{ transform: `scale(${zoom})` }">
+                <div v-if="pages > 0" class="scaled" :style="{ transform: `scale(${zoom})` }">
                     <template v-for="page in pages" :key="page">
                         <Page :image="pagePreviewSrc(page)"
                             :annotations="annotations[page-1]"
                             :annotations-supported="annotations_supported"
                             :tool="tool" @change="saveAnnotations"></Page>
                     </template>
+                </div>
+                <div v-if="pages == 0">
+                    <img :src="thumbnailSrc()" style="max-width: 25%; max-height: 50%">
+                    <h3>{{ file_name }}</h3>
                 </div>
             </div>
             <div id="toolbar">
@@ -42,10 +47,10 @@
                 <button class="toolButton" v-if="annotations_supported" @click="chooseTool('eraser')" title="Erase">
                     &#x1F5D1;&#xFE0F;
                 </button>
-                <button class="toolButton" @click="adaptZoomLevel(-0.1)" :disabled="zoom <= 0.2" title="Zoom Out">
+                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(-0.1)" :disabled="zoom <= 0.2" title="Zoom Out">
                     &#x2796;
                 </button>
-                <button class="toolButton" @click="adaptZoomLevel(0.1)" :disabled="zoom > 1.5" title="Zoom In">
+                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(0.1)" :disabled="zoom > 1.5" title="Zoom In">
                     &#x2795;
                 </button>
                 <button class="toolButton" v-if="!isSecondScreen" :disabled="isPreparingSecondScreen" @click="useSecondScreen()" title="Open on tablet">

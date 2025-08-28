@@ -146,7 +146,7 @@ module.exports = function(api)
     {
         try
         {
-            const doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+            const doc = await Document.findOne({ _id: req.params.id }, [ "name", "mime_type" ]);
 
             if(!doc)
                 res.status(404).send({ error: "not found" });
@@ -174,6 +174,8 @@ module.exports = function(api)
                 }
 
                 res.json({
+                    name: doc.name,
+                    mime_type: doc.mime_type,
                     annotations_supported: true,
                     pages: pdf.numPages,
                     annotations

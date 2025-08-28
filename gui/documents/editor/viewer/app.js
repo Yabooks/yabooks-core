@@ -8,6 +8,7 @@ Vue.createApp(
     {
         return {
             _id: null,
+            file_name: "",
             annotations_supported: false,
             annotations: [],
             pages: 0,
@@ -42,7 +43,9 @@ Vue.createApp(
         async loadDocument(doc_id)
         {
             let doc = await axios.get(`/api/v1/documents/${doc_id}/preview`);
+
             this._id = doc_id;
+            this.file_name = doc.data.name ?? doc.data.mime_type ?? "no preview available";
             this.annotations_supported = doc.data.annotations_supported;
             this.annotations = doc.data.annotations ?? [];
             this.pages = doc.data.pages;
@@ -63,6 +66,11 @@ Vue.createApp(
         pagePreviewSrc(page)
         {
             return `/api/v1/documents/${this._id}/preview/pages/${page}?annotations=false`;
+        },
+
+        thumbnailSrc()
+        {
+            return `/api/v1/documents/${this._id}/thumbnail`;
         },
 
         adaptZoomLevel(change)
