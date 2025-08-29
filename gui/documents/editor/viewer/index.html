@@ -15,15 +15,16 @@
     <body>
         <main>
             <div id="preview">
-                <div v-if="pages > 0" class="scaled" :style="{ transform: `scale(${zoom})` }">
+                <template v-if="pages > 0">
                     <template v-for="page in pages" :key="page">
                         <Page :image="pagePreviewSrc(page)"
+                            :scale="scale" :zoom="zoom"
                             :annotations="annotations[page-1]"
                             :annotations-supported="annotations_supported"
                             :tool="tool" @change="saveAnnotations"></Page>
                     </template>
-                </div>
-                <div v-if="pages == 0">
+                </template>
+                <div v-if="pages === 0">
                     <img :src="thumbnailSrc()" style="max-width: 25%; max-height: 50%">
                     <h3>{{ file_name }}</h3>
                 </div>
@@ -47,13 +48,14 @@
                 <button class="toolButton" v-if="annotations_supported" @click="chooseTool('eraser')" title="Erase">
                     &#x1F5D1;&#xFE0F;
                 </button>
-                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(-0.1)" :disabled="zoom <= 0.2" title="Zoom Out">
+                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(-.1)" :disabled="zoom <= .01" title="Zoom Out">
                     &#x2796;
                 </button>
-                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(0.1)" :disabled="zoom > 1.5" title="Zoom In">
+                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(+.1)" :disabled="zoom > 5" title="Zoom In">
                     &#x2795;
                 </button>
-                <button class="toolButton" v-if="!isSecondScreen" :disabled="isPreparingSecondScreen" @click="useSecondScreen()" title="Open on tablet">
+                <button class="toolButton" v-if="!isSecondScreen" @click="useSecondScreen()"
+                        :disabled="isPreparingSecondScreen" title="Open on tablet">
                     <template v-if="isPreparingSecondScreen">
                         &#x23F3;
                     </template>

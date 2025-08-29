@@ -11,8 +11,9 @@ Vue.createApp(
             file_name: "",
             annotations_supported: false,
             annotations: [],
-            pages: 0,
+            pages: null,
             zoom: 0.5,
+            scale: 2.0,
             isSecondScreen: false,
             isPreparingSecondScreen: false,
             tool: { color: [ 255, 255, 0 ], opacity: .5, lineWidth: 10 }
@@ -73,11 +74,6 @@ Vue.createApp(
             return `/api/v1/documents/${this._id}/thumbnail`;
         },
 
-        adaptZoomLevel(change)
-        {
-            this.zoom = Math.min(Math.max(this.zoom + change, 0.2), 1.5);
-        },
-
         chooseTool(tool)
         {
             if(tool == "pencil")
@@ -97,6 +93,11 @@ Vue.createApp(
             
             if(tool == "eraser")
                 this.tool = null; // TODO
+        },
+
+        adaptZoomLevel(change)
+        {
+            this.zoom *= (1 + change);
         },
 
         async useSecondScreen()

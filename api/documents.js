@@ -212,7 +212,7 @@ module.exports = function(api)
                 else
                 {
                     const page = await pdf.getPage(parseInt(req.params.page));
-                    const viewport = page.getViewport({ scale: 2.0 });
+                    const viewport = page.getViewport({ scale: parseFloat(req.query.scale ?? 2.0) });
 
                     const canvas = createCanvas(viewport.width, viewport.height);
                     const context = canvas.getContext("2d");

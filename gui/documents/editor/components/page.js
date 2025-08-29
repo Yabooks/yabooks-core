@@ -2,6 +2,8 @@ const Page = (
 {
     props:
     {
+        zoom: .5,
+        scale: 2.0,
         image: null,
         annotations: [],
         annotationsSupported: true,
@@ -9,15 +11,15 @@ const Page = (
     },
 
     template: `
-        <span class="page">
-            <img :src="image" ref="img" />
+        <div class="page" :style="{ ...getZoomedSize() }">
+            <img v-if="image" :src="image" ref="img" />
             <canvas v-if="annotationsSupported" ref="canvas"
                 @pointerdown="onPointerDown"
                 @pointermove="onPointerMove"
                 @pointerup="onPointerUp"
                 @pointercancel="onPointerUp"
                 @pointerout="onPointerUp"></canvas>
-        </span>
+        </div>
     `,
 
     data: () => (
@@ -36,11 +38,23 @@ const Page = (
             this.ctx = this.canvas.getContext("2d");
 
             this.drawAllAnnotations();
+            this.$forceUpdate();
         };
     },
 
     methods:
     {
+        getZoomedSize()
+        {
+            if(this.canvas)
+                return {
+                    width: parseInt(this.canvas.width * this.zoom) + "px",
+                    height: parseInt(this.canvas.height * this.zoom) + "px"
+                };
+            
+            else return {};
+        },
+
         drawAllAnnotations()
         {
             const context = this.ctx;
@@ -55,14 +69,14 @@ const Page = (
                     return;
 
                 context.strokeStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
-                context.lineWidth = lineWidth * 2;
+                context.lineWidth = lineWidth * this.scale;
                 context.lineCap = "round";
 
                 context.beginPath();
-                context.moveTo(points[0].x * 2, points[0].y * 2);
+                context.moveTo(points[0].x * this.scale, points[0].y * this.scale);
 
                 for(let i = 1; i < points.length; i++)
-                    context.lineTo(points[i].x * 2, points[i].y * 2);
+                    context.lineTo(points[i].x * this.scale, points[i].y * this.scale);
 
                 context.stroke();
             });
@@ -74,7 +88,7 @@ const Page = (
                 return;
 
             this.isDrawing = true;
-            this.currentPoints.value = [ { x: e.offsetX / 2, y: e.offsetY / 2 } ];
+            this.currentPoints.value = [ { x: e.offsetX / this.scale / this.zoom, y: e.offsetY / this.scale / this.zoom } ];
         },
 
         onPointerMove(e)
@@ -82,7 +96,7 @@ const Page = (
             if(!this.annotationsSupported || !this.isDrawing || !['mouse', 'pen'].includes(e.pointerType))
                 return;
 
-            this.currentPoints.push({ x: e.offsetX / 2, y: e.offsetY / 2 });
+            this.currentPoints.push({ x: e.offsetX / this.scale / this.zoom, y: e.offsetY / this.scale / this.zoom });
             this.drawTempLine(this.currentPoints);
         },
 
@@ -118,14 +132,14 @@ const Page = (
                 return;
 
             context.strokeStyle = `rgba(${this.tool.color.join(",")}, ${this.tool.opacity})`;
-            context.lineWidth = this.tool.lineWidth * 2;
+            context.lineWidth = this.tool.lineWidth * this.scale;
             context.lineCap = 'round';
 
             context.beginPath();
-            context.moveTo(points[0].x * 2, points[0].y * 2);
+            context.moveTo(points[0].x * this.scale, points[0].y * this.scale);
 
             for(let i = 1; i < points.length; i++)
-                context.lineTo(points[i].x * 2, points[i].y * 2);
+                context.lineTo(points[i].x * this.scale, points[i].y * this.scale);
 
             context.stroke();
         },
