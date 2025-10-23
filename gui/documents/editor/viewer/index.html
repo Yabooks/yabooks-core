@@ -15,6 +15,7 @@
     <body>
         <main>
             <div id="preview">
+                <!-- PDF drawing editor -->
                 <template v-if="pages > 0">
                     <template v-for="page in pages" :key="page">
                         <Page :image="pagePreviewSrc(page)"
@@ -24,6 +25,7 @@
                             :tool="tool" @change="saveAnnotations"></Page>
                     </template>
                 </template>
+                <!-- show thumbnail for every other file type -->
                 <div v-if="pages === 0">
                     <img :src="thumbnailSrc()" style="max-width: 25%; max-height: 50%">
                     <h3>{{ file_name }}</h3>
