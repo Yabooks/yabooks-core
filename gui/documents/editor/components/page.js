@@ -1,4 +1,4 @@
-const Page = (
+const Page = ( // PDF drawing editor
 {
     props:
     {
@@ -88,7 +88,11 @@ const Page = (
                 return;
 
             this.isDrawing = true;
-            this.currentPoints.value = [ { x: e.offsetX / this.scale / this.zoom, y: e.offsetY / this.scale / this.zoom } ];
+
+            if(this.tool?.type === "eraser")
+                this.checkAndEraseStroke(e.offsetX / this.scale / this.zoom, e.offsetY / this.scale / this.zoom);
+            else            
+                this.currentPoints.value = [ { x: e.offsetX / this.scale / this.zoom, y: e.offsetY / this.scale / this.zoom } ];
         },
 
         onPointerMove(e)
@@ -96,8 +100,13 @@ const Page = (
             if(!this.annotationsSupported || !this.isDrawing || !['mouse', 'pen'].includes(e.pointerType))
                 return;
 
-            this.currentPoints.push({ x: e.offsetX / this.scale / this.zoom, y: e.offsetY / this.scale / this.zoom });
-            this.drawTempLine(this.currentPoints);
+            if(this.tool?.type === "eraser")
+                this.checkAndEraseStroke(e.offsetX / this.scale / this.zoom, e.offsetY / this.scale / this.zoom);
+            else
+            {
+                this.currentPoints.push({ x: e.offsetX / this.scale / this.zoom, y: e.offsetY / this.scale / this.zoom });
+                this.drawTempLine(this.currentPoints);
+            }
         },
 
         onPointerUp(e)
@@ -107,17 +116,20 @@ const Page = (
 
             this.isDrawing = false;
 
-            this.annotations.push(
+            if(this.tool?.type !== "eraser")
             {
-                points: [ ...this.currentPoints ],
-                color: this.tool.color,
-                opacity: this.tool.opacity,
-                lineWidth: this.tool.lineWidth
-            });
+                this.annotations.push(
+                {
+                    points: [ ...this.currentPoints ],
+                    color: this.tool.color,
+                    opacity: this.tool.opacity,
+                    lineWidth: this.tool.lineWidth
+                });
 
-            this.currentPoints = [];
-            this.drawAllAnnotations();
-            this.saveAnnotations();
+                this.currentPoints = [];
+                this.drawAllAnnotations();
+                this.saveAnnotations();
+            }
         },
 
         drawTempLine(points)
@@ -142,6 +154,63 @@ const Page = (
                 context.lineTo(points[i].x * this.scale, points[i].y * this.scale);
 
             context.stroke();
+        },
+
+        checkAndEraseStroke(x, y)
+        {
+            const distanceToLineSegment = (px, py, x1, y1, x2, y2) =>
+            {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const lengthSquared = dx * dx + dy * dy;
+                
+                if(lengthSquared === 0)
+                    return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+                
+                let t = ((px - x1) * dx + (py - y1) * dy) / lengthSquared;
+                t = Math.max(0, Math.min(1, t));
+                
+                const projX = x1 + t * dx;
+                const projY = y1 + t * dy;
+                
+                return Math.sqrt((px - projX) * (px - projX) + (py - projY) * (py - projY));
+            };
+
+            const eraserRadius = this.tool.lineWidth;
+            let erasedAny = false;
+
+            // Check each annotation from back to front
+            for(let i = this.annotations.length - 1; i >= 0; --i)
+            {
+                const annotation = this.annotations[i];
+                const strokeRadius = annotation.lineWidth / 2;
+                
+                // Check if pointer is near any point in the stroke
+                for(let j = 0; j < annotation.points.length - 1; j++)
+                {
+                    const p1 = annotation.points[j];
+                    const p2 = annotation.points[j + 1];
+                    
+                    // Calculate distance from point to line segment
+                    const dist = distanceToLineSegment(x, y, p1.x, p1.y, p2.x, p2.y);
+                    
+                    if(dist < eraserRadius + strokeRadius)
+                    {
+                        this.annotations.splice(i, 1);
+                        erasedAny = true;
+                        break;
+                    }
+                }
+                
+                if(erasedAny)
+                    break; // Only erase one stroke at a time
+            }
+
+            if(erasedAny)
+            {
+                this.drawAllAnnotations();
+                this.saveAnnotations();
+            }
         },
 
         saveAnnotations()

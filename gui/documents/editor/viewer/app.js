@@ -27,12 +27,12 @@ Vue.createApp(
         if(reqParams.get("second_screen"))
         {
             this.isSecondScreen = true;
-            document.cookie = `user_token=${reqParams.get("auth")}; path=/`;
+            document.cookie = `user_token=${reqParams.get("auth")}; path=/api/v1/documents`;
 
             document.title = "YaBooks Second Screen";
             document.body.style.background = "#f2f2f2";
 
-            // TODO connect websocket and consume incoming app notifications
+            // TODO connect websocket and consume incoming app notifications on tablets
         }
 
         if(reqParams.get("doc_id"))
@@ -92,7 +92,7 @@ Vue.createApp(
                 this.tool = { color: [ 255, 255, 0 ], opacity: .4, lineWidth: 16 };
             
             if(tool == "eraser")
-                this.tool = null; // TODO
+                this.tool = { lineWidth: 1, type: "eraser" };
         },
 
         adaptZoomLevel(change)
