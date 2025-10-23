@@ -31,7 +31,7 @@
                             <option value="expenses">{{ $filters.translate("accounts.types.expenses") }}</option>
                             <option value="oci">{{ $filters.translate("accounts.types.oci") }}</option>
                         </select>
-                        <tag-input v-model="account.tags"></tag-input>
+                        <tags-input v-model="account.tags"></tags-input>
                         <input type="date" placeholder="valid only from" v-model="account.valid_from" />
                         <input type="date" placeholder="valid only until" v-model="account.valid_to" />
                         <span class="buttons">

@@ -1,8 +1,8 @@
-/* global getSelectedBusinessId, filters, StructureItem, TagInput */
+/* global getSelectedBusinessId, filters, StructureItem, TagsInput */
 
 let app = Vue.createApp(
 {
-    components: { StructureItem, TagInput },
+    components: { StructureItem, TagsInput },
 
     data()
     {
