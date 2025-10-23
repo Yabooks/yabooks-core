@@ -310,9 +310,18 @@ Document.readCurrentVersion = async function(id)
 
 Document.archiveCurrentVersion = async function(id, invalidated_by)
 {
-    let version = new DocumentVersion({ document: id, bytes: await Document.readCurrentVersion(id), invalidated_by });
-    await version.save();
-    return version._id;
+    try
+    {
+        let version = new DocumentVersion({ document: id, bytes: await Document.readCurrentVersion(id), invalidated_by });
+        await version.save();
+        return version._id;
+    }
+    catch(x)
+    {
+        if(x.message.includes("no such file"))
+            return null; // no current version exists
+        else throw x;
+    }
 };
 
 Document.overwriteCurrentVersion = async function(id, data)
