@@ -4,6 +4,8 @@
         <link rel="stylesheet" type="text/css" href="style.css" />
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
     </head>
     <body>
         <main>
@@ -15,6 +17,10 @@
                 <button class="menuitem" :class="{ selected: tab === 'general' }" @click="selectTab('general')">
                     <span class="icon">&#x2139;&#xFE0F;</span>
                     <label>General</label>
+                </button>
+                <button class="menuitem" :class="{ selected: tab === 'financial' }" @click="selectTab('financial')">
+                    <span class="icon">&#x1F4B8;</span>
+                    <label>Financial</label>
                 </button>
                 <button class="menuitem" :class="{ selected: tab === 'ledger' }" @click="selectTab('ledger')">
                     <span class="icon">&#x1F4D6;</span>
@@ -38,6 +44,9 @@
                 <div class="tab" v-if="tab === 'general'">
                     <general-tab :doc="doc"></general-tab>
                 </div>
+                <div class="tab" v-if="tab === 'financial'">
+                    <financial-tab :doc="doc"></financial-tab>
+                </div>
                 <div class="tab" v-if="tab === 'ledger'">
                     <ledger-tab :doc="doc"></ledger-tab>
                 </div>
@@ -50,8 +59,10 @@
             </div>
         </main>
         <script type="text/javascript" src="/js/yabooks/searchable-dropdown.js"></script>
-        <script type="text/javascript" src="components/ledger-tx.js"></script>
+        <script type="text/javascript" src="/js/yabooks/currency-input.js"></script>
+        <script type="text/javascript" src="/js/yabooks/tags-input.js"></script>
         <script type="text/javascript" src="tabs/general.js"></script>
+        <script type="text/javascript" src="tabs/financial.js"></script>
         <script type="text/javascript" src="tabs/ledger.js"></script>
         <script type="text/javascript" src="app.js"></script>
     </body>

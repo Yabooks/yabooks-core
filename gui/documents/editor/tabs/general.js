@@ -1,6 +1,10 @@
+/* global TagsInput */
+
 const GeneralTab = (
 {
     props: [ "doc" ],
+
+    components: { TagsInput },
 
     template: `
         <div class="item">
@@ -15,10 +19,6 @@ const GeneralTab = (
                     <td><input type="datetime-local" v-model="doc.date" /></td>
                 </tr>
                 <tr>
-                    <td>External Invoice Number</td>
-                    <td><input type="text" v-model="doc.external_reference" /></td>
-                </tr>
-                <tr>
                     <td>Document Type</td>
                     <td><input type="text" v-model="doc.type" /></td>
                 </tr>
@@ -27,18 +27,27 @@ const GeneralTab = (
                     <td><input type="text" v-model="doc.internal_reference" /></td>
                 </tr>
                 <tr>
-                    <td>Business Partner</td>
-                    <td><business-selector :model="doc.business_partner" /></td>
+                    <td>External Invoice Number</td>
+                    <td><input type="text" v-model="doc.external_reference" /></td>
                 </tr>
                 <tr>
-                    <td>Intra-Company?</td>
-                    <td><input type="checkbox" v-model="doc.intracompany" /></td>
-                </tr>
-                <tr>
-                    <td>Name</td>
+                    <td>Document Name</td>
                     <td><input type="text" v-model="doc.name" /></td>
                 </tr>
-                <!-- TODO -->
+                <tr>
+                    <td>File</td>
+                    <td>
+                        {{ doc.mime_type }}
+                        <button @click="upload">replace</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Link</td>
+                    <td>
+                        <input type="text" v-model="doc.uri" />
+                        <button @click="openUri">open</button>
+                    </td>
+                </tr>
                 <tr>
                     <td>Classification</td>
                     <td>
@@ -51,8 +60,32 @@ const GeneralTab = (
                         </select>
                     </td>
                 </tr>
-                
+                <tr>
+                    <td>Tags</td>
+                    <td><tags-input v-model="doc.tags"></tags-input></td>
+                </tr>
+                <tr>
+                    <td>Business Partner</td>
+                    <td><business-selector :model="doc.business_partner" /></td>
+                </tr>
+                <tr>
+                    <td>Intra-Company?</td>
+                    <td><input type="checkbox" v-model="doc.intracompany" /></td>
+                </tr>
             </table>
         </div>
-    `
+    `,
+
+    methods:
+    {
+        upload()
+        {
+            // TODO
+        },
+
+        openUri()
+        {
+            // TODO
+        }
+    }
 });
