@@ -32,8 +32,8 @@
                             <option value="oci">{{ $filters.translate("accounts.types.oci") }}</option>
                         </select>
                         <tag-input v-model="account.tags"></tag-input>
-                        <input type="date" placeholder="" v-model="account.valid_from" />
-                        <input type="date" placeholder="" v-model="account.valid_to" />
+                        <input type="date" placeholder="valid only from" v-model="account.valid_from" />
+                        <input type="date" placeholder="valid only until" v-model="account.valid_to" />
                         <span class="buttons">
                             <button @click="saveChanges(account)">&#x1F4BE;</button>
                             <button @click="cancelEditing(account)">&#x274C;</button>

@@ -22,7 +22,7 @@ let app = Vue.createApp(
                 .then(this.$forceUpdate);
             
             this.business = await getSelectedBusinessId();
-            if(!business) {
+            if(!this.business) {
                 await loadTranslations({ "code": "home.alerts.select-business" });
                 throw this.$filters.translate("home.alerts.select-business");
             }
