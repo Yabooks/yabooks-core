@@ -96,7 +96,9 @@ const LedgerTab = (
                         <td>
                             <searchable-dropdown v-model:selected="tx.account" value="_id" label="description" :options="accounts" />
                         </td>
-                        <td><input type="text" v-model="text" /></td>
+                        <td>
+                            <input type="text" v-model="tx.text" />
+                        </td>
                         <td><currency-input v-model="tx.amount" currency="EUR" locale="de-AT"></currency-input></td>
                         <td>
                             <tax-code-selector :tax_codes="tax_codes"
