@@ -2,13 +2,13 @@ const LedgerTab = (
 {
     props: [ "doc" ],
 
-    components: { CurrencyInput },
+    components: { CurrencyInput, SearchableDropdown, TaxCodeSelector },
 
     data()
     {
         return {
-            tax_codes: [],
-            tax_code_represenations: []
+            accounts: [],
+            tax_codes: []
         };
     },
 
@@ -16,9 +16,14 @@ const LedgerTab = (
     {
         try
         {
-            // load available tax codes from backend
+            // load available tax codes
             let data = await axios.get("/api/v1/tax-codes");
-            this.tax_codes = data.data;
+            this.tax_codes = data.data.data;
+            this.$forceUpdate();
+
+            // load available ledger accounts
+            data = await axios.get(`/api/v1/businesses/${this.doc.business}/ledger-accounts`);
+            this.accounts = data.data.data.map(account => ({ ...account, description: `${account.display_number} ${account.display_name}` }));
             this.$forceUpdate();
         }
         catch(x)
@@ -88,10 +93,17 @@ const LedgerTab = (
                 </tr>
                 <tr v-for="(tx, i) in (doc?.ledger_transactions || [])">
                     <template v-if="true">
-                        <td><account-selector v-model="tx.account" /></td>
+                        <td>
+                            <searchable-dropdown v-model:selected="tx.account" value="_id" label="description" :options="accounts" />
+                        </td>
                         <td><input type="text" v-model="text" /></td>
                         <td><currency-input v-model="tx.amount" currency="EUR" locale="de-AT"></currency-input></td>
-                        <td><tax-code-selector /></td>
+                        <td>
+                            <tax-code-selector :tax_codes="tax_codes"
+                                v-model:tax_code="tx.tax_code" v-model:tax_code_base="tx.tax_code_base"
+                                v-model:tax_sub_code="tx.tax_sub_code" v-model:tax_sub_code_base="tx.tax_sub_code_base"
+                                v-model:tax_percent="tx.tax_percent" />
+                        </td>
                         <td>
                             <button disabled @click="more(i)">
                                 &mldr;
