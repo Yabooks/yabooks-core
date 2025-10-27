@@ -33,12 +33,15 @@ const LedgerTransaction = (function()
         alternate_currency2: { type: String },
         alternate_currency2_amount: { type: mongoose.Schema.Types.Decimal128 },
 
-        tax_code: String,
-        tax_code_base: String,
+        tax_code: String, // references the "code" of a tax code
+        tax_code_base: String, // references the "code" of a tax code
         tax_sub_code: String,
         tax_sub_code_base: String,
         tax_percent: mongoose.Schema.Types.Decimal128,
-        tax_number: String // VAT number, TIN, etc.
+        tax_number: String, // VAT number, TIN, etc used by the business itself
+
+        override_business_partner:  { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },
+        business_partner_tax_number: String // 
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });

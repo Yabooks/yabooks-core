@@ -115,18 +115,12 @@ const filters = (
             || fallback || code; // if no translation is found at all, show the code
     },
 
-    toTaxName: (tax_code) =>
+    toFlagEmoji: (countryCode) =>
     {
-        window.taxCodes = window.taxCodes || {};
+        if(!countryCode || countryCode.length !== 2)
+            return null;
 
-        /*if(!window.taxCodes[tax_code] && window.app)
-            (async function () =>
-            {
-                let data = await axios.get("");
-                window.taxCodes[tax_code] = data.data.data[0].name;
-                window.app.$forceUpdate();
-            })();*/
-
-        return window.taxCodes[tax_code] || tax_code;
+        let codePoints = countryCode.toUpperCase().split("").map(char => char.charCodeAt(0) + 127397);
+        return String.fromCodePoint(...codePoints);
     }
 });

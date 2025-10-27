@@ -54,7 +54,7 @@
                                 {{ $filters.formatNumber(record.tax_percent) }}%
                             </span>
                             <span v-if="record.tax_code">
-                                {{ $filters.toTaxName(record.tax_code) }}
+                                {{ record.tax_code }}
                             </span>
                         </span>
                     </td>

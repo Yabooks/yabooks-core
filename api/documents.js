@@ -62,11 +62,12 @@ module.exports = function(api)
     {
         try
         {
-            let x = await Document.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
+            let doc = await Document.findOne({ _id: req.params.id });
+            await Document.updateOne({ _id: req.params.id }, { $set: req.body }, { runValidators: true });
             res.send({ success: true });
 
             //await Logger.logRecordUpdated("document", , );
-            //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+            App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
         }
         catch(x) { next(x) }
     });

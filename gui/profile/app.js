@@ -22,15 +22,6 @@ const extractCountryCode = function(languageCode)
     return country || language;
 };
 
-const toFlagEmoji = function(countryCode)
-{
-    if(!countryCode || countryCode.length !== 2)
-        return null;
-
-    let codePoints = countryCode.toUpperCase().split("").map(char => char.charCodeAt(0) + 127397);
-    return String.fromCodePoint(...codePoints);
-};
-
 const app = Vue.createApp(
 {
     components: { SearchableDropdown },
@@ -53,12 +44,12 @@ const app = Vue.createApp(
         let data = await axios.get("/api/v1/translations/languages");
         this.languages = data.data.data.map(language => ({
             value: language.language,
-            label: `${toFlagEmoji(extractCountryCode(language.language))} ${language.language}`
+            label: `${this.$filters.toFlagEmoji(extractCountryCode(language.language))} ${language.language}`
         }));
 
         // load user profile data
         data = await axios.get("/api/v1/users/me");
-        this.profile = data.data;
+        this.profile = data.data;console.log(this.profile);
 
         this.$forceUpdate();
     },
