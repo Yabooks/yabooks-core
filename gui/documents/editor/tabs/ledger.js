@@ -94,7 +94,7 @@ const LedgerTab = (
                 <tr v-for="(tx, i) in (doc?.ledger_transactions || [])">
                     <template v-if="true">
                         <td>
-                            <searchable-dropdown v-model:selected="tx.account" value="_id" label="description" :options="accounts" />
+                            <searchable-dropdown v-model:selected="tx.account" value="_id" label="description" :options="accounts" :autoSelectFirstMatch="true" />
                         </td>
                         <td>
                             <input type="text" v-model="tx.text" />
