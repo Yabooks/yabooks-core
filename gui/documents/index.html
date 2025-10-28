@@ -10,10 +10,13 @@
     </head>
     <body>
         <div id="doc_list">
-            <filter-bar :keys="[]" :types="[]" @update=""></filter-bar>
+            <filter-bar :keys="searchOptions.keys" :types="searchOptions.types" @update="applyFilterFromBar"></filter-bar>
             <div class="doc" v-for="doc in docs">
                 <img class="thumbnail" :src="'/api/v1/documents/' + doc._id + '/thumbnail'" height="50" />
                 <div class="description">
+                    <span class="label" :title="doc.posted ? 'posted' : 'draft'">
+                        {{ doc.posted ? "\uD83D\uDD12" : "\uD83D\uDCDD" }}
+                    </span>
                     <span class="label internal_reference" v-if="doc.type || doc.internal_reference">
                         <a class="link" @click="filterForDocType(doc.type)" v-if="doc.type">
                             {{ doc.type }}
@@ -30,20 +33,22 @@
                         {{ $filters.formatDate(doc.date) }}
                     </span>
                     <span class="label tag" v-for="tag in doc.tags">
-                        {{ tag }}
+                        <a class="link" @click="filterForTag(tag)">
+                            {{ tag }}
+                        </a>
                     </span>
                     <div>
-                        <button @click="downloadDocument(doc)" v-if="doc.mime_type">
-                            download document
+                        <button @click="downloadDocument(doc)" v-if="doc.mime_type" title="download document">
+                            &#x2193;
                         </button>
-                        <button @click="showLedgerRecords(doc)">
-                            show ledger records
+                        <button @click="showLedgerRecords(doc)" title="show ledger records">
+                            &#128209;
                         </button>
-                        <button @click="editDocument(doc)">
-                            edit document
+                        <button @click="editDocument(doc)" title="edit document">
+                            &#x270F;&#xFE0F;
                         </button>
-                        <button @click="deleteDocument(doc)">
-                            delete document
+                        <button @click="deleteDocument(doc)" title="delete document">
+                            &#128465;
                         </button>
                     </div>
                 </div>
@@ -56,10 +61,9 @@
                 <button id="upload" @click="uploadFile()" @dragover.prevent @drop.prevent="handleDrop">
                     upload documents
                 </button>
-                <!--<button>
-                    show list on second screen and open in quick recorder
-                </button>-->
-                <button @click="loadDocuments(true)">load more</button>
+                <button id="loadMore" @click="loadDocuments(true)">
+                    load more
+                </button>
             </div>
             <div id="notification" v-if="notifications?.length > 0" @click="notifications = []">
                 <span v-for="notification in notifications">

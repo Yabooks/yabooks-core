@@ -4,8 +4,16 @@ body
     font-family: Arial, sans-serif;
 }
 
+/* make scrollbar appear on the left side */
+html, body
+{
+    direction: rtl;
+}
+
+
 main
 {
+    direction: ltr;
     padding-bottom: 70px; /* space for toolbar */
 }
 
