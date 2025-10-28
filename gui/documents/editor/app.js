@@ -45,12 +45,12 @@ let app = Vue.createApp(
             try
             {
                 await axios.patch(`/api/v1/documents/${this.doc._id}`, this.doc);
-                alert("Successfully saved changes!");
+                alert("💾 Successfully saved changes!");
             }
             catch(x)
             {
                 console.log(x);
-                alert("Could not save changes!");
+                alert("❌ Could not save changes!");
             }
         }
     }
