@@ -69,7 +69,7 @@ module.exports = async function(req, res, next)
     // prepare method for aggregation pipeline stages for filtering, sorting and pagination
     req.paginatedAggregatePipelineWithFilters = async (model, pipeline = []) =>
     {
-        const keywords = [ "skip", "limit", "sort_asc", "sort_desc" ];
+        const keywords = [ "skip", "limit", "sort_asc", "sort_desc", "q" ];
         req.base_filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") === 0).map(parameterToFilter);
         req.filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") !== 0).map(parameterToFilter);
 
@@ -91,6 +91,12 @@ module.exports = async function(req, res, next)
             let sort = { $sort: {} };
             sort.$sort[req.query.sort_desc] = -1;
             pipeline.push(sort);
+        }
+
+        if(req.query.q) // ?q={}
+        {
+            let query = JSON.parse(req.query.q);
+            pipeline.push({ $match: query });
         }
 
         let result = await model.aggregate([ ...pipeline, ...[
