@@ -26,11 +26,11 @@ let app = Vue.createApp(
                     "external_reference"
                 ],
                 types: [
-                    String, // name
-                    String, // mime_type
-                    String, // uri
-                    String, // search_text
-                    String, // tags
+                    "text", // name
+                    "text", // mime_type
+                    "text", // uri
+                    "text", // search_text
+                    "text", // tags
                     "checkbox", // posted
                     "datetime-local", // date
                     "text", // internal_reference
