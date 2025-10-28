@@ -12,7 +12,7 @@ let app = Vue.createApp(
             business: null,
             notifications: [],
 
-            params: "",
+            params: self.location.search,
             searchOptions: {
                 keys: [
                     "name",
@@ -43,6 +43,15 @@ let app = Vue.createApp(
     mounted()
     {
         this.loadDocuments();
+
+        addEventListener("popstate", (event) => // on history.back()
+        {
+            if(event.state?.params)
+            {
+                this.params = `?${event.state.params}`;
+                this.loadDocuments();
+            }
+        });
     },
 
     methods:
@@ -64,7 +73,11 @@ let app = Vue.createApp(
                     else this.docs = res.data.data;
                     this.error = null;
 
-                    // TODO history.pushState({}, "", `?${params}`);
+                    // remember params for when history.back() is triggered
+                    history.pushState({ params }, "", `?${params}`);
+
+                    // tell parent frame that the current state uses another URL
+                    window.dispatchEvent(new HashChangeEvent("hashchange")); // FIXME
                 }
                 else
                 {
@@ -87,12 +100,14 @@ let app = Vue.createApp(
 
         filterForDocType(docType)
         {
-            self.location = `?type=${encodeURIComponent(docType)}`;
+            this.params = `?type=${encodeURIComponent(docType)}`;
+            this.loadDocuments();
         },
 
         filterForTag(tag)
         {
-            self.location = `?tags=${encodeURIComponent(tag)}`;
+            this.params = `?tags=${encodeURIComponent(tag)}`;
+            this.loadDocuments();
         },
 
         applyFilterFromBar(filter)
