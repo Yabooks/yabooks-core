@@ -9,7 +9,34 @@ let app = Vue.createApp(
         return {
             docs: [],
             error: null,
-            notifications: []
+            business: null,
+            notifications: [],
+
+            params: "",
+            searchOptions: {
+                keys: [
+                    "name",
+                    "mime_type",
+                    "uri",
+                    "search_text",
+                    "tags",
+                    "posted",
+                    "date",
+                    "internal_reference",
+                    "external_reference"
+                ],
+                types: [
+                    String, // name
+                    String, // mime_type
+                    String, // uri
+                    String, // search_text
+                    String, // tags
+                    "checkbox", // posted
+                    "datetime-local", // date
+                    "text", // internal_reference
+                    "text" // external_reference
+                ]
+            }
         };
     },
 
@@ -24,18 +51,20 @@ let app = Vue.createApp(
         {
             try
             {
-                let business = await getSelectedBusinessId();
-                if(business)
+                this.business = await getSelectedBusinessId();
+                if(this.business)
                 {
-                    let params = self.location.search.substring(1);
+                    let params = (this.params ?? self.location.search).substring(1);
+
                     if(loadMore) params += `&skip=${this.docs.length}`;
                     else if(this.docs.length > 100) params += `&limit=${this.docs.length}`;
 
-                    let res = await axios.get(`/api/v1/businesses/${business}/documents?${params}`);
+                    let res = await axios.get(`/api/v1/businesses/${this.business}/documents?${params}`);
                     if(loadMore) this.docs.push(...res.data.data);
                     else this.docs = res.data.data;
                     this.error = null;
-                    this.$forceUpdate();
+
+                    // TODO history.pushState({}, "", `?${params}`);
                 }
                 else
                 {
@@ -50,11 +79,26 @@ let app = Vue.createApp(
                 this.docs = [];
                 this.error = x?.message || x;
             }
+            finally
+            {
+                this.$forceUpdate();
+            }
         },
 
         filterForDocType(docType)
         {
             self.location = `?type=${encodeURIComponent(docType)}`;
+        },
+
+        filterForTag(tag)
+        {
+            self.location = `?tags=${encodeURIComponent(tag)}`;
+        },
+
+        applyFilterFromBar(filter)
+        {
+            this.params = `?q=${encodeURIComponent(JSON.stringify(filter))}`;
+            this.loadDocuments();
         },
 
         downloadDocument(doc)
@@ -110,7 +154,7 @@ let app = Vue.createApp(
             event.preventDefault();
             uploadFiles(event.dataTransfer.files, doc =>
             {
-                this.showNotification(`${doc.name} was successfully uploaded.`, true);
+                this.showNotification(`${doc.name ?? "Unnamed document"} was successfully uploaded.`, true);
                 this.loadDocuments();
             });
         },
@@ -120,11 +164,8 @@ let app = Vue.createApp(
             this.notifications.push({ message, good });
             this.$forceUpdate();
 
-            setTimeout(_ =>
-            {
-                for(let i in this.notifications)
-                    if(this.notifications[i].message === message)
-                        this.notifications.pop();
+            setTimeout(_ => {
+                this.notifications.pop();
                 this.$forceUpdate();
             }, 5000);
         }
