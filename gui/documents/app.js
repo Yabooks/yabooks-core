@@ -131,7 +131,7 @@ let app = Vue.createApp(
             try
             {
                 let editor = await axios.get(`/api/v1/documents/${doc._id}/editor`);
-                self.location = editor.request.res.responseUrl;
+                self.location = editor.data.url;
             }
             catch(x) { self.location = `/documents/editor/?${doc._id}`; }
         },

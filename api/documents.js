@@ -329,11 +329,17 @@ module.exports = function(api)
         {
             let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
             let editor_url = await App.getWebhook("document.editor", doc.owned_by);
-            res.redirect(editor_url);
+
+            if(req.query.redirect)
+                res.redirect(editor_url);
+            else res.json({ url: editor_url });
         }
         catch(x)
         {
-            res.status(404).send({ error: "not found", error_description: "document or its editor could not be found" });
+            res.status(404).send({
+                error: "not found",
+                error_description: "document or its editor could not be found"
+            });
         }
     });
 
