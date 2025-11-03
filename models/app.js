@@ -95,7 +95,7 @@ App.getWebhook = async function(event, app_id)
     ]);
 
     if(webhooks && webhooks.length > 0)
-        return webhooks[0].url;
+        return webhooks[0].url.split("$$ID$$").join(webhooks[0].document_id);
 
     else throw `no webhook for event "${event}" found for app ${app_id}`;
 };
