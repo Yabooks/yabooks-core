@@ -327,8 +327,8 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, "owner");
-            let editor_url = await App.getWebhook("document.editor", doc.owner);
+            let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
+            let editor_url = await App.getWebhook("document.editor", doc.owned_by);
             res.redirect(editor_url);
         }
         catch(x)
