@@ -15,6 +15,7 @@ let app = Vue.createApp(
             params: self.location.search,
             searchOptions: {
                 keys: [
+                    "type",
                     "name",
                     "mime_type",
                     "uri",
@@ -26,6 +27,7 @@ let app = Vue.createApp(
                     "external_reference"
                 ],
                 types: [
+                    "text", // type
                     "text", // name
                     "text", // mime_type
                     "text", // uri
