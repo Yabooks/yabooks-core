@@ -90,12 +90,12 @@ App.getWebhook = async function(event, app_id)
     [
         { $match: { _id: new mongoose.Types.ObjectId(app_id) } },
         { $unwind: "$webhooks" },
-        { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$webhooks", { document_id: "$$ROOT._id" } ] } }  },
+        { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$webhooks" ] } } },
         { $match: { event } }
     ]);
 
     if(webhooks && webhooks.length > 0)
-        return webhooks[0].url.split("$$ID$$").join(webhooks[0].document_id);
+        return webhooks[0].url;
 
     else throw `no webhook for event "${event}" found for app ${app_id}`;
 };
@@ -119,11 +119,23 @@ App.startLocalApps = async function()
                 YABOOKS_APP_LICENSE_KEY: app.license_key
             };
 
+            // TODO https://www.electronjs.org/docs/latest/api/utility-process
+            // TODO https://stackoverflow.com/questions/15302618/node-js-check-if-module-is-installed-without-actually-requiring-it
+
             // start app as child process
             const app_script = (process.env.shell_init ? `${process.env.shell_init};` : "") + app.auto_start_command;
-            const child = cmd.spawn(app_script, { cwd: app.install_path, env, stdio: "inherit", shell: process.env.shell || true });
-            child.on("exit", (code, signal) => console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} exited with signal ${signal}`));
-            child.on("close", (code) => console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} closed with code ${code}`));
+            const child = cmd.spawn(app_script, {
+                cwd: app.install_path,
+                env,
+                stdio: "inherit",
+                shell: process.env.shell || true
+            });
+
+            child.on("exit", (code, signal) =>
+                console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} exited with signal ${signal}`));
+            
+            child.on("close", (code) =>
+                console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} closed with code ${code}`));
 
             // store process id in the database
             await App.updateOne({ _id: app._id }, { pid: child.pid });

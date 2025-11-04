@@ -331,8 +331,9 @@ module.exports = function(api)
             let editor_url = await App.getWebhook("document.editor", doc.owned_by);
 
             if(req.query.redirect)
-                res.redirect(editor_url);
-            else res.json({ url: editor_url });
+                res.redirect(editor_url.split("$$ID$$").join(eq.params.id));
+
+            else res.json({ url: editor_url.split("$$ID$$").join(req.params.id) });
         }
         catch(x)
         {

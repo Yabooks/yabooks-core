@@ -113,7 +113,7 @@ module.exports = function(api)
             let code = new OAuthCode({ session: session._id, app_id: context.client_id });
             await code.save();
 
-            res.redirect(context.redirect_uri + "?code=" + code._id);
+            res.redirect(context.redirect_uri + "?code=" + code._id + "&state=" + encodeURIComponent(context.state));
         }
         catch(x)
         {
