@@ -60,7 +60,7 @@
     { "code": "accounts.types.assets", "language": "en", "text": "assets" },
     { "code": "accounts.types.assets", "language": "de", "text": "Verm\u00f6gen" },
     { "code": "accounts.types.liabilities", "language": "en", "text": "liabilities" },
-    { "code": "accounts.types.liabilities", "language": "de", "text": "Verbindlichkeiten" },
+    { "code": "accounts.types.liabilities", "language": "de", "text": "Fremdkapital" },
     { "code": "accounts.types.equity", "language": "en", "text": "equity" },
     { "code": "accounts.types.equity", "language": "de", "text": "Eigenkapital" },
     { "code": "accounts.types.revenues", "language": "en", "text": "revenues" },
