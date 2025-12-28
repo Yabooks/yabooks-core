@@ -1,0 +1,212 @@
+/* General Ledger Modern Stylesheet */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Header Styles */
+th {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    color: #ffffff;
+    font-weight: 600;
+    text-align: left;
+    padding: 16px 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 3px solid #e85d2a;
+}
+
+/* Body Rows */
+tr {
+    transition: background-color 0.2s ease;
+}
+
+tr:not(:first-child):hover {
+    background-color: #fff5f0;
+}
+
+tr:nth-child(even):not(:first-child) {
+    background-color: #fafafa;
+}
+
+tr:nth-child(even):not(:first-child):hover {
+    background-color: #fff5f0;
+}
+
+/* Cell Styles */
+td {
+    padding: 12px;
+    border-bottom: 1px solid #e8e8e8;
+    color: #333333;
+    vertical-align: middle;
+}
+
+/* Link Styles */
+.link {
+    color: #ff6b35;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.link:hover {
+    color: #e85d2a;
+    border-bottom-color: #e85d2a;
+}
+
+/* Empty State */
+tr td[colspan] {
+    text-align: center;
+    color: #999999;
+    font-style: italic;
+    padding: 32px;
+}
+
+/* Numeric Columns */
+td[align="right"] {
+    font-variant-numeric: tabular-nums;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+    font-size: 13px;
+}
+
+/* Tax Column Styling */
+td:last-child {
+    font-size: 12px;
+    color: #666666;
+}
+
+/* Tooltip Enhancement */
+td[title] {
+    cursor: help;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 1024px) {
+    table {
+        font-size: 13px;
+    }
+
+    th, td {
+        padding: 10px 8px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    table {
+        font-size: 12px;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    th, td {
+        padding: 8px 6px;
+    }
+}
+
+/* Accessibility - Focus States */
+.link:focus {
+    outline: 2px solid #ff6b35;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Print Styles */
+@media print {
+    table {
+        box-shadow: none;
+    }
+
+    th {
+        background: #ff6b35 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    tr:hover {
+        background-color: transparent !important;
+    }
+
+    .link {
+        color: #333333;
+        text-decoration: underline;
+    }
+
+    .newRecord {
+        display: none;
+        visibility: hidden;
+    }
+}
+
+.newRecord {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 56px;
+    height: 56px;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f98f5e 0%, #ff6b35 100%);
+    color: white;
+    font-size: 28px;
+    font-weight: 300;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(249, 143, 94, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    text-indent: -9999px;
+    overflow: hidden;
+}
+
+.newRecord::after {
+    content: "+";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-indent: 0;
+    font-size: 32px;
+    line-height: 1;
+}
+
+.newRecord:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 6px 24px rgba(249, 143, 94, 0.5);
+}
+
+.newRecord:active {
+    transform: scale(1.05) rotate(90deg);
+}
+
+.newRecord.drag-over {
+    background: linear-gradient(135deg, #ffa978 0%, #ff8555 100%);
+    transform: scale(1.15);
+}
+
+/* Pulse animation for attention */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(249, 143, 94, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 24px rgba(249, 143, 94, 0.6), 0 0 0 8px rgba(249, 143, 94, 0.1);
+    }
+}
+
+.newRecord:focus-visible {
+    outline: none;
+    animation: pulse 2s infinite;
+}

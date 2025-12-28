@@ -38,6 +38,11 @@ let app = Vue.createApp(
         async goToDocument(id)
         {
             self.location = `/ledger/?business=${await getSelectedBusinessId()}&document_id=${id}`;
+        },
+
+        openQuickRecorder()
+        {
+            parent.document.app.openModal('/quick-recorder');
         }
     }
 });
