@@ -77,10 +77,10 @@ module.exports = function(api)
         try
         {
             let doc = await Document.findOne({ _id: req.params.id }, [ "name", "mime_type" ]);
-            
+
             if(!doc)
                 res.status(404).send({ error: "not found" });
-            
+
             else res.header("content-type", doc["mime_type"])
                     .header("content-disposition", `attachment; filename="${doc.name}"`)
                     .send(await Document.readCurrentVersion(doc._id));
@@ -151,7 +151,7 @@ module.exports = function(api)
 
             if(!doc)
                 res.status(404).send({ error: "not found" });
-                
+
             else if(doc.mime_type == "application/pdf")
             {
                 const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)) }).promise;
@@ -170,7 +170,7 @@ module.exports = function(api)
                                 opacity: annotation.opacity ?? 1,
                                 lineWidth: annotation.borderStyle?.width ?? 1
                             });
-                    
+
                     annotations.push(pageAnnotations);
                 }
 
@@ -185,10 +185,10 @@ module.exports = function(api)
 
             else if(typeof doc.mime_type == "string" && doc.mime_type.indexOf("image/") === 0)
                 res.json({ annotations_supported: false, pages: 1 });
-            
+
             else
                 res.json({ annotations_supported: false, pages: 0 });
-                
+
         }
         catch(x) { next(x) }
     });
@@ -201,7 +201,7 @@ module.exports = function(api)
 
             if(!doc)
                 res.status(404).send({ error: "not found" });
-            
+
             // render PDF document page to image preview
             if(doc.mime_type == "application/pdf")
             {
@@ -235,7 +235,7 @@ module.exports = function(api)
             // image preview is the image itself
             else if(typeof doc.mime_type == "string" && doc.mime_type.indexOf("image/") === 0 && req.params.page == 1)
                 res.set("content-type", doc.mime_type).send(await Document.readCurrentVersion(doc._id));
-            
+
             else
                 res.status(404).send({ error: "page not found" });
         }
@@ -250,7 +250,7 @@ module.exports = function(api)
 
             if(!doc)
                 res.status(404).send({ error: "not found" });
-                
+
             else if(doc.mime_type != "application/pdf")
                 res.status(406).json({ error: `saving annotations not supported for documents of type ${doc.mime_type}` });
 

@@ -160,6 +160,11 @@ let app = Vue.createApp(
                     maintainAspectRatio: false
                 }
             };
+        },
+
+        openQuickRecorder()
+        {
+            parent.document.app.openModal('/quick-recorder');
         }
     }
 });

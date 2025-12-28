@@ -20,9 +20,6 @@
                 <a @click="logout" v-if="!isInSingleUserMode">
                     {{ $filters.translate("start.logout") }}
                 </a>
-                <!--<a @click="openModal('/quick-recorder')">
-                    Quick Recorder
-                </a>-->
                 <a @click="openModal('/notifications/')" v-if="loggedIn">
                     {{ $filters.translate("start.notifications") }}
                     <span class="badge" v-if="notifications">
@@ -75,6 +72,13 @@
                     // ask if application may show system notifications
                     if("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied")
                         Notification.requestPermission();
+
+                    // bind escape button to modal close button
+                    document.addEventListener("keydown", event => // FIXME
+                    {
+                        if(event.key === "Escape" && this.modal)
+                            this.modal = false;
+                    });
                 },
 
                 methods:
@@ -202,7 +206,7 @@
                     }
                 }
             });
-            
+
             app.config.globalProperties.$filters = { ...filters };
             document.app = app.mount("main");
         </script>
