@@ -1,0 +1,117 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <style type="text/css">
+            .business .logo
+            {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <div>
+                <img v-if="organization?._id" :src="`/api/v1/identities/${organization._id}/picture`" />
+                <span>
+                    {{ organization.name }}
+                </span>
+                <div v-if="organization.dba?.length > 0">
+                    <span>Doing Business As:</span>
+                    <ul>
+                        <li v-for="dba in organization.dba">
+                            {{ dba }}
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <span>Main Contact:</span>
+                    <ul>
+                        <li v-if="organization.main_email?.address">
+                            {{ organization.main_email.address }}
+                        </li>
+                        <li v-if="organization.main_phone?.formatted_international_number">
+                            {{ organization.main_phone.formatted_international_number }}
+                        </li>
+                        <li v-if="organization.main_address?.full_address">
+                            {{ organization.main_address.full_address.split("\n").join(", ") }}
+                        </li>
+                        <li v-for="adr in organization.more_addresses">
+                            {{ adr.full_address }}
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <span>Tax Information:</span>
+                    <ul>
+                        <li v-for="(value, key) in organization.tax_numbers">
+                            {{ key }}
+                            {{ value }}
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <span>Businesses:</span>
+                    <ul>
+                        <li class="business" v-for="business in businesses.data">
+                            <img class="logo" :src="`/api/v1/businesses/${business._id}/logo`" />
+                            <span>{{ business.name }}</span>
+                            <button @click="selectBusiness(business)">focus</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+        <script type="text/javascript">
+            Vue.createApp(
+            {
+                data()
+                {
+                    return {
+                        organization: {},
+                        businesses: []
+                    };
+                },
+
+                async mounted()
+                {
+                    try
+                    {
+                        this.organization._id = self.location.search.substring(1);
+                        await this.load();
+                    }
+                    catch(x)
+                    {
+                        console.error("Could not load organization", x);
+                        self.location = "/people/";
+                    }
+                },
+
+                methods:
+                {
+                    load: async function()
+                    {
+                        let res = await axios.get(`/api/v1/identities/${this.organization._id}`);
+                        this.organization = res.data;
+                        this.$forceUpdate();
+
+                        res = await await axios.get(`/api/v1/identities/${this.organization._id}/businesses`);
+                        this.businesses = res.data;
+                        this.$forceUpdate();
+                    },
+
+                    selectBusiness: async (business) =>
+                    {
+                        // store selection in session and refresh page
+                        await axios.put("/api/v1/session", { business: business._id });
+                        console.info("context changed to business", business._id);
+                        window.parent.document.app.updateSessionData();
+                    }
+                }
+            }).mount("main");
+        </script>
+    </body>
+</html>
