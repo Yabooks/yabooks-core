@@ -62,4 +62,25 @@ module.exports = function(api)
         }
         catch(x) { next(x) }
     });
+
+    api.put("/api/v1/businesses/:id/logo", async (req, res, next) =>
+    {
+        try
+        {
+            let business = await Business.findOne({ _id: req.params.id });
+            if(!business)
+                res.status(404).send({ error: "not found" });
+            else
+            {
+                let picture = req.rawBody;
+
+                if(!picture)
+                    return res.json({ success: false, error: "no logo provided" });
+
+                await business.setLogo(picture);
+                res.json({ success: true });
+            }
+        }
+        catch(x) { next(x) }
+    });
 };

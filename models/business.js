@@ -22,7 +22,7 @@ const Business = mongoose.model("Business", (function()
         {
             try
             {
-                let file = path.join(process.env.persistent_data_dir || "./data", "business_" + this._id);
+                let file = path.join(process.env.persistent_data_dir ?? "./data", "business_" + this._id);
                 return await fs.readFile(file);
             }
             catch(x)
@@ -30,6 +30,15 @@ const Business = mongoose.model("Business", (function()
                 let file = path.join(__dirname, "../gui/people/organization.svg");
                 return await fs.readFile(file);
             }
+        },
+
+        async setLogo(binary)
+        {
+            if(typeof binary !== "string" && !binary instanceof Buffer)
+                throw "logo binary must be either a string or buffer";
+
+            let file = path.join(process.env.persistent_data_dir ?? "./data", "business_" + this._id);
+            await fs.writeFile(file, binary);
         }
     });
 

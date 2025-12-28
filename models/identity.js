@@ -27,7 +27,7 @@ const Identity = mongoose.model("Identity", (function()
         {
             try
             {
-                let file = path.join(process.env.persistent_data_dir || "./data", this.kind + "_" + this._id);
+                let file = path.join(process.env.persistent_data_dir ?? "./data", this.kind + "_" + this._id);
                 return await fs.readFile(file);
             }
             catch(x)
@@ -35,6 +35,15 @@ const Identity = mongoose.model("Identity", (function()
                 let file = path.join(__dirname, `../gui/people/${this.kind.toLowerCase()}.svg`);
                 return await fs.readFile(file);
             }
+        },
+
+        async setPicture(binary)
+        {
+            if(typeof binary !== "string" && !binary instanceof Buffer)
+                throw "picture binary must be either a string or buffer";
+
+            let file = path.join(process.env.persistent_data_dir ?? "./data", this.kind + "_" + this._id);
+            await fs.writeFile(file, binary);
         }
     });
 

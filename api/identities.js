@@ -74,6 +74,27 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    api.put("/api/v1/identities/:id/picture", async (req, res, next) =>
+    {
+        try
+        {
+            let identity = await Identity.findOne({ _id: req.params.id });
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+            else
+            {
+                let picture = req.rawBody;
+
+                if(!picture)
+                    return res.json({ success: false, error: "no picture provided" });
+
+                await identity.setPicture(picture);
+                res.json({ success: true });
+            }
+        }
+        catch(x) { next(x) }
+    });
+
     api.patch("/api/v1/individuals/:id", async (req, res) =>
     {
         await Individual.updateOne({ _id: req.params.id }, req.body);
