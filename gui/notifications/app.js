@@ -33,8 +33,15 @@ let app = Vue.createApp(
 
         isLocalLink(url)
         {
-            url = new URL(url);
-            return url.host === self.location.host && url.protocol === self.location.protocol;
+            try
+            {
+                if(!url)
+                    return false;
+
+                url = new URL(url);
+                return url.host === self.location.host && url.protocol === self.location.protocol;
+            }
+            catch(x) { return false; }
         },
 
         async toggleRead(notification, read = undefined)
