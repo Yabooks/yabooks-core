@@ -40,6 +40,16 @@ let app = Vue.createApp(
             self.location = `/ledger/?business=${await getSelectedBusinessId()}&document_id=${id}`;
         },
 
+        async editDocument(id)
+        {
+            try
+            {
+                let editor = await axios.get(`/api/v1/documents/${id}/editor`);
+                self.location = editor.data.url;
+            }
+            catch(x) { self.location = `/documents/editor/?${id}`; }
+        },
+
         openQuickRecorder()
         {
             parent.document.app.openModal('/quick-recorder');

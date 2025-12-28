@@ -21,12 +21,16 @@
                 </tr>
                 <tr v-for="record in records">
                     <td>
-                        {{ $filters.formatDate(record.display_data || record.date || record.posting_date) }}
+                        {{ $filters.formatDate(record.display_date ?? record.date ?? record.posting_date) }}
                     </td>
                     <td>
                         <a class="link" @click="goToDocument(record.document_id)">
                             <span v-if="record.document_external_reference">{{ record.document_external_reference }}</span>
-                            <span v-else>{{ record.document_type }}{{ record.document_internal_reference }}</span>
+                            <span v-else-if="record.document_internal_reference">{{ record.document_type }}{{ record.document_internal_reference }}</span>
+                            <span v-else>unnamed document</span>
+                        </a>
+                        <a class="editRecord" @click="editDocument(record.document_id)">
+                            &#x270F;&#xFE0F;
                         </a>
                     </td>
                     <td :title="record.account.display_name">

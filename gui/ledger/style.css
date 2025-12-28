@@ -121,6 +121,13 @@ td[title] {
     border-radius: 2px;
 }
 
+.editRecord {
+    filter: grayscale();
+    cursor: pointer;
+    font-size: 8pt;
+    margin-left: 5px;
+}
+
 /* Print Styles */
 @media print {
     table {
@@ -139,10 +146,10 @@ td[title] {
 
     .link {
         color: #333333;
-        text-decoration: underline;
+        /*text-decoration: underline;*/
     }
 
-    .newRecord {
+    .editRecord, .newRecord {
         display: none;
         visibility: hidden;
     }
