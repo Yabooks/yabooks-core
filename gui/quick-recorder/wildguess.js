@@ -1,19 +1,20 @@
-async function wildguess(input) // e.g. 2020-10-08+Einkauf+5700,,2/3300+120
+async function wildguess(input) // e.g. "2020-10-08+Einkauf+5700,.2/3300+120"
 {
     let wildguess = {};
 
     for(let part of input.split(/[\+\=]/g))
     {
-        // accounting record
+        // accounting records (in form "account no debit/account no credit")
         let rec = part.match(/^(?<debit>[0-9a-zA-Z]+)(\,[\.\,](?<taxdebit>[0-9]+))?\/(?<credit>[0-9a-zA-Z]+)(\,[\.\,](?<taxcredit>[0-9]+))?$/);
         if(rec && rec.groups)
         {
             wildguess.account_debit = rec.groups.debit;
             wildguess.account_credit = rec.groups.credit;
+
+            // optional tax percent mentioned
             wildguess.tax_pay_and_claimback = !!(rec.groups.taxdebit && rec.groups.taxcredit);
-            wildguess.tax_percent = rec.groups.taxdebit ? parseFloat("." + rec.groups.taxdebit) * 100 :
-                                    rec.groups.taxcredit ? ("." + rec.groups.taxcredit) * 100 :
-                                    undefined;
+            wildguess.tax_percent_debit = rec.groups.taxdebit ? parseFloat("." + rec.groups.taxdebit) * 100 : undefined;
+            wildguess.tax_percent_credit = rec.groups.taxcredit ? ("." + rec.groups.taxcredit) * 100 : undefined;
         }
 
         // amount
@@ -38,12 +39,17 @@ async function wildguess(input) // e.g. 2020-10-08+Einkauf+5700,,2/3300+120
             wildguess.document_number = part.substring(part.indexOf(" ") + 1);
         }
 
-        // comment
+        // text comment
         else if(part.trim().length > 0)
             wildguess.text = part;
     }
 
-    // TODO caculate tax
+    if(wildguess.amount) // calculate net amount
+    {
+        wildguess.amount_net = wildguess.amount;
+        if((wildguess.tax_percent_debit || wildguess.tax_percent_credit) && !(wildguess.tax_percent_debit && wildguess.tax_percent_credit))
+            wildguess.amount_net = wildguess.amount_net / (1 + (wildguess.tax_percent_debit ?? wildguess.tax_percent_credit) / 100);
+    }
 
     return wildguess;
 }

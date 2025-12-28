@@ -8,43 +8,56 @@
         <script type="text/javascript" src="/_generic/filters.js"></script>
         <script type="text/javascript" src="wildguess.js"></script>
     <body>
-        <main @dragover="acceptFile" @drop="fileDropped">
-            <input type="text" id="recorder" v-model="input" @keyup="guess" autocomplete="off"
-                :class="input_status" placeholder="Type here..." autofocus />
+        <main>
+            <input type="text" id="recorder"
+                v-model="input" @keyup="guess" autocomplete="off"
+                @dragover="acceptFile" @drop="fileDropped"
+                :class="{ green: input_complete, yellow: (input_complete === false) }"
+                :placeholder="$filters.translate('quick-recorder.type-here')" autofocus />
             <table class="discovery">
                 <tr v-if="wildguess.type">
-                    <td>Document number</td>
+                    <td>{{ $filters.translate('quick-recorder.document-number') }}</td>
                     <td>{{ wildguess.type }} {{ wildguess.document_number }}</td>
                 </tr>
                 <tr v-if="wildguess.date">
-                    <td>Date</td>
+                    <td>{{ $filters.translate('quick-recorder.date') }}</td>
                     <td>{{ $filters.formatDate(wildguess.date) }}</td>
                 </tr>
                 <tr v-if="wildguess.text">
-                    <td>Text</td>
+                    <td>{{ $filters.translate('quick-recorder.text') }}</td>
                     <td>{{ wildguess.text }}</td>
                 </tr>
                 <tr v-if="wildguess.account_debit">
-                    <td>Account Debit</td>
+                    <td>{{ $filters.translate('quick-recorder.account-debit') }}</td>
                     <td>{{ wildguess.account_debit }}</td>
                 </tr>
                 <tr v-if="wildguess.account_credit">
-                    <td>Account Credit</td>
+                    <td>{{ $filters.translate('quick-recorder.account-credit') }}</td>
                     <td>{{ wildguess.account_credit }}</td>
                 </tr>
                 <tr v-if="wildguess.amount">
-                    <td>Amount</td>
+                    <td>
+                        {{ $filters.translate('quick-recorder.amount') }}
+                        <span v-if="wildguess.tax_percent_debit || wildguess.tax_percent_credit">{{ $filters.translate('quick-recorder.amount.gross') }}</span>
+                    </td>
                     <td>{{ $filters.formatNumber(wildguess.amount) }}</td>
                 </tr>
-                <tr v-if="wildguess.tax_percent">
-                    <td>Tax Percent</td>
-                    <td>{{ wildguess.tax_percent }}%</td>
+                <tr v-if="wildguess.tax_percent_debit || wildguess.tax_percent_credit">
+                    <td>{{ $filters.translate('quick-recorder.tax') }}</td>
+                    <td>{{ wildguess.tax_percent_debit ?? wildguess.tax_percent_credit }}%</td>
                 </tr>
                 <tr v-if="file">
-                    <td>Document</td>
+                    <td>{{ $filters.translate('quick-recorder.document') }}</td>
                     <td>{{ this.file.name }}</td>
                 </tr>
             </table>
+            <div id="recentlyAdded">
+                <ul v-if="recently_added?.length > 0">
+                    <li v-for="document in recently_added">
+                        {{ document }}
+                    </li>
+                </ul>
+            </div>
         </main>
         <script type="text/javascript" src="app.js"></script>
     </body>
