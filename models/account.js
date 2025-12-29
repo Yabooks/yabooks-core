@@ -14,7 +14,7 @@ const BalanceSheetStructure = mongoose.model("BalanceSheetStructure", (function(
         name: { type: String, required: true },
         translated_names: [ translationSchema ]
     });
-    
+
     return new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
 })());
 
@@ -28,7 +28,7 @@ const BalanceSheetStructureItem = mongoose.model("BalanceSheetStructureItem", (f
         parent: { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" },
         order: Number
     });
-    
+
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
     schema.path("structure");
     schema.path("parent");
@@ -51,8 +51,8 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
         default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false }, // null if not a cost transaction
 
         tags: [ { type: String, enum: [ "fixed", "current", "liquid funds", "raw materials and supplies", "long-term", "short-term" ] } ],
-        balanceSheetStructureItems: [ { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" } ],
-        alternativeBalanceSheetStructureItems: [ { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" } ],
+        balance_sheet_structure_items: [ { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" } ],
+        alternative_balance_sheet_structure_items: [ { type: mongoose.Schema.Types.ObjectId, ref: "BalanceSheetStructureItem" } ],
 
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },
         tax_number: String,

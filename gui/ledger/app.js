@@ -16,8 +16,14 @@ let app = Vue.createApp(
         try
         {
             let business = await getSelectedBusinessId();
+
+            // load leger transactions
             let res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
             this.records = res.data.data;
+
+            // load ui translations
+            await loadTranslations({ "code*": "general-ledger." });
+            this.$forceUpdate();
         }
         catch(x)
         {
@@ -30,9 +36,12 @@ let app = Vue.createApp(
 
     methods:
     {
-        async goToAccount(id)
+        async goToAccount(id, business_partner_id = null)
         {
-            self.location = `/ledger/?business=${await getSelectedBusinessId()}&account._id=${id}`;
+            let url = `/ledger/?business=${await getSelectedBusinessId()}&account._id=${id}`;
+            if(business_partner_id)
+                url += `&business_partner._id=${business_partner_id}`;
+            self.location = url;
         },
 
         async goToDocument(id)

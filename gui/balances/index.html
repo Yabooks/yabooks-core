@@ -27,9 +27,9 @@
                         <th>{{ $filters.translate("balances.credit") }}</th>
                         <th />
                     </tr>
-                    <tr v-for="account in accounts">
-                        <template v-if="account?.type == type">
-                            <td>{{ account.display_name }}</td>
+                    <template v-for="account in accounts">
+                        <tr v-if="account?.type == type">
+                            <td>{{ account.display_number }} {{ account.display_name }}</td>
                             <td align="right">
                                 <span v-if="(account.balance.$numberDecimal || account.balance) > 0">
                                     {{ $filters.formatNumber($filters.absolute(account.balance)) }}
@@ -45,10 +45,10 @@
                                     &#x1F4CB;
                                 </button>
                             </td>
-                        </template>
-                    </tr>
+                        </tr>
+                    </template>
                     <tr v-if="type == 'equity'">
-                        <td>{{ $filters.translate("balances.current-pl") }}</td>
+                        <td>{{ $filters.translate(-$filters.number(profit) >= 0 ? "balances.current-profit" : "balances.current-loss") }}</td>
                         <td align="right">
                             <span v-if="profit > 0">
                                 {{ $filters.formatNumber($filters.absolute(profit)) }}

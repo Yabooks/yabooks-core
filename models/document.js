@@ -11,6 +11,19 @@ const omitTimezone = (date) =>
     return null;
 };
 
+const Payment = (function()
+{
+    const schemaDefinition = (
+    {
+        document: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
+        amount_paid: { type: mongoose.Schema.Types.Decimal128, required: true }
+    });
+
+    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true } });
+    schema.path("document").index(true);
+    return schema;
+})();
+
 // ledger transaction schema
 const LedgerTransaction = (function()
 {
@@ -41,7 +54,10 @@ const LedgerTransaction = (function()
         tax_number: String, // VAT number, TIN, etc used by the business itself
 
         override_business_partner:  { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },
-        business_partner_tax_number: String // 
+        business_partner_tax_number: String, // VAT number, TIN, etc used by the business partner
+        receivable: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
+        due_date: Date,
+        pays: [ Payment ]
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
@@ -51,6 +67,9 @@ const LedgerTransaction = (function()
     schema.path("tax_code").index(true);
     schema.path("tax_code_base").index(true);
     schema.path("tax_sub_code").index(true);
+    schema.path("override_business_partner").index(true);
+    schema.path("business_partner_tax_number").index(true);
+    schema.path("pays").index(true);
     return schema;
 })();
 
@@ -78,7 +97,7 @@ const debitCreditValidation = function(transactions)
 
             if(!totals[context])
                 totals[context] = 0;
-            
+
             totals[context] += num(tx.amount);
         }
 
@@ -86,7 +105,7 @@ const debitCreditValidation = function(transactions)
             if(totals[context] > .01 || totals[context] < -.01)
                 return false;
     }
-    
+
     return true;
 };
 
@@ -129,19 +148,6 @@ const CostTransaction = (function()
     return schema;
 })();
 
-const Payment = (function()
-{
-    const schemaDefinition = (
-    {
-        document: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
-        amount_paid: { type: mongoose.Schema.Types.Decimal128, required: true }
-    });
-
-    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true } });
-    schema.path("document").index(true);
-    return schema;
-})();
-
 // document schema
 const Document = mongoose.model("Document", (function()
 {
@@ -156,7 +162,6 @@ const Document = mongoose.model("Document", (function()
 
         external_reference: String,
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
-        intracompany: { type: Boolean, required: true, default: false },
 
         name: String,
         mime_type: String,
@@ -165,10 +170,6 @@ const Document = mongoose.model("Document", (function()
         thumbnail: Buffer,
         tags: [ String ],
         data: mongoose.Schema.Types.Mixed,
-
-        receivable: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
-        due_date: Date,
-        pays: [ Payment ],
 
         ledger_transactions: [ LedgerTransaction ],
         cost_transactions: [ CostTransaction ],
@@ -181,6 +182,7 @@ const Document = mongoose.model("Document", (function()
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, toJSON: { getters: true }, autoIndex: false });
     schema.path("ledger_transactions").validate(debitCreditValidation, "debit credit difference");
+    // TODO check if tax codes are valid
     schema.path("ledger_transactions").validate(assetValidation, "asset_alteration must be set iff asset is mentioned");
     schema.path("ledger_transactions").validate(noTaxOnAlternateLedgerValidation, "may not record withholding tax on alternate ledger only");
     schema.path("business").index(true);
@@ -188,12 +190,10 @@ const Document = mongoose.model("Document", (function()
     schema.path("internal_reference").index(true);
     schema.path("external_reference").index(true);
     schema.path("business_partner").index(true);
-    schema.path("intracompany").index(true);
     schema.path("mime_type").index(true);
     schema.path("search_text").index(true);
     schema.path("tags").index(true);
     schema.path("posted").index(true);
-    schema.path("pays").index(true);
     return schema;
 })());
 

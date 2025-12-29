@@ -68,10 +68,6 @@ const GeneralTab = (
                     <td>Business Partner</td>
                     <td><business-selector :model="doc.business_partner" /></td>
                 </tr>
-                <tr>
-                    <td>Intra-Company?</td>
-                    <td><input type="checkbox" v-model="doc.intracompany" /></td>
-                </tr>
             </table>
         </div>
     `,

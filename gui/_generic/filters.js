@@ -25,7 +25,7 @@ const loadTranslations = async (filters = {}) =>
 
     let data = await axios.get("/api/v1/translations?" +
         Object.keys(filters).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(filters[key])}`).join("&"));
-    
+
     window.translations.push(...data.data.data);
 };
 
@@ -62,6 +62,11 @@ const sleep = (delay) =>
 
 const filters = (
 {
+    number: (number) =>
+    {
+        return parseDecimal(number);
+    },
+    
     absolute: (number) =>
     {
         if(typeof number === "object" && number.$numberDecimal)
@@ -92,7 +97,7 @@ const filters = (
     {
         return new Date(timestamp).toLocaleString(language);
     },
-    
+
     formatTaxCode: (tax_code) =>
     {
         if(tax_code && tax_code.length > 1)

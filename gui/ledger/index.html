@@ -11,13 +11,13 @@
         <div id="table">
             <table>
                 <tr>
-                    <th>Date</th>
-                    <th>Document</th>
-                    <th>Account</th>
-                    <th>Text</th>
-                    <th>Debit</th>
-                    <th>Credit</th>
-                    <th>Tax</th>
+                    <th>{{ $filters.translate("general-ledger.date") }}</th>
+                    <th>{{ $filters.translate("general-ledger.document") }}</th>
+                    <th>{{ $filters.translate("general-ledger.account") }}</th>
+                    <th>{{ $filters.translate("general-ledger.text") }}</th>
+                    <th>{{ $filters.translate("general-ledger.debit") }}</th>
+                    <th>{{ $filters.translate("general-ledger.credit") }}</th>
+                    <th>{{ $filters.translate("general-ledger.tax") }}</th>
                 </tr>
                 <tr v-for="record in records">
                     <td>
@@ -27,7 +27,7 @@
                         <a class="link" @click="goToDocument(record.document_id)">
                             <span v-if="record.document_external_reference">{{ record.document_external_reference }}</span>
                             <span v-else-if="record.document_internal_reference">{{ record.document_type }}{{ record.document_internal_reference }}</span>
-                            <span v-else>unnamed document</span>
+                            <span v-else>{{ $filters.translate("general-ledger.document.unnamed") }}</span>
                         </a>
                         <a class="editRecord" @click="editDocument(record.document_id)">
                             &#x270F;&#xFE0F;
@@ -37,6 +37,16 @@
                         <a class="link" @click="goToAccount(record.account._id)">
                             {{ record.account.display_number }}
                         </a>
+                        <span v-if="$filters.number(record.receivable) != 0">
+                            <a class="link" @click="goToAccount(record.account._id, record.business_partner._id)">
+                                &nbsp;{{ record.business_partner?.full_name }}
+                            </a>
+                        </span>
+                        <span v-if="false">
+                            <a class="link" @click="record.asset">
+                                &nbsp;{{ record.asset?.name }}
+                            </a>
+                        </span>
                     </td>
                     <td>
                         {{ record.text }}
@@ -53,19 +63,16 @@
                     </td>
                     <td :title="record.tax_code || record.tax_code_base">
                         <span v-if="record.tax_code || record.tax_code_base">
-                            {{ $filters.formatTaxCode(record.tax_code || record.tax_code_base) }}
-                            <span v-if="record.tax_code_base">
+                            {{ $filters.formatTaxCode(record.tax_code ?? record.tax_code_base) }}
+                            <span v-if="record.tax_code_base || record.tax_code">
                                 {{ $filters.formatNumber(record.tax_percent) }}%
-                            </span>
-                            <span v-if="record.tax_code">
-                                {{ record.tax_code }}
                             </span>
                         </span>
                     </td>
                 </tr>
                 <tr v-if="records.length == 0">
                     <td colspan="7">
-                        No records found.
+                        {{ $filters.translate("general-ledger.no-records") }}
                     </td>
                 </tr>
             </table>
