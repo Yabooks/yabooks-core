@@ -29,11 +29,11 @@
                 </tr>
                 <tr v-if="wildguess.account_debit">
                     <td>{{ $filters.translate('quick-recorder.account-debit') }}</td>
-                    <td>{{ wildguess.account_debit }}</td>
+                    <td>{{ wildguess.account_debit }} {{ wildguess.account_debit_details?.display_name ?? "\uD83E\uDD14" }}</td>
                 </tr>
                 <tr v-if="wildguess.account_credit">
                     <td>{{ $filters.translate('quick-recorder.account-credit') }}</td>
-                    <td>{{ wildguess.account_credit }}</td>
+                    <td>{{ wildguess.account_credit }} {{ wildguess.account_credit_details?.display_name ?? "\uD83E\uDD14" }}</td>
                 </tr>
                 <tr v-if="wildguess.amount">
                     <td>

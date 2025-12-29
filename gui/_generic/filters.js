@@ -8,7 +8,7 @@ const parseDecimal = function(number)
     if(typeof number === "number")
         return number;
 
-    if(number.$numberDecimal)
+    if(number?.$numberDecimal)
         return parseFloat(number.$numberDecimal);
 
     return parseFloat(number);
@@ -66,10 +66,10 @@ const filters = (
     {
         return parseDecimal(number);
     },
-    
+
     absolute: (number) =>
     {
-        if(typeof number === "object" && number.$numberDecimal)
+        if(typeof number === "object" && number?.$numberDecimal)
             number = number.$numberDecimal;
 
         return Math.abs(number);
@@ -77,7 +77,7 @@ const filters = (
 
     formatNumber: (number) =>
     {
-        if(typeof number === "object" && number.$numberDecimal)
+        if(typeof number === "object" && number?.$numberDecimal)
             number = number.$numberDecimal;
 
         return Intl.NumberFormat(getUserLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);

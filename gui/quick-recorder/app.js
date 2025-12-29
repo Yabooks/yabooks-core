@@ -57,17 +57,18 @@ let app = Vue.createApp(
             this.wildguess = await wildguess(this.input);
 
             // map accounts, find appropriate tax code and caculate tax
-            // TODO
+            this.wildguess.account_debit_details = this.accounts.find(account => account.display_number == this.wildguess.account_debit);
+            this.wildguess.account_credit_details = this.accounts.find(account => account.display_number == this.wildguess.account_credit);
 
             // adapt box border color based on completeness of input
             this.input_complete = !this.input ? null :
-                (this.wildguess.date && this.wildguess.account_debit && this.wildguess.account_credit && this.wildguess.amount);
+                (this.wildguess.date && this.wildguess.account_debit_details && this.wildguess.account_credit_details && this.wildguess.amount);
 
             if(event.code == "Enter" || event.code == "NumpadEnter")
                 try
                 {
                     // abort if input is incomplete
-                    if(!this.wildguess.date || !this.wildguess.account_debit || !this.wildguess.account_credit || !this.wildguess.amount)
+                    if(!this.input_complete)
                         return alert(this.$filters.translate('quick-recorder.abort-incomplete'));
 
                     // prepare document meta data based on wild guess
@@ -84,36 +85,40 @@ let app = Vue.createApp(
 
                     tx.push({
                         posting_date: this.wildguess.date,
-                        account: null, // TODO
+                        account: this.wildguess.account_debit_details._id,
                         amount: +(this.wildguess.tax_percent_debit ? this.wildguess.amount_net : this.wildguess.amount),
                         text: this.wildguess.text,
-                        tax_code_base: this.wildguess.tax_percent_debit ? null : undefined // TODO
+                        tax_percent: this.wildguess.tax_percent_debit,
+                        tax_code_base: this.wildguess.tax_percent_debit ? this.guessTaxCode(this.wildguess.tax_percent_debit) : undefined
                     });
 
                     tx.push({
                         posting_date: this.wildguess.date,
-                        account: null, // TODO
+                        account: this.wildguess.account_credit_details._id,
                         amount: -(this.wildguess.tax_percent_credit ? this.wildguess.amount_net : this.wildguess.amount),
                         text: this.wildguess.text,
-                        tax_code_base: this.wildguess.tax_percent_credit ? null : undefined // TODO
+                        tax_percent: this.wildguess.tax_percent_credit,
+                        tax_code_base: this.wildguess.tax_percent_credit ? this.guessTaxCode(this.wildguess.tax_percent_credit) : undefined
                     });
 
                     if(this.wildguess.tax_percent_debit)
                         tx.push({
                             posting_date: this.wildguess.date,
-                            account: null, // TODO
+                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_debit)))?._id,
                             amount: +(this.wildguess.amount - this.wildguess.amount_net),
                             text: this.wildguess.text,
-                            tax_code: null // TODO
+                            tax_percent: this.wildguess_tax_percent_debit,
+                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_debit)
                         });
 
                     if(this.wildguess.tax_percent_credit)
                         tx.push({
                             posting_date: this.wildguess.date,
-                            account: null, // TODO
+                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_credit)))?._id,
                             amount: -(this.wildguess.amount - this.wildguess.amount_net),
                             text: this.wildguess.text,
-                            tax_code: null // TODO
+                            tax_percent: this.wildguess.tax_percent_credit,
+                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_credit)
                         });
 
                     return console.log(doc); // TODO remove DEBUG
@@ -137,6 +142,12 @@ let app = Vue.createApp(
                     alert("Error!");
                     console.error(x);
                 }
+        },
+
+        guessTaxCode(percent)
+        {
+            // TODO use jurisdiction, tax_code.type (input tax receivable / tax payable), un_ece_5305 (S / AA / H / A / Z), rates
+            return "at.vat.input";
         },
 
         acceptFile(event)
