@@ -29,6 +29,7 @@ module.exports = function(api)
         try
         {
             let identity = new Individual(req.body);
+            identity.full_name = `${identity.first_name ?? ""} ${identity.last_name ?? ""}`.trim();
             await identity.save();
             res.send(identity);
         }
@@ -95,21 +96,40 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.patch("/api/v1/individuals/:id", async (req, res) =>
+    api.patch("/api/v1/individuals/:id", async (req, res, next) =>
     {
-        await Individual.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            let identity = await Identity.findOne({ _id: req.params.id });
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+            else
+            {
+                let full_name = `${req.body.first_name ?? identity.first_name ?? ""} ${req.body.last_name ?? identity.last_name ?? ""}`.trim();
+                await Individual.updateOne({ _id: req.params.id }, { full_name, ...req.body });
+                res.send({ success: true });
+            }
+        }
+        catch(x) { next(x) }
     });
 
     api.patch("/api/v1/organizations/:id", async (req, res) =>
     {
-        await Organization.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            await Organization.updateOne({ _id: req.params.id }, req.body);
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     api.delete("/api/v1/identities/:id", async (req, res) =>
     {
-        await Identity.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+        try
+        {
+            await Identity.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 };

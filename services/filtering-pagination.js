@@ -18,7 +18,7 @@ module.exports = async function(req, res, next)
         const guessType = (value) =>
         {
             // detect number
-            if(typeof value === "string" && !isNaN(value) && !isNaN(parseFloat(value)) && value.substring(0, 1) !== "0")
+            if(typeof value === "string" && !isNaN(value) && !isNaN(parseFloat(value)) && value.substring(0, 1) !== "0" || value === "0")
                 return parseFloat(value);
 
             // detect boolean and null value

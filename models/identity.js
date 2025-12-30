@@ -6,6 +6,7 @@ const Identity = mongoose.model("Identity", (function()
 {
     const schemaDefinition = (
     {
+        full_name: { type: String, required: true },
         trader: Boolean,
         dba: [ String ],
         main_address: Address,
@@ -61,7 +62,6 @@ const Individual = Identity.discriminator("Individual",
 // organization schema
 const Organization = Identity.discriminator("Organization",
 {
-    full_name: { type: String, required: true },
     registration_number: String,
     jurisdiction_of_incorporation: { type: String, validate: { validator: (v) => /^[A-Z]{2}(\-.+)?$/.test(v) } }
 });

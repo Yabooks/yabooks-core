@@ -14,7 +14,6 @@ module.exports = function(api)
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
                 { $match: { "ledger_transactions.alternate_ledger": null } },
-                { $set: { "document_id": "$_id._id" } },
                 { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", {
                     document_id: "$$ROOT._id",
@@ -23,7 +22,7 @@ module.exports = function(api)
                     document_external_reference: "$$ROOT.external_reference",
                     business_partner: "$$ROOT.business_partner"
                 } ] } } },
-                { $unset: "override_business_partner" },
+                { $unset: [ "override_business_partner", "thumbnail", "type" ] },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0 } },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
@@ -46,7 +45,6 @@ module.exports = function(api)
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
                 { $match: { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger} ] } },
-                { $set: { "document_id": "$_id._id" } },
                 { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", {
                     document_id: "$$ROOT._id",
@@ -55,7 +53,7 @@ module.exports = function(api)
                     document_external_reference: "$$ROOT.external_reference",
                     business_partner: "$$ROOT.business_partner"
                 } ] } }  },
-                { $unset: "override_business_partner" },
+                { $unset: [ "override_business_partner", "thumbnail", "type" ] },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0 } },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
@@ -117,21 +115,55 @@ module.exports = function(api)
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
-                { $match: { "ledger_transactions.alternate_ledger": null, "ledger_transactions.receivable": { $ne: 0 } } },
-                { $unionWith: { coll: Document.collection.collectionName, pipeline: [
+                { $match: { "ledger_transactions.alternate_ledger": null } },
+                { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
+                { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", {
+                    document_id: "$$ROOT._id",
+                    document_type: "$$ROOT.type",
+                    document_internal_reference: "$$ROOT.internal_reference",
+                    document_external_reference: "$$ROOT.external_reference",
+                    business_partner: "$$ROOT.business_partner"
+                } ] } } },
+                { $unset: [ "override_business_partner", "thumbnail", "type" ] },
+                { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0 } },
+                { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
+                { $unwind: "$account" },
+                { $lookup: { from: Identity.collection.collectionName, localField: "business_partner", foreignField: "_id", as: "business_partner" } },
+                { $unwind: { path: "$business_partner", preserveNullAndEmptyArrays: true } },
+
+                // filter for ledger transactions of accounts only that track open items
+                { $match: { "account.track_open_items": true } },
+
+                // look up ledger transactions that have this transaction linked as open item allocation
+                { $lookup: { from: Document.collection.collectionName, let: { localId: "$_id" }, as: "open_items_allocated", pipeline: [
                     { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                     { $unwind: "$ledger_transactions" },
-                    { $unwind: "$ledger_transactions.pays" },
-                    // TODO { $match: {} },
-                    //{ $set: { "_id": "$ledger_transactions.pays.document", "receivable": "$pays.amount_paid", due_date: null } }
+                    { $match: { "ledger_transactions.alternate_ledger": null } },
+                    { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
+                    { $unwind: "$ledger_transactions.open_item_allocations" },
+                    { $replaceRoot: { newRoot: { $mergeObjects: [ "$ledger_transactions.open_item_allocations", {
+                        document_id: "$$ROOT._id",
+                        document_type: "$$ROOT.type",
+                        document_internal_reference: "$$ROOT.internal_reference",
+                        document_external_reference: "$$ROOT.external_reference",
+                        business_partner: "$$ROOT.business_partner",
+                        _id: "$ledger_transactions.open_item_allocations.ledger_transaction"
+                    } ] } } },
+                    { $unset: [ "override_business_partner", "thumbnail", "ledger_transaction" ] },
+                    { $lookup: { from: Identity.collection.collectionName, localField: "business_partner", foreignField: "_id", as: "business_partner" } },
+                    { $unwind: { path: "$business_partner", preserveNullAndEmptyArrays: true } },
+                    { $match: { $expr: { $eq: [ "$_id", "$$localId" ] } } }
                 ] } },
-                // TODO
-                /*{ $match: { receivable: { $ne: 0 } } },
-                { $group: { _id: "$_id", receivable: { $sum: "$receivable" }, due_date: { $min: "$due_date" } } },
-                { $lookup: { from: Document.collection.collectionName, localField: "_id", foreignField: "_id", as: "business_partner" } },
-                { $unwind: "$business_partner" },
-                { $lookup: { from: Business.collection.collectionName, localField: "business_partner.business_partner", foreignField: "_id", as: "business_partner" } },
-                { $unwind: { path: "$business_partner", preserveNullAndEmptyArrays: true } }*/
+
+                // merge links of both directions, and sum up open amount
+                { $set: { open_amount: { $add: [
+                    "$amount",
+                    { $multiply: [ { $sum: "$open_item_allocations.amount" }, -1 ] },
+                    { $sum: "$open_items_allocated.amount" }
+                ] } } },
+
+                // sort by account display number, due date, and posting date
+                { $sort: { "account.display_number": 1, "due_date": 1, "posting_date": 1 } }
             ]));
         }
         catch(x) { next(x) }

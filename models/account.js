@@ -46,6 +46,7 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
         display_number: { type: String, required: true },
         display_name: { type: String, required: true },
 
+        track_open_items: { type: Boolean, default: false },
         preferred_tax_code: String,
         preferred_tax_percent: mongoose.Schema.Types.Decimal128,
         default_cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: false }, // null if not a cost transaction

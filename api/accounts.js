@@ -36,7 +36,8 @@ module.exports = function(api)
         try
         {
             res.send(await req.paginatedAggregatePipelineWithFilters(LedgerAccount, [
-                { $match: { business: new req.ObjectId(req.params.id) } }
+                { $match: { business: new req.ObjectId(req.params.id) } },
+                { $sort: { display_number: 1 } }
             ]));
         }
         catch(x) { next(x) }

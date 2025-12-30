@@ -25,9 +25,16 @@
                     </td>
                     <td>
                         <a class="link" @click="goToDocument(record.document_id)">
-                            <span v-if="record.document_external_reference">{{ record.document_external_reference }}</span>
-                            <span v-else-if="record.document_internal_reference">{{ record.document_type }}{{ record.document_internal_reference }}</span>
-                            <span v-else>{{ $filters.translate("general-ledger.document.unnamed") }}</span>
+                            <span v-if="record.document_external_reference">
+                                {{ record.document_external_reference }}
+                            </span>
+                            <span v-else-if="record.document_internal_reference">
+                                {{ record.document_type ?? "" }}
+                                {{ record.document_internal_reference }}
+                            </span>
+                            <span v-else>
+                                {{ $filters.translate("general-ledger.document.unnamed") }}
+                            </span>
                         </a>
                         <a class="editRecord" @click="editDocument(record.document_id)">
                             &#x270F;&#xFE0F;
@@ -37,13 +44,13 @@
                         <a class="link" @click="goToAccount(record.account._id)">
                             {{ record.account.display_number }}
                         </a>
-                        <span v-if="$filters.number(record.receivable) != 0">
+                        <span v-if="record.account.track_open_items && record.business_partner">
                             <a class="link" @click="goToAccount(record.account._id, record.business_partner._id)">
                                 &nbsp;{{ record.business_partner?.full_name }}
                             </a>
                         </span>
-                        <span v-if="false">
-                            <a class="link" @click="record.asset">
+                        <span v-if="record.asset">
+                            <a class="link" @click="goToAsset(record.asset._id)">
                                 &nbsp;{{ record.asset?.name }}
                             </a>
                         </span>

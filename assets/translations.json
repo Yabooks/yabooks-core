@@ -69,6 +69,8 @@
     { "code": "accounts.types.expenses", "language": "de", "text": "Aufwendungen" },
     { "code": "accounts.types.oci", "language": "en", "text": "other comprehensive income" },
     { "code": "accounts.types.oci", "language": "de", "text": "sonstiges Ergebnis (OCI)" },
+    { "code": "accounts.track_open_items", "language": "en", "text": "manage open items" },
+    { "code": "accounts.track_open_items", "language": "de", "text": "offene Posten vewalten" },
     { "code": "balances.debit", "language": "de", "text": "Soll" },
     { "code": "balances.debit", "language": "en", "text": "Debit" },
     { "code": "balances.credit", "language": "de", "text": "Haben" },

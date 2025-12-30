@@ -49,6 +49,11 @@ let app = Vue.createApp(
             self.location = `/ledger/?business=${await getSelectedBusinessId()}&document_id=${id}`;
         },
 
+        async goToAsset(id)
+        {
+            // TODO #11
+        },
+
         async editDocument(id)
         {
             try

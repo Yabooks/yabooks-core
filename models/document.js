@@ -11,16 +11,17 @@ const omitTimezone = (date) =>
     return null;
 };
 
-const Payment = (function()
+const OpenItemAllocation = (function()
 {
     const schemaDefinition = (
     {
-        document: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
-        amount_paid: { type: mongoose.Schema.Types.Decimal128, required: true }
+        ledger_transaction: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerTransaction", required: true },
+        type: { type: String, enum: [ "cancelation", "discount", "payment" ], required: true },
+        amount: { type: mongoose.Schema.Types.Decimal128, required: true }
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true } });
-    schema.path("document").index(true);
+    schema.path("ledger_transaction").index(true);
     return schema;
 })();
 
@@ -55,9 +56,9 @@ const LedgerTransaction = (function()
 
         override_business_partner:  { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },
         business_partner_tax_number: String, // VAT number, TIN, etc used by the business partner
-        receivable: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
+
         due_date: Date,
-        pays: [ Payment ]
+        open_item_allocations: [ OpenItemAllocation ]
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
@@ -69,7 +70,8 @@ const LedgerTransaction = (function()
     schema.path("tax_sub_code").index(true);
     schema.path("override_business_partner").index(true);
     schema.path("business_partner_tax_number").index(true);
-    schema.path("pays").index(true);
+    schema.path("due_date").index(true);
+    schema.path("open_item_allocations").index(true);
     return schema;
 })();
 
