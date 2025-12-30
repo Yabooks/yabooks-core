@@ -89,7 +89,7 @@ let app = Vue.createApp(
                         amount: +(this.wildguess.tax_percent_debit ? this.wildguess.amount_net : this.wildguess.amount),
                         text: this.wildguess.text,
                         tax_percent: this.wildguess.tax_percent_debit,
-                        tax_code_base: this.wildguess.tax_percent_debit ? this.guessTaxCode(this.wildguess.tax_percent_debit) : undefined
+                        tax_code_base: this.wildguess.tax_percent_debit ? this.guessTaxCode(this.wildguess.tax_percent_debit, this.wildguess.account_debit_details) : undefined
                     });
 
                     tx.push({
@@ -98,27 +98,27 @@ let app = Vue.createApp(
                         amount: -(this.wildguess.tax_percent_credit ? this.wildguess.amount_net : this.wildguess.amount),
                         text: this.wildguess.text,
                         tax_percent: this.wildguess.tax_percent_credit,
-                        tax_code_base: this.wildguess.tax_percent_credit ? this.guessTaxCode(this.wildguess.tax_percent_credit) : undefined
+                        tax_code_base: this.wildguess.tax_percent_credit ? this.guessTaxCode(this.wildguess.tax_percent_credit, this.wildguess.account_credit_details) : undefined
                     });
 
                     if(this.wildguess.tax_percent_debit)
                         tx.push({
                             posting_date: this.wildguess.date,
-                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_debit)))?._id,
+                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_debit, this.wildguess.account_debit_details)))?._id,
                             amount: +(this.wildguess.amount - this.wildguess.amount_net),
                             text: this.wildguess.text,
                             tax_percent: this.wildguess_tax_percent_debit,
-                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_debit)
+                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_debit, this.wildguess.account_debit_details)
                         });
 
                     if(this.wildguess.tax_percent_credit)
                         tx.push({
                             posting_date: this.wildguess.date,
-                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_credit)))?._id,
+                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_credit, this.wildguess.account_credit_details)))?._id,
                             amount: -(this.wildguess.amount - this.wildguess.amount_net),
                             text: this.wildguess.text,
                             tax_percent: this.wildguess.tax_percent_credit,
-                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_credit)
+                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_credit, this.wildguess.account_credit_details)
                         });
 
                     return console.log(doc); // TODO remove DEBUG
@@ -144,8 +144,13 @@ let app = Vue.createApp(
                 }
         },
 
-        guessTaxCode(percent)
+        guessTaxCode(percent, account)
         {
+            if(account.preferred_tax_code)
+            {
+                return account.preferred_tax_code;
+            }
+
             // TODO use jurisdiction, tax_code.type (input tax receivable / tax payable), un_ece_5305 (S / AA / H / A / Z), rates
             return "at.vat.input";
         },
