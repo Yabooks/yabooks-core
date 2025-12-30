@@ -33,8 +33,8 @@ app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
             version: require("./package.json").version,
             description: "API documentation for all core features",
             contact: {
-                name: "Leopold M. Regner",
-                email: "leo@yabooks.net",
+                name: "ducklings tech solutions stb flexco",
+                email: "office@yabooks.net",
                 url: "https://www.yabooks.net/"
             },
             license: {

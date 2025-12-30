@@ -16,8 +16,8 @@
     "package-win": "electron-packager . YaBooks --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico --overwrite"
   },
   "keywords": [],
-  "author": "Leopold M. Regner",
-  "license": "GPL-3.0",
+  "author": "ducklings tech solutions stb flexco",
+  "license": "EUPL-1.2",
   "dependencies": {
     "@fragaria/address-formatter": "^5.0.0",
     "authenticator": "^1.1.5",
