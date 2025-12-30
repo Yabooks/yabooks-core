@@ -78,9 +78,9 @@ let app = Vue.createApp(
             const revenueAccounts = [];
 
             for(let account of this.accounts)
-                if(account.type == "revenues" && val(account.balance) < 0 || account.type == "expenses" && val(account.balance) > 0)
+                if(account.type == "revenues" && val(account.balance) < 0 || account.type == "expenses" && val(account.balance) < 0)
                     revenueAccounts.push(account);
-                else if(account.type == "revenues" && val(account.balance) > 0 || account.type == "expenses" && val(account.balance) < 0)
+                else if(account.type == "revenues" && val(account.balance) > 0 || account.type == "expenses" && val(account.balance) > 0)
                     expenseAccounts.push(account);
 
             let datasets = [];
