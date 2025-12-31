@@ -59,10 +59,16 @@ let app = Vue.createApp(
             // map accounts, find appropriate tax code and caculate tax
             this.wildguess.account_debit_details = this.accounts.find(account => account.display_number == this.wildguess.account_debit);
             this.wildguess.account_credit_details = this.accounts.find(account => account.display_number == this.wildguess.account_credit);
+            this.wildguess.tax_code_debit = await this.guessTaxCode(this.wildguess.tax_percent_debit, this.wildguess.account_debit_details);
+            this.wildguess.tax_code_credit = await this.guessTaxCode(this.wildguess.tax_percent_credit, this.wildguess.account_credit_details);
 
             // adapt box border color based on completeness of input
-            this.input_complete = !this.input ? null :
-                (this.wildguess.date && this.wildguess.account_debit_details && this.wildguess.account_credit_details && this.wildguess.amount);
+            this.input_complete = !this.input ? null : (
+                this.wildguess.date && this.wildguess.amount &&
+                this.wildguess.account_debit_details && this.wildguess.account_credit_details &&
+                (!this.wildguess.tax_percent_debit || this.wildguess.tax_code_debit) &&
+                (!this.wildguess.tax_percent_credit || this.wildguess.tax_code_credit)
+            );
 
             if(event.code == "Enter" || event.code == "NumpadEnter")
                 try
@@ -89,7 +95,7 @@ let app = Vue.createApp(
                         amount: +(this.wildguess.tax_percent_debit ? this.wildguess.amount_net : this.wildguess.amount),
                         text: this.wildguess.text,
                         tax_percent: this.wildguess.tax_percent_debit,
-                        tax_code_base: this.wildguess.tax_percent_debit ? this.guessTaxCode(this.wildguess.tax_percent_debit, this.wildguess.account_debit_details) : undefined
+                        tax_code_base: this.wildguess.tax_code_debit?.code
                     });
 
                     tx.push({
@@ -98,30 +104,30 @@ let app = Vue.createApp(
                         amount: -(this.wildguess.tax_percent_credit ? this.wildguess.amount_net : this.wildguess.amount),
                         text: this.wildguess.text,
                         tax_percent: this.wildguess.tax_percent_credit,
-                        tax_code_base: this.wildguess.tax_percent_credit ? this.guessTaxCode(this.wildguess.tax_percent_credit, this.wildguess.account_credit_details) : undefined
+                        tax_code_base: this.wildguess.tax_code_credit?.code
                     });
 
                     if(this.wildguess.tax_percent_debit)
                         tx.push({
                             posting_date: this.wildguess.date,
-                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_debit, this.wildguess.account_debit_details)))?._id,
+                            account: this.wildguess.tax_code_debit?.account?._id,
                             amount: +(this.wildguess.amount - this.wildguess.amount_net),
                             text: this.wildguess.text,
-                            tax_percent: this.wildguess_tax_percent_debit,
-                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_debit, this.wildguess.account_debit_details)
+                            tax_percent: this.wildguess?.tax_percent_debit,
+                            tax_code: this.wildguess.tax_code_debit?.code
                         });
 
                     if(this.wildguess.tax_percent_credit)
                         tx.push({
                             posting_date: this.wildguess.date,
-                            account: this.accounts.find(account => account.tags?.includes?.(this.guessTaxCode(this.wildguess.tax_percent_credit, this.wildguess.account_credit_details)))?._id,
+                            account: this.wildguess.tax_code_credit?.account?._id,
                             amount: -(this.wildguess.amount - this.wildguess.amount_net),
                             text: this.wildguess.text,
                             tax_percent: this.wildguess.tax_percent_credit,
-                            tax_code: this.guessTaxCode(this.wildguess.tax_percent_credit, this.wildguess.account_credit_details)
+                            tax_code: this.wildguess.tax_code_credit?.code
                         });
 
-                    return console.log(doc); // TODO remove DEBUG
+                    this.$forceUpdate();return console.log(doc); // TODO remove DEBUG
 
                     // create document and set meta data
                     doc = await axios.post(`/api/v1/businesses/${this.business._id}/documents`, doc);
@@ -135,24 +141,65 @@ let app = Vue.createApp(
                     this.wildguess = {};
                     this.file = null;
                     this.input = "";
-                    this.$forceUpdate();
                 }
                 catch(x)
                 {
-                    alert("Error!");
+                    alert(`Error!\n${x?.message ?? x}`);
                     console.error(x);
                 }
+
+            this.$forceUpdate();
         },
 
-        guessTaxCode(percent, account)
+        guessTaxCode(percent, ledger_account)
         {
-            if(account.preferred_tax_code)
+            if(!percent && percent !== 0)
+                return undefined;
+
+            // use preferred tax code if one is stored in the revenue/expense account meta data
+            if(ledger_account.preferred_tax_code)
             {
-                return account.preferred_tax_code;
+                let tax_code = this.tax_codes.find(tc => tc.code === ledger_account.preferred_tax_code);console.log(percent, tax_code);
+                if(tax_code && tax_code.rates?.includes?.(percent))
+                {
+                    tax_code.account = this.accounts.find(account => account.tags?.includes?.(tax_code?.code));
+                    if(tax_code.account)
+                        return tax_code;
+                    else throw `${this.$filters.translate("quick-recorder.no-tagged-tax-account")} ${tax_code?.code}`;
+                }
+                else throw `${this.$filters.translate("quick-recorder.no-appropriate-tax-code")} ${ledger_account.preferred_tax_code} ${percent}%`;
             }
 
-            // TODO use jurisdiction, tax_code.type (input tax receivable / tax payable), un_ece_5305 (S / AA / H / A / Z), rates
-            return "at.vat.input";
+            // TODO pay and receive back tax code
+
+            // otherwise, attempt to find appropriate tax code based on revenue/expense account type
+            let appropriate_tax_codes = this.tax_codes.filter(tc => tc.rates?.includes?.(percent)).filter(tax_code =>
+                ledger_account.type == "revenues" && tax_code.type == "tax payable" ||
+                (ledger_account.type == "assets" || ledger_account.type == "expenses") && tax_code.type == "input tax receivable"
+            );
+
+            // limit found codes by jurisdiction
+            if(appropriate_tax_codes.length > 1)
+            {
+                // TODO
+            }
+
+            console.log("appropriate", appropriate_tax_codes); // TODO remove
+
+            if(appropriate_tax_codes.length > 0)
+            {
+                let tax_code = appropriate_tax_codes.sort((a, b) => a?.code?.length - b?.code?.length)[0]; // use shortest tax code
+                if(tax_code && tax_code.rates?.includes?.(percent))
+                {
+                    tax_code.account = this.accounts.find(account => account.tags?.includes?.(tax_code?.code));
+                    if(tax_code.account)
+                        return tax_code;
+                    else throw `${this.$filters.translate("quick-recorder.no-tagged-tax-account")} ${tax_code?.code}`;
+                }
+                else throw `${this.$filters.translate("quick-recorder.no-appropriate-tax-code")} ${ledger_account.preferred_tax_code} ${percent}%`;
+            }
+
+            throw `${this.$filters.translate("quick-recorder.no-appropriate-tax-code")} ${percent}%`;
         },
 
         acceptFile(event)

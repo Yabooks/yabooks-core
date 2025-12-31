@@ -124,5 +124,9 @@
     { "code": "quick-recorder.abort-incomplete", "language": "de", "text": "Eine unvollst\u00e4ndige Buchung kann nicht gespeichert werden." },
     { "code": "quick-recorder.abort-incomplete", "language": "en", "text": "Cannot store an incomplete transaction." },
     { "code": "quick-recorder.manual", "language": "de", "text": "" },
-    { "code": "quick-recorder.manual", "language": "en", "text": "" }
+    { "code": "quick-recorder.manual", "language": "en", "text": "" },
+    { "code": "quick-recorder.no-tagged-tax-account", "language": "de", "text": "Es existiert kein Konto mit einem Tag f\u00fcr diesen Steuercode:" },
+    { "code": "quick-recorder.no-tagged-tax-account", "language": "en", "text": "No account with a tax for this tax code exists:" },
+    { "code": "quick-recorder.no-appropriate-tax-code", "language": "de", "text": "Es konnte kein passender Steuercode gefunden werden:" },
+    { "code": "quick-recorder.no-appropriate-tax-code", "language": "en", "text": "No appropriate tax code could be found:" }
 ]

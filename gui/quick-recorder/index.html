@@ -44,7 +44,13 @@
                 </tr>
                 <tr v-if="wildguess.tax_percent_debit || wildguess.tax_percent_credit">
                     <td>{{ $filters.translate('quick-recorder.tax') }}</td>
-                    <td>{{ wildguess.tax_percent_debit ?? wildguess.tax_percent_credit }}%</td>
+                    <td>
+                        <span v-if="wildguess.tax_code_debit?.code || wildguess.tax_code_credit?.code">
+                            {{ $filters.toFlagEmoji((wildguess.tax_code_debit?.code ?? wildguess.tax_code_credit?.code).substring(0, 2)) }}
+                        </span>
+                        {{ wildguess.tax_percent_debit ?? wildguess.tax_percent_credit }}%
+                        {{ wildguess.tax_code_debit?.description ?? wildguess.tax_code_credit?.description ?? "" }}
+                    </td>
                 </tr>
                 <tr v-if="file">
                     <td>{{ $filters.translate('quick-recorder.document') }}</td>

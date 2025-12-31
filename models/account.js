@@ -57,8 +57,8 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
 
         business_partner: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: false },
         tax_number: String,
-        credit_card_number_ending: String,
-        iban: String,
+        credit_card_number_ending: String, // four digits, to be used with a credit card clearing account
+        iban: String, // to be used with a bank account
         bic: String,
 
         valid_from: Date,
