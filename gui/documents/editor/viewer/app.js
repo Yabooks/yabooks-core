@@ -81,16 +81,16 @@ Vue.createApp(
 
             if(tool == "pen")
                 this.tool = { color: [ 0, 0, 255 ], opacity: 1, lineWidth: 2 };
-            
+
             if(tool == "fountain-pen")
                 this.tool = { color: [ 0, 0, 100 ], opacity: 1, lineWidth: 4 };
-            
+
             if(tool == "paintbrush")
                 this.tool = { color: [ 255, 0, 0 ], opacity: .8, lineWidth: 8 };
-            
+
             if(tool == "crayon")
                 this.tool = { color: [ 255, 255, 0 ], opacity: .4, lineWidth: 16 };
-            
+
             if(tool == "eraser")
                 this.tool = { lineWidth: 1, type: "eraser" };
         },

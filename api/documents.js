@@ -22,7 +22,7 @@ module.exports = function(api)
         {
             if(!req.body || !Array.isArray(req.body))
                 res.status(400).json({ error: "expecting Mongo pipeline as array in request body" });
-            
+
             else res.json(await Document.aggregate([ // FIXME might allow security breach by joining other collections
                 { $match: { business: new req.ObjectId(req.params.id) } },
                 ...req.body
@@ -80,6 +80,9 @@ module.exports = function(api)
 
             if(!doc)
                 res.status(404).send({ error: "not found" });
+
+            else if(!await Document.hasCurrentVersion(doc._id))
+                res.status(404).send({ error: "no current version found" });
 
             else res.header("content-type", doc["mime_type"])
                     .header("content-disposition", `attachment; filename="${doc.name}"`)

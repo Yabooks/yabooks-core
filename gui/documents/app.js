@@ -205,7 +205,7 @@ async function uploadFiles(files, callback)
             let reader = new FileReader();
             reader.onload = async () =>
             {
-                const headers = { "Content-Type": "application/octet-stream" };
+                const headers = { "Content-Type": file.type ?? "application/octet-stream" };
                 await axios.put(`/api/v1/documents/${doc.data._id}/binary`, new Uint8Array(reader.result), { headers });
                 callback(doc.data);
             };

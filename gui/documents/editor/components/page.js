@@ -32,12 +32,15 @@ const Page = ( // PDF drawing editor
     {
         this.$refs.img.onload = () =>
         {
-            this.canvas = this.$refs.canvas;
-            this.canvas.width = this.$refs.img.naturalWidth;
-            this.canvas.height = this.$refs.img.naturalHeight;
-            this.ctx = this.canvas.getContext("2d");
-
-            this.drawAllAnnotations();
+            if(this.annotationsSupported)
+            {
+                this.canvas = this.$refs.canvas;
+                this.canvas.width = this.$refs.img.naturalWidth;
+                this.canvas.height = this.$refs.img.naturalHeight;
+                this.ctx = this.canvas.getContext("2d");
+                this.drawAllAnnotations();
+            }
+            
             this.$forceUpdate();
         };
     },
@@ -51,7 +54,13 @@ const Page = ( // PDF drawing editor
                     width: parseInt(this.canvas.width * this.zoom) + "px",
                     height: parseInt(this.canvas.height * this.zoom) + "px"
                 };
-            
+
+            else if(this.$refs?.img)
+                return {
+                    width: parseInt(this.$refs.img.naturalWidth * this.zoom) + "px",
+                    height: parseInt(this.$refs.img.naturalHeight * this.zoom) + "px"
+                };
+
             else return {};
         },
 
@@ -91,7 +100,7 @@ const Page = ( // PDF drawing editor
 
             if(this.tool?.type === "eraser")
                 this.checkAndEraseStroke(e.offsetX / this.scale / this.zoom, e.offsetY / this.scale / this.zoom);
-            else            
+            else
                 this.currentPoints.value = [ { x: e.offsetX / this.scale / this.zoom, y: e.offsetY / this.scale / this.zoom } ];
         },
 
@@ -163,16 +172,16 @@ const Page = ( // PDF drawing editor
                 const dx = x2 - x1;
                 const dy = y2 - y1;
                 const lengthSquared = dx * dx + dy * dy;
-                
+
                 if(lengthSquared === 0)
                     return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
-                
+
                 let t = ((px - x1) * dx + (py - y1) * dy) / lengthSquared;
                 t = Math.max(0, Math.min(1, t));
-                
+
                 const projX = x1 + t * dx;
                 const projY = y1 + t * dy;
-                
+
                 return Math.sqrt((px - projX) * (px - projX) + (py - projY) * (py - projY));
             };
 
@@ -184,16 +193,16 @@ const Page = ( // PDF drawing editor
             {
                 const annotation = this.annotations[i];
                 const strokeRadius = annotation.lineWidth / 2;
-                
+
                 // Check if pointer is near any point in the stroke
                 for(let j = 0; j < annotation.points.length - 1; j++)
                 {
                     const p1 = annotation.points[j];
                     const p2 = annotation.points[j + 1];
-                    
+
                     // Calculate distance from point to line segment
                     const dist = distanceToLineSegment(x, y, p1.x, p1.y, p2.x, p2.y);
-                    
+
                     if(dist < eraserRadius + strokeRadius)
                     {
                         this.annotations.splice(i, 1);
@@ -201,7 +210,7 @@ const Page = ( // PDF drawing editor
                         break;
                     }
                 }
-                
+
                 if(erasedAny)
                     break; // Only erase one stroke at a time
             }

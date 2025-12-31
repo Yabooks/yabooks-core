@@ -237,6 +237,12 @@ Document.getStorageLocation = function(id)
     return path.join(process.env.persistent_data_dir || "./data", `document_${id}`);
 };
 
+Document.hasCurrentVersion = async function(id)
+{
+    const doesFileExist = async path => !!(await fs.access(path).then(() => true).catch(() => false));
+    return await doesFileExist(Document.getStorageLocation(id));
+};
+
 Document.readCurrentVersion = async function(id)
 {
     return await fs.readFile(Document.getStorageLocation(id));
