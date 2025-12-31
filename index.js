@@ -24,6 +24,28 @@ app.use(cookieParser());
 // authentication routes
 require("./api/auth.js")(app);
 
+// render markdown help pages
+app.get("/manuals/:page", async (req, res, next) =>
+{
+    try
+    {
+        if(req.params.page.includes(".."))
+            throw new Error("no such file");
+
+        const { marked: renderMarkdown } = await import("marked");
+        let md = require("node:fs").readFileSync(`./assets/manuals/${req.params.page}.md`, "utf8");
+        res.send(`<!DOCTYPE html><html>
+            <head><title>YaBooks</title><link rel="stylesheet" href="/_generic/help_page.css" /></head>
+            <body><main>${renderMarkdown(md)}</main></body>`);
+    }
+    catch(x)
+    {
+        if(x?.message?.includes("no such file"))
+            res.status(404).send("help page does not exist");
+        else res(next);
+    }
+});
+
 // api swagger documentation
 app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
     swaggerDefinition: {
@@ -55,8 +77,8 @@ app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
                         }
                 }},
 
-                // read all mongoose schemas and models from modesl folder and convert them to swagger component schemas
-                ...require("fs").readdirSync("./models")
+                // read all mongoose schemas and models from models folder and convert them to swagger component schemas
+                ...require("node:fs").readdirSync("./models")
                     .filter(fileName => fileName.includes(".js"))
                     .map(fileName => {
                         const models = require(`./models/${fileName}`), schemas = {};

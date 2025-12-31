@@ -75,12 +75,14 @@ const filters = (
         return Math.abs(number);
     },
 
-    formatNumber: (number) =>
+    formatNumber: (number, currency = null) =>
     {
         if(typeof number === "object" && number?.$numberDecimal)
             number = number.$numberDecimal;
 
-        return Intl.NumberFormat(getUserLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
+        if(currency)
+            return Intl.NumberFormat(getUserLanguage(), { style: "currency", currency }).format(number);
+        else return Intl.NumberFormat(getUserLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
     },
 
     id2timestamp(id)

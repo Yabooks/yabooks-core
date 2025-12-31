@@ -1,4 +1,4 @@
-/* global getSelectedBusinessId, filters, wildguess */
+/* global getSelectedBusinessId, filters, wildguess, guessTaxCode */
 
 let app = Vue.createApp(
 {
@@ -13,9 +13,15 @@ let app = Vue.createApp(
             input: "",
             file: null,
             wildguess: {},
+            processing: false,
             recently_added: [],
             input_complete: null
         };
+    },
+
+    created()
+    {
+        this.guessTaxCode = guessTaxCode.bind(this); // @see wildguess.js
     },
 
     async mounted()
@@ -37,6 +43,7 @@ let app = Vue.createApp(
             this.tax_codes = res.data.data;
 
             await loadTranslations({ "code*": "quick-recorder." });
+            await loadTranslations({ "code*": "general-ledger.document." });
             this.$forceUpdate();
         }
         catch(x)
@@ -53,6 +60,8 @@ let app = Vue.createApp(
     {
         async guess(event)
         {
+            this.processing = true;
+
             // guess meaning of input
             this.wildguess = await wildguess(this.input);
 
@@ -92,7 +101,7 @@ let app = Vue.createApp(
                     tx.push({
                         posting_date: this.wildguess.date,
                         account: this.wildguess.account_debit_details._id,
-                        amount: +(this.wildguess.tax_percent_debit ? this.wildguess.amount_net : this.wildguess.amount),
+                        amount: (this.wildguess.tax_percent_debit ? this.wildguess.amount_net : this.wildguess.amount).toFixed(2),
                         text: this.wildguess.text,
                         tax_percent: this.wildguess.tax_percent_debit,
                         tax_code_base: this.wildguess.tax_code_debit?.code
@@ -101,7 +110,7 @@ let app = Vue.createApp(
                     tx.push({
                         posting_date: this.wildguess.date,
                         account: this.wildguess.account_credit_details._id,
-                        amount: -(this.wildguess.tax_percent_credit ? this.wildguess.amount_net : this.wildguess.amount),
+                        amount: (this.wildguess.tax_percent_credit ? -this.wildguess.amount_net : -this.wildguess.amount).toFixed(2),
                         text: this.wildguess.text,
                         tax_percent: this.wildguess.tax_percent_credit,
                         tax_code_base: this.wildguess.tax_code_credit?.code
@@ -111,7 +120,7 @@ let app = Vue.createApp(
                         tx.push({
                             posting_date: this.wildguess.date,
                             account: this.wildguess.tax_code_debit?.account?._id,
-                            amount: +(this.wildguess.amount - this.wildguess.amount_net),
+                            amount: (this.wildguess.amount - this.wildguess.amount_net).toFixed(2),
                             text: this.wildguess.text,
                             tax_percent: this.wildguess?.tax_percent_debit,
                             tax_code: this.wildguess.tax_code_debit?.code
@@ -121,20 +130,19 @@ let app = Vue.createApp(
                         tx.push({
                             posting_date: this.wildguess.date,
                             account: this.wildguess.tax_code_credit?.account?._id,
-                            amount: -(this.wildguess.amount - this.wildguess.amount_net),
+                            amount: (this.wildguess.amount_net - this.wildguess.amount).toFixed(2),
                             text: this.wildguess.text,
                             tax_percent: this.wildguess.tax_percent_credit,
                             tax_code: this.wildguess.tax_code_credit?.code
                         });
 
-                    this.$forceUpdate();return console.log(doc); // TODO remove DEBUG
-
                     // create document and set meta data
-                    doc = await axios.post(`/api/v1/businesses/${this.business._id}/documents`, doc);
+                    let res = await axios.post(`/api/v1/businesses/${this.business._id}/documents`, doc);
+                    this.recently_added.unshift(res.data);
 
                     // upload binary file if one has been dropped
                     if(this.file)
-                        await axios.put(`/api/v1/documents/${doc.data._id}/binary`, this.file.bytes);
+                        await axios.put(`/api/v1/documents/${res.data._id}/binary`, this.file.bytes, { headers: { "content-type": this.file.type } });
 
                     // reset input fields
                     this.input_complete = null;
@@ -148,58 +156,8 @@ let app = Vue.createApp(
                     console.error(x);
                 }
 
+            this.processing = false;
             this.$forceUpdate();
-        },
-
-        guessTaxCode(percent, ledger_account)
-        {
-            if(!percent && percent !== 0)
-                return undefined;
-
-            // use preferred tax code if one is stored in the revenue/expense account meta data
-            if(ledger_account.preferred_tax_code)
-            {
-                let tax_code = this.tax_codes.find(tc => tc.code === ledger_account.preferred_tax_code);console.log(percent, tax_code);
-                if(tax_code && tax_code.rates?.includes?.(percent))
-                {
-                    tax_code.account = this.accounts.find(account => account.tags?.includes?.(tax_code?.code));
-                    if(tax_code.account)
-                        return tax_code;
-                    else throw `${this.$filters.translate("quick-recorder.no-tagged-tax-account")} ${tax_code?.code}`;
-                }
-                else throw `${this.$filters.translate("quick-recorder.no-appropriate-tax-code")} ${ledger_account.preferred_tax_code} ${percent}%`;
-            }
-
-            // TODO pay and receive back tax code
-
-            // otherwise, attempt to find appropriate tax code based on revenue/expense account type
-            let appropriate_tax_codes = this.tax_codes.filter(tc => tc.rates?.includes?.(percent)).filter(tax_code =>
-                ledger_account.type == "revenues" && tax_code.type == "tax payable" ||
-                (ledger_account.type == "assets" || ledger_account.type == "expenses") && tax_code.type == "input tax receivable"
-            );
-
-            // limit found codes by jurisdiction
-            if(appropriate_tax_codes.length > 1)
-            {
-                // TODO
-            }
-
-            console.log("appropriate", appropriate_tax_codes); // TODO remove
-
-            if(appropriate_tax_codes.length > 0)
-            {
-                let tax_code = appropriate_tax_codes.sort((a, b) => a?.code?.length - b?.code?.length)[0]; // use shortest tax code
-                if(tax_code && tax_code.rates?.includes?.(percent))
-                {
-                    tax_code.account = this.accounts.find(account => account.tags?.includes?.(tax_code?.code));
-                    if(tax_code.account)
-                        return tax_code;
-                    else throw `${this.$filters.translate("quick-recorder.no-tagged-tax-account")} ${tax_code?.code}`;
-                }
-                else throw `${this.$filters.translate("quick-recorder.no-appropriate-tax-code")} ${ledger_account.preferred_tax_code} ${percent}%`;
-            }
-
-            throw `${this.$filters.translate("quick-recorder.no-appropriate-tax-code")} ${percent}%`;
         },
 
         acceptFile(event)
@@ -223,6 +181,11 @@ let app = Vue.createApp(
                 alert("Error!");
                 console.error(x);
             }
+        },
+
+        closeModal()
+        {
+            setTimeout(_ => parent.document.app.openModal(false), 500);
         }
     }
 });
