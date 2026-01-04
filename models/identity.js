@@ -1,5 +1,5 @@
 const mongoose = require("../services/connector.js"), fs = require("node:fs").promises, path = require("node:path");
-const { Address, Email, Phone } = require("./contact.js");
+const { Address, Email, Phone, BankAccount } = require("./contact.js");
 
 // identity schema, which is shared by individuals and organizations
 const Identity = mongoose.model("Identity", (function()
@@ -9,15 +9,15 @@ const Identity = mongoose.model("Identity", (function()
         full_name: { type: String, required: true },
         trader: Boolean,
         dba: [ String ],
+        website: String,
         main_address: Address,
         more_adresses: [ Address ],
         main_email: Email,
         more_emails: [ Email ],
         main_phone: Phone,
         more_phones: [ Phone ],
-        website: String,
-        iban: String,
-        bic: String,
+        main_bank_account: BankAccount,
+        more_bank_accoutns: [ BankAccount ],
         tax_numbers: mongoose.Schema.Types.Mixed,
         data: mongoose.Schema.Types.Mixed,
     });
