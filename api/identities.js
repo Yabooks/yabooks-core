@@ -101,14 +101,17 @@ module.exports = function(api)
         try
         {
             let identity = await Identity.findOne({ _id: req.params.id });
+
             if(!identity)
                 res.status(404).send({ error: "not found" });
-            else
-            {
-                let full_name = `${req.body.first_name ?? identity.first_name ?? ""} ${req.body.last_name ?? identity.last_name ?? ""}`.trim();
-                await Individual.updateOne({ _id: req.params.id }, { full_name, ...req.body });
-                res.send({ success: true });
-            }
+
+            identity.full_name = `${req.body.first_name ?? identity.first_name ?? ""} ${req.body.last_name ?? identity.last_name ?? ""}`.trim();
+
+            for(let key in req.body)
+                identity[key] = req.body[key];
+
+            await identity.save();
+            res.send({ success: true });
         }
         catch(x) { next(x) }
     });
@@ -117,7 +120,15 @@ module.exports = function(api)
     {
         try
         {
-            await Organization.updateOne({ _id: req.params.id }, req.body);
+            let identity = await Organization.findOne({ _id: req.params.id });
+
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+
+            for(let key in req.body)
+                identity[key] = req.body[key];
+
+            await identity.save();
             res.send({ success: true });
         }
         catch(x) { next(x) }

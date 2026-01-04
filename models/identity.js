@@ -11,7 +11,7 @@ const Identity = mongoose.model("Identity", (function()
         dba: [ String ],
         website: String,
         main_address: Address,
-        more_adresses: [ Address ],
+        more_addresses: [ Address ],
         main_email: Email,
         more_emails: [ Email ],
         main_phone: Phone,

@@ -15,30 +15,35 @@ const Address = (function()
         city: { type: String, required: true },
         jurisdiction: { type: String, validate: { validator: (v) => /^[A-Z]{2}(\-.+)?$/.test(v) } },
         purpose: String,
-        comment: String
+        comment: String,
+        full_address: String // automatically set by pre-save hook
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true }, autoIndex: false });
     schema.path("lat").index(true);
     schema.path("lng").index(true);
-    schema.virtual("full_address").get(function()
+    schema.path("jurisdiction").index(true);
+
+    schema.pre("save", function(next)
     {
-        let addressLines = formatAddress(
-        {
+        const address = {
             houseNumber: this.building_number,
             road: this.street,
             city: this.city,
             postcode: this.zip_code,
-            state: this.jurisdiction && this.jurisdiction.indexOf("-") > -1 ? this.jurisdiction.substring(this.jurisdiction.indexOf("-") + 1) : undefined,
-            countryCode: this.jurisdiction && this.jurisdiction.indexOf("-") > -1 ? this.jurisdiction.substring(0, this.jurisdiction.indexOf("-")) : this.jurisdiction
-        },
-        { appendCountry: true }).trim().split("\n");
+            state: this.jurisdiction?.indexOf?.("-") > -1 ? this.jurisdiction.substring(this.jurisdiction.indexOf("-") + 1) : undefined,
+            countryCode: this.jurisdiction?.indexOf?.("-") > -1 ? this.jurisdiction.substring(0, this.jurisdiction.indexOf("-")) : this.jurisdiction
+        };
+
+        let addressLines = formatAddress(address, { appendCountry: true }).trim().split("\n");
 
         if(this.additional_info)
             addressLines.splice(1, 0, this.additional_info);
 
-        return addressLines.join("\n");
+        this.full_address = addressLines.join("\n");
+        next();
     });
+
     return schema;
 })();
 
@@ -52,7 +57,7 @@ const Email = (function()
         comment: String
     });
 
-    return new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true }, autoIndex: false });
+    return new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
 })();
 
 // telephone number schema
@@ -63,12 +68,21 @@ const Phone = (function()
         number: { type: String, validate: { validator: (v) => /^\+[0-9]{6,14}$/.test(v) }, required: true },
         additional_dial_tones: { type: String, validate: { validator: (v) => /^[0-9\*\#]*$/.test(v) } },
         purpose: String,
-        comment: String
+        comment: String,
+        formatted_national_number: String, // automatically set by pre-save hook
+        formatted_international_number: String // automatically set by pre-save hook
     });
 
-    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true }, autoIndex: false });
-    schema.virtual("formatted_national_number").get(function() { return parsePhoneNumber(this.number).formatNational(); });
-    schema.virtual("formatted_international_number").get(function() { return parsePhoneNumber(this.number).formatInternational(); });
+    let schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    schema.path("number").index(true);
+
+    schema.pre("save", function(next)
+    {
+        this.formatted_national_number = parsePhoneNumber(this.number).formatNational();
+        this.formatted_international_number = parsePhoneNumber(this.number).formatInternational();
+        next();
+    });
+
     return schema;
 })();
 
@@ -79,14 +93,14 @@ const BankAccount = (function()
     {
         account_holder_name: String,
         iban: { type: String, validate: { validator: (v) => /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(v) } },
-        bic: { type: String, validate: { validator: (v) => /^[A-Z0-9]{8}[A-Z0-9]{3}?$/.test(v) } },
+        bic: { type: String, validate: { validator: (v) => /^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(v) } },
         bank_name: String,
         local_account_number: String,
         local_bank_identifier: String,
         comment: String
     });
 
-    return new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true }, autoIndex: false });
+    return new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
 })();
 
 module.exports = { Address, Email, Phone, BankAccount };
