@@ -77,7 +77,8 @@ const BankAccount = (function()
 {
     const schemaDefinition = (
     {
-        iban: { type: String, validate: { validator: (v) => /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(v) }, required: true },
+        account_holder_name: String,
+        iban: { type: String, validate: { validator: (v) => /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(v) } },
         bic: { type: String, validate: { validator: (v) => /^[A-Z0-9]{8}[A-Z0-9]{3}?$/.test(v) } },
         bank_name: String,
         local_account_number: String,
