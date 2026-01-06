@@ -132,23 +132,47 @@ let app = Vue.createApp(
         getAssetChartConfig()
         {
             const assetAccounts = this.accounts.filter(account => account.type == "assets");
+            const equityAccounts = this.accounts.filter(account => account.type == "equity");
+            const liabilitiesAccounts = this.accounts.filter(account => account.type == "liabilities");
 
-            let datasets = [];
+            const assetsDataSet = { labels: [], data: [], backgroundColor: [] };
+            assetsDataSet.label = `${this.$filters.translate("accounts.types.assets")}`;
+
+            const passivaDataSet = { labels: [], data: [], backgroundColor: [] };
+            passivaDataSet.label = `${this.$filters.translate("accounts.types.equity")}/${this.$filters.translate("accounts.types.liabilities")}`;
 
             for(let i in assetAccounts)
-                datasets.push({
-                    label: assetAccounts[i].display_name,
-                    data: [ val(assetAccounts[i].balance), 0 ],
-                    backgroundColor: shade([ 176, 224, 230, .8 ], [ 135, 206, 250, .8 ], assetAccounts.length, i)
-                });
+            {
+                assetsDataSet.labels.push(assetAccounts[i].display_name);
+                assetsDataSet.data.push(val(assetAccounts[i].balance));
+                assetsDataSet.backgroundColor.push(shade([ 176, 224, 230, .8 ], [ 135, 206, 250, .8 ], assetAccounts.length, i));
+            }
+
+            for(let i in equityAccounts)
+            {
+                passivaDataSet.labels.push(equityAccounts[i].display_name);
+                passivaDataSet.data.push(val(equityAccounts[i].balance));
+                passivaDataSet.backgroundColor.push(shade([ 144, 238, 144, .8 ], [ 75, 192, 75, .8 ], equityAccounts.length, i));
+            }
+
+            for(let i in liabilitiesAccounts)
+            {
+                passivaDataSet.labels.push(liabilitiesAccounts[i].display_name);
+                passivaDataSet.data.push(val(liabilitiesAccounts[i].balance));
+                passivaDataSet.backgroundColor.push(shade([ 255, 180, 190, .8 ], [ 255, 99, 132, .8 ], liabilitiesAccounts.length, i));
+            }
 
             return {
                 type: "pie",
                 data: {
-                    labels: [
-                        this.$filters.translate("accounts.types.assets")
-                    ],
-                    datasets
+                    /*labels: [ // FIXME no possibility to use different labels in multiple datasets/rings of a single pie chart
+                        assetsDataSet.labels,
+                        passivaDataSet.labels,
+                    ],*/
+                    datasets: [
+                        assetsDataSet,
+                        passivaDataSet
+                    ]
                 },
                 options: {
                     plugins: {
