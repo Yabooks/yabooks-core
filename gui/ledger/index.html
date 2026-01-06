@@ -28,9 +28,9 @@
                             <span v-if="record.document_external_reference">
                                 {{ record.document_external_reference }}
                             </span>
-                            <span v-else-if="record.document_internal_reference">
+                            <span v-else-if="record.document_type || record.document_internal_reference">
                                 {{ record.document_type ?? "" }}
-                                {{ record.document_internal_reference }}
+                                {{ record.document_internal_reference ?? "" }}
                             </span>
                             <span v-else>
                                 {{ $filters.translate("general-ledger.document.unnamed") }}
