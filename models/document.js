@@ -20,7 +20,7 @@ const OpenItemAllocation = (function()
         amount: { type: mongoose.Schema.Types.Decimal128, required: true }
     });
 
-    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true } });
+    let schema = new mongoose.Schema(schemaDefinition, { id: false });
     schema.path("ledger_transaction").index(true);
     return schema;
 })();
@@ -143,7 +143,7 @@ const CostTransaction = (function()
         text: String
     });
 
-    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true } });
+    let schema = new mongoose.Schema(schemaDefinition, { id: false });
     schema.path("cost_center").index(true);
     schema.path("corresponding_ledger_transaction").index(true);
     schema.path("is_budget").index(true);

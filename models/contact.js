@@ -19,7 +19,7 @@ const Address = (function()
         full_address: String // automatically set by pre-save hook
     });
 
-    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { virtuals: true }, autoIndex: false });
+    let schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
     schema.path("lat").index(true);
     schema.path("lng").index(true);
     schema.path("jurisdiction").index(true);
