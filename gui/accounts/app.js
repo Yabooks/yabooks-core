@@ -1,16 +1,14 @@
-/* global getSelectedBusinessId, filters, StructureItem, TagsInput */
+/* global getSelectedBusinessId, filters, TagsInput */
 
 let app = Vue.createApp(
 {
-    components: { StructureItem, TagsInput },
+    components: { TagsInput },
 
     data()
     {
         return {
             business: null,
-            accounts: [],
-            structures: null,
-            selectedStructure: null
+            accounts: []
         };
     },
 
@@ -40,21 +38,6 @@ let app = Vue.createApp(
 
     methods:
     {
-        async toggleStructures()
-        {
-            if(this.structures)
-                this.structures = null;
-
-            else
-            {
-                let data = await axios.get("/api/v1/balance-sheet-structures");
-                this.structures = data.data.data;
-                this.selectedStructure = this.structures[0];
-            }
-
-            this.$forceUpdate();
-        },
-
         async newAccount()
         {
             this.accounts.push({
