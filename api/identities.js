@@ -144,6 +144,30 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/identities/{id}/relationships:
+     *   get:
+     *     summary: Get all relationships of an identity
+     *     tags:
+     *       - relationships
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/Relationship'
+     */
     api.get("/api/v1/identities/:id/relationships", async (req, res, next) =>
     {
         try
@@ -157,6 +181,34 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/identities/{id}/relationships:
+     *   post:
+     *     summary: Create a relationship from an identity to another
+     *     tags:
+     *       - relationships
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the source identity
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Relationship'
+     *     responses:
+     *       200:
+     *         description: The created relationship
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Relationship'
+     */
     api.post("/api/v1/identities/:id/relationships", async (req, res, next) =>
     {
         try
@@ -168,6 +220,39 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/relationships/{id}:
+     *   patch:
+     *     summary: Update a relationship
+     *     tags:
+     *       - relationships
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the relationship
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Relationship'
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *       404:
+     *         description: Relationship not found
+     */
     api.patch("/api/v1/relationships/:id", async (req, res, next) =>
     {
         try
@@ -186,6 +271,31 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/relationships/{id}:
+     *   delete:
+     *     summary: Delete a relationship
+     *     tags:
+     *       - relationships
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the relationship
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     */
     api.delete("/api/v1/relationships/:id", async (req, res, next) =>
     {
         try
