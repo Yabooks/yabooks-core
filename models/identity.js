@@ -19,7 +19,7 @@ const Identity = mongoose.model("Identity", (function()
         main_bank_account: BankAccount,
         more_bank_accounts: [ BankAccount ],
         tax_numbers: mongoose.Schema.Types.Mixed,
-        data: mongoose.Schema.Types.Mixed,
+        data: mongoose.Schema.Types.Mixed
     });
 
     const methods = (
@@ -66,12 +66,17 @@ const Organization = Identity.discriminator("Organization",
     jurisdiction_of_incorporation: { type: String, validate: { validator: (v) => /^[A-Z]{2}(\-.+)?$/.test(v) } }
 });
 
-// link schema connecting two indentities with one another
-const Link = mongoose.model("Link",
+// relationship schema connecting two indentities with one another
+const Relationship = mongoose.model("Relationship",
 {
     from: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
     to: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
-    type: String
+    type: { type: String, required: true },
+
+    valid_from: Date,
+    valid_to: Date,
+    
+    data: mongoose.Schema.Types.Mixed
 });
 
-module.exports = { Identity, Individual, Organization, Link };
+module.exports = { Identity, Individual, Organization, Relationship };

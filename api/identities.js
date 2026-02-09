@@ -1,4 +1,4 @@
-const { Identity, Individual, Organization } = require("../models/identity.js");
+const { Identity, Individual, Organization, Relationship } = require("../models/identity.js");
 
 module.exports = function(api)
 {
@@ -139,6 +139,58 @@ module.exports = function(api)
         try
         {
             await Identity.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
+    });
+
+    api.get("/api/v1/identities/:id/relationships", async (req, res, next) =>
+    {
+        try
+        {
+            let relationships = await Relationship.find({ $or: [{ from: req.params.id }, { to: req.params.id }] })
+                .populate("from", "full_name kind") // from: { _id, full_name, kind }
+                .populate("to", "full_name kind"); // to: { _id, full_name, kind }
+
+            res.send(relationships);
+        }
+        catch(x) { next(x) }
+    });
+
+    api.post("/api/v1/identities/:id/relationships", async (req, res, next) =>
+    {
+        try
+        {
+            let relationship = new Relationship({ from: req.params.id, ...req.body });
+            await relationship.save();
+            res.send(relationship);
+        }
+        catch(x) { next(x) }
+    });
+
+    api.patch("/api/v1/relationships/:id", async (req, res, next) =>
+    {
+        try
+        {
+            let relationship = await Relationship.findOne({ _id: req.params.id });
+
+            if(!relationship)
+                return res.status(404).send({ error: "not found" });
+
+            for(let key in req.body)
+                relationship[key] = req.body[key];
+
+            await relationship.save();
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
+    });
+
+    api.delete("/api/v1/relationships/:id", async (req, res, next) =>
+    {
+        try
+        {
+            await Relationship.deleteOne({ _id: req.params.id });
             res.send({ success: true });
         }
         catch(x) { next(x) }
