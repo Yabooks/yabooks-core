@@ -185,6 +185,103 @@ module.exports = function(api)
      *                   nullable: true
      *                   example: could not delete account, deactivated it instead
      */
+    /**
+     * @openapi
+     * /api/v1/ledger-accounts/{id}/tags:
+     *   post:
+     *     summary: Add a tag to a ledger account
+     *     tags:
+     *       - ledger-accounts
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the ledger account
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - tag
+     *             properties:
+     *               tag:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Updated ledger account
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/LedgerAccount'
+     *       404:
+     *         description: Ledger account not found
+     */
+    api.post("/api/v1/ledger-accounts/:id/tags", async (req, res, next) =>
+    {
+        try
+        {
+            let acc = await LedgerAccount.findOneAndUpdate(
+                { _id: req.params.id },
+                { $addToSet: { tags: req.body.tag } },
+                { new: true }
+            );
+            if(!acc)
+                res.status(404).send({ error: "not found" });
+            else res.send(acc);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/ledger-accounts/{id}/tags/{tag}:
+     *   delete:
+     *     summary: Remove a tag from a ledger account
+     *     tags:
+     *       - ledger-accounts
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the ledger account
+     *       - in: path
+     *         name: tag
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: The tag to remove
+     *     responses:
+     *       200:
+     *         description: Updated ledger account
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/LedgerAccount'
+     *       404:
+     *         description: Ledger account not found
+     */
+    api.delete("/api/v1/ledger-accounts/:id/tags/:tag", async (req, res, next) =>
+    {
+        try
+        {
+            let acc = await LedgerAccount.findOneAndUpdate(
+                { _id: req.params.id },
+                { $pull: { tags: req.params.tag } },
+                { new: true }
+            );
+            if(!acc)
+                res.status(404).send({ error: "not found" });
+            else res.send(acc);
+        }
+        catch(x) { next(x) }
+    });
+
     api.delete("/api/v1/ledger-accounts/:id", async (req, res) =>
     {
         // TODO do not allow deleting an account which has ever been booked on
