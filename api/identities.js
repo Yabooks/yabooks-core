@@ -233,6 +233,9 @@ module.exports = function(api)
      *               type:
      *                 type: string
      *                 description: Relationship type (e.g. employee, director, shareholder)
+     *               icon:
+     *                 type: string
+     *                 description: Emoji or icon for the relationship
      *               email:
      *                 $ref: '#/components/schemas/Email'
      *               address:
@@ -300,6 +303,9 @@ module.exports = function(api)
      *               type:
      *                 type: string
      *                 description: Relationship type
+     *               icon:
+     *                 type: string
+     *                 description: Emoji or icon for the relationship
      *               email:
      *                 $ref: '#/components/schemas/Email'
      *               address:

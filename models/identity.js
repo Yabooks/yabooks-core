@@ -72,7 +72,8 @@ const Relationship = mongoose.model("Relationship",
     from: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
     to: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
     type: { type: String, required: true },
-    
+    icon: String, // unicode emoji
+
     email: Email,
     address: Address,
     phone: Phone,
