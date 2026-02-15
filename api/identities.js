@@ -2,6 +2,29 @@ const { Identity, Individual, Organization, Relationship } = require("../models/
 
 module.exports = function(api)
 {
+    /**
+     * @openapi
+     * /api/v1/identities:
+     *   get:
+     *     summary: List all identities
+     *     description: Returns a paginated list of all identities (individuals and organizations). Supports filtering and sorting via query parameters.
+     *     tags:
+     *       - identities
+     *     responses:
+     *       200:
+     *         description: Paginated list of identities
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/Identity'
+     */
     api.get("/api/v1/identities", async (req, res, next) =>
     {
         try
@@ -11,6 +34,40 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/identities/tax_numbers:
+     *   get:
+     *     summary: Search identities by tax number
+     *     description: Returns identities with tax_numbers expanded into key/value array entries for filtering. Use query parameter tax_numbers.v to search by value.
+     *     tags:
+     *       - identities
+     *     responses:
+     *       200:
+     *         description: Paginated list of identities with expanded tax numbers
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         allOf:
+     *                           - $ref: '#/components/schemas/Identity'
+     *                           - properties:
+     *                               tax_numbers:
+     *                                 type: array
+     *                                 items:
+     *                                   type: object
+     *                                   properties:
+     *                                     k:
+     *                                       type: string
+     *                                     v:
+     *                                       type: string
+     */
     api.get("/api/v1/identities/tax_numbers", async (req, res, next) => // ?tax_numbers.v=ATU69690827
     {
         try
@@ -24,6 +81,28 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/individuals:
+     *   post:
+     *     summary: Create a new individual
+     *     description: Creates a new individual identity. The full_name is automatically computed from first_name and last_name.
+     *     tags:
+     *       - identities
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Individual'
+     *     responses:
+     *       200:
+     *         description: The created individual
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Individual'
+     */
     api.post("/api/v1/individuals", async (req, res, next) =>
     {
         try
@@ -36,6 +115,27 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/organizations:
+     *   post:
+     *     summary: Create a new organization
+     *     tags:
+     *       - identities
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Organization'
+     *     responses:
+     *       200:
+     *         description: The created organization
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Organization'
+     */
     api.post("/api/v1/organizations", async (req, res, next) =>
     {
         try
@@ -47,6 +147,31 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/identities/{id}:
+     *   get:
+     *     summary: Get an identity by ID
+     *     description: Returns a single identity (individual or organization) by its ID.
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *     responses:
+     *       200:
+     *         description: The identity
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Identity'
+     *       404:
+     *         description: Identity not found
+     */
     api.get("/api/v1/identities/:id", async (req, res, next) =>
     {
         try
@@ -59,6 +184,35 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/identities/{id}/picture:
+     *   get:
+     *     summary: Get an identity's profile picture
+     *     description: Returns the profile picture as JPEG, or a default SVG placeholder if none is set.
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *     responses:
+     *       200:
+     *         description: The profile picture
+     *         content:
+     *           image/jpeg:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *           image/svg+xml:
+     *             schema:
+     *               type: string
+     *       404:
+     *         description: Identity not found
+     */
     api.get("/api/v1/identities/:id/picture", async (req, res, next) =>
     {
         try
@@ -75,6 +229,43 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/identities/{id}/picture:
+     *   put:
+     *     summary: Upload an identity's profile picture
+     *     description: Replaces the identity's profile picture with the raw binary body.
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         image/*:
+     *           schema:
+     *             type: string
+     *             format: binary
+     *     responses:
+     *       200:
+     *         description: Upload result
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 error:
+     *                   type: string
+     *       404:
+     *         description: Identity not found
+     */
     api.put("/api/v1/identities/:id/picture", async (req, res, next) =>
     {
         try
@@ -96,6 +287,40 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/individuals/{id}:
+     *   patch:
+     *     summary: Update an individual
+     *     description: Partially updates an individual. The full_name is automatically recomputed from first_name and last_name.
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the individual
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Individual'
+     *     responses:
+     *       200:
+     *         description: Successful update
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *       404:
+     *         description: Individual not found
+     */
     api.patch("/api/v1/individuals/:id", async (req, res, next) =>
     {
         try
@@ -116,7 +341,40 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
-    api.patch("/api/v1/organizations/:id", async (req, res) =>
+    /**
+     * @openapi
+     * /api/v1/organizations/{id}:
+     *   patch:
+     *     summary: Update an organization
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the organization
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Organization'
+     *     responses:
+     *       200:
+     *         description: Successful update
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *       404:
+     *         description: Organization not found
+     */
+    api.patch("/api/v1/organizations/:id", async (req, res, next) =>
     {
         try
         {
@@ -134,6 +392,32 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/identities/{id}:
+     *   delete:
+     *     summary: Delete an identity
+     *     description: Permanently deletes an identity (individual or organization).
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity to delete
+     *     responses:
+     *       200:
+     *         description: Identity deleted
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     */
     api.delete("/api/v1/identities/:id", async (req, res) =>
     {
         try
