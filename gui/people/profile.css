@@ -1,0 +1,306 @@
+html, body
+{
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: "Roboto", sans-serif;
+    color: #1e293b;
+    /*background: #f5f5f5;*/
+}
+
+main
+{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    column-count: 2;
+    column-gap: 16px;
+}
+
+.widget
+{
+    break-inside: avoid;
+    margin-bottom: 16px;
+}
+
+/* Widget cards */
+
+.widget
+{
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(249, 143, 94, 0.1);
+    border: 1px solid #ffe4d6;
+    transition: all 0.2s ease;
+}
+
+.widget:hover
+{
+    box-shadow: 0 4px 16px rgba(249, 143, 94, 0.2);
+}
+
+/* Profile header widget — spans full width */
+
+.widget:first-child
+{
+    column-span: all;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.profile_picture
+{
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ffe4d6;
+    flex-shrink: 0;
+}
+
+.widget:first-child > span
+{
+    font-size: 1.5em;
+    font-weight: 700;
+}
+
+.widget:first-child > span small
+{
+    display: block;
+    font-size: 0.55em;
+    font-weight: 400;
+    color: #94a3b8;
+}
+
+/* Section titles */
+
+.title
+{
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin-bottom: 16px;
+}
+
+/* Add buttons */
+
+.plus
+{
+    float: right;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.plus:hover
+{
+    color: #f98f5e;
+}
+
+/* Lists */
+
+.widget ul
+{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.widget li
+{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+/* Contact items */
+
+.contact
+{
+    padding: 8px 12px;
+    background: #fff7f4;
+    border-radius: 8px;
+    border: 1px solid #ffe4d6;
+}
+
+/* DBA items */
+
+.dba
+{
+    padding: 4px 12px;
+    background: #f1f5f9;
+    border-radius: 100px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* Tax / registration items */
+
+.tag
+{
+    display: inline-block;
+    padding: 2px 8px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 100px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: #ea580c;
+}
+
+.id
+{
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #333;
+}
+
+/* Business items */
+
+.business
+{
+    padding: 10px 12px;
+    background: #fff7f4;
+    border-radius: 8px;
+    border: 1px solid #ffe4d6;
+    transition: all 0.2s ease;
+}
+
+.business:hover
+{
+    background: #ffe4d6;
+}
+
+.business .logo
+{
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.business span
+{
+    flex: 1;
+    font-weight: 600;
+}
+
+.business button
+{
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #ffe4d6;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    color: #f98f5e;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.business button:hover
+{
+    background: #ffe4d6;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(249, 143, 94, 0.2);
+}
+
+.business button:active
+{
+    transform: translateY(0);
+}
+
+/* Relationship items */
+
+.relationship
+{
+    padding: 8px 12px;
+    background: #fff7f4;
+    border-radius: 8px;
+    border: 1px solid #ffe4d6;
+    transition: all 0.2s ease;
+}
+
+.relationship:hover
+{
+    background: #ffe4d6;
+}
+
+.relationship a
+{
+    color: #1e293b;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px dashed #94a3b8;
+    transition: all 0.2s ease;
+}
+
+.relationship a:hover
+{
+    color: #f98f5e;
+    border-bottom-color: #f98f5e;
+    border-bottom-style: solid;
+}
+
+/* Responsive: single column on narrow screens */
+
+@media (max-width: 768px)
+{
+    main
+    {
+        column-count: 1;
+        padding: 16px;
+    }
+
+    .widget:first-child
+    {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px)
+{
+    main
+    {
+        padding: 12px;
+    }
+
+    .widget
+    {
+        padding: 16px;
+    }
+
+    .profile_picture
+    {
+        width: 64px;
+        height: 64px;
+    }
+
+    .widget:first-child > span
+    {
+        font-size: 1.25em;
+    }
+}

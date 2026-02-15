@@ -3,76 +3,93 @@
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
-        <style type="text/css">
-            .business .logo
-            {
-                width: 50px;
-                height: 50px;
-                border-radius: 50%;
-            }
-        </style>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+        <link rel="stylesheet" type="text/css" href="profile.css" />
     </head>
     <body>
         <main>
-            <div>
-                <img v-if="individual?._id" :src="`/api/v1/identities/${individual._id}/picture`" />
+            <div class="widget">
+                <img class="profile_picture" v-if="individual?._id" :src="`/api/v1/identities/${individual._id}/picture`" />
                 <span>
                     {{ individual.full_name }}
+                    <small v-if="individual.birthdate">&#x1F382; {{ $filters.formatDate(individual.birthdate) }}</small>
                 </span>
-                <div v-if="individual.dba?.length > 0">
-                    <span>Doing Business As:</span>
-                    <ul>
-                        <li v-for="dba in individual.dba">
-                            {{ dba }}
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <span>Main Contact:</span>
-                    <ul>
-                        <li v-if="individual.main_email?.address">
-                            {{ individual.main_email.address }}
-                        </li>
-                        <li v-if="individual.main_phone?.formatted_international_number">
-                            {{ individual.main_phone.formatted_international_number }}
-                        </li>
-                        <li v-if="individual.main_address?.full_address">
-                            {{ individual.main_address.full_address.split("\n").join(", ") }}
-                        </li>
-                        <li v-for="adr in individual.more_addresses">
-                            {{ adr.full_address }}
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <span>Tax Information:</span>
-                    <ul>
-                        <li v-for="(value, key) in individual.tax_numbers">
-                            {{ key }}
-                            {{ value }}
-                        </li>
-                    </ul>
-                </div>
-                <div>
-                    <span>Businesses:</span>
-                    <ul>
-                        <li class="business" v-for="business in businesses.data">
-                            <img class="logo" :src="`/api/v1/businesses/${business._id}/logo`" />
-                            <span>{{ business.name }}</span>
-                            <button @click="selectBusiness(business)">focus</button>
-                        </li>
-                    </ul>
-                </div>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.dba") }}</span>
+                <button class="plus" @click="addDba()" :title="$filters.translate('people.dba.add')">+</button>
+                <ul>
+                    <li class="dba" v-for="dba in individual.dba">
+                        {{ dba }}
+                    </li>
+                </ul>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.main-contact") }}</span>
+                <button class="plus" @click="addContact()" :title="$filters.translate('people.main-contact.add')">+</button>
+                <ul>
+                    <li class="contact" v-if="individual.main_email?.address">
+                        &#x1F4E7;
+                        {{ individual.main_email.address }}
+                    </li>
+                    <li class="contact" v-if="individual.main_phone?.formatted_international_number">
+                        &#x260E;&#xFE0F;
+                        {{ individual.main_phone.formatted_international_number }}
+                    </li>
+                    <li class="contact" v-if="individual.main_address?.full_address">
+                        &#x1F3E0;
+                        {{ individual.main_address.full_address.split("\n").join(", ") }}
+                    </li>
+                    <li class="contact" v-for="adr in individual.more_addresses">
+                        &#x1F3E0;
+                        {{ adr.full_address }}
+                    </li>
+                </ul>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.tax-no") }}</span>
+                <button class="plus" @click="addTaxNo()" :title="$filters.translate('people.tax-no.add')">+</button>
+                <ul>
+                    <li v-for="(value, key) in individual.tax_numbers">
+                        {{ $filters.toFlagEmoji(key?.substring?.(0, 2)) }}
+                        <span class="tag">{{ key }}</span>
+                        <span class="id">{{ value }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.businesses") }}</span>
+                <button class="plus" @click="addBusiness()" :title="$filters.translate('people.businesses.add')">+</button>
+                <ul>
+                    <li class="business" v-for="business in businesses.data">
+                        <img class="logo" :src="`/api/v1/businesses/${business._id}/logo`" />
+                        <span>{{ business.name }}</span>
+                        <button @click="selectBusiness(business)" title="focus">&#x1F447;</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.relationships") }}</span>
+                <button class="plus" @click="addRelationship()" :title="$filters.translate('people.relationships.add')">+</button>
+                <ul>
+                    <li class="relationship" v-for="relationship in relationships">
+                        {{ relationship.icon || "\uD83D\uDD17" }}
+                        <span class="tag">{{ relationship.type }}</span>
+                        <a href="">{{ (relationship.from._id == individual._id ? relationship.to : relationship.from).full_name }}</span>
+                    </li>
+                </ul>
             </div>
         </main>
         <script type="text/javascript">
-            Vue.createApp(
+            let app = Vue.createApp(
             {
                 data()
                 {
                     return {
                         individual: {},
-                        businesses: []
+                        businesses: [],
+                        relationships: []
                     };
                 },
 
@@ -80,6 +97,8 @@
                 {
                     try
                     {
+                        await loadTranslations({ "code*": "people." });
+
                         this.individual._id = self.location.search.substring(1);
                         await this.load();
                     }
@@ -101,6 +120,30 @@
                         res = await await axios.get(`/api/v1/identities/${this.individual._id}/businesses`);
                         this.businesses = res.data;
                         this.$forceUpdate();
+
+                        res = await await axios.get(`/api/v1/identities/${this.individual._id}/relationships`);
+                        this.relationships = res.data;
+                        this.$forceUpdate();
+                    },
+
+                    addDba()
+                    {
+                        // TODO
+                    },
+
+                    addTaxNo()
+                    {
+                        // TODO
+                    },
+
+                    addBusiness()
+                    {
+                        // TODO
+                    },
+
+                    addRelationship()
+                    {
+                        // TODO
                     },
 
                     selectBusiness: async (business) =>
@@ -111,7 +154,10 @@
                         window.parent.document.app.updateSessionData();
                     }
                 }
-            }).mount("main");
+            });
+
+            app.config.globalProperties.$filters = { ...filters };
+            app.mount("main");
         </script>
     </body>
 </html>

@@ -1,0 +1,80 @@
+html, body
+{
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: "Roboto", sans-serif;
+    color: #1e293b;
+}
+
+#identities_list
+{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.identity
+{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(249, 143, 94, 0.1);
+    border: 1px solid #ffe4d6;
+    transition: all 0.2s ease;
+}
+
+.identity:hover
+{
+    box-shadow: 0 4px 16px rgba(249, 143, 94, 0.2);
+}
+
+.identity .logo
+{
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ffe4d6;
+    flex-shrink: 0;
+}
+
+.identity span
+{
+    flex: 1;
+    min-width: 0;
+}
+
+.identity a
+{
+    color: #1e293b;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95em;
+    transition: color 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+.identity a:hover
+{
+    color: #f98f5e;
+}
+
+@media (max-width: 640px)
+{
+    #identities_list
+    {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 12px;
+    }
+}

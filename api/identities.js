@@ -146,6 +146,205 @@ module.exports = function(api)
 
     /**
      * @openapi
+     * /api/v1/identities/{id}/dba:
+     *   post:
+     *     summary: Add a DBA name to an identity
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - dba
+     *             properties:
+     *               dba:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Updated identity
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Identity'
+     *       404:
+     *         description: Identity not found
+     */
+    api.post("/api/v1/identities/:id/dba", async (req, res, next) =>
+    {
+        try
+        {
+            let identity = await Identity.findOneAndUpdate(
+                { _id: req.params.id },
+                { $addToSet: { dba: req.body.dba } },
+                { new: true }
+            );
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+            else res.send(identity);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/identities/{id}/dba/{dba}:
+     *   delete:
+     *     summary: Remove a DBA name from an identity
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *       - in: path
+     *         name: dba
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: The DBA name to remove
+     *     responses:
+     *       200:
+     *         description: Updated identity
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Identity'
+     *       404:
+     *         description: Identity not found
+     */
+    api.delete("/api/v1/identities/:id/dba/:dba", async (req, res, next) =>
+    {
+        try
+        {
+            let identity = await Identity.findOneAndUpdate(
+                { _id: req.params.id },
+                { $pull: { dba: req.params.dba } },
+                { new: true }
+            );
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+            else res.send(identity);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/identities/{id}/tax_numbers:
+     *   post:
+     *     summary: Add a tax number to an identity
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - key
+     *               - value
+     *             properties:
+     *               key:
+     *                 type: string
+     *                 description: Tax number key (e.g. AT-UID, DE-USt)
+     *               value:
+     *                 type: string
+     *                 description: Tax number value
+     *     responses:
+     *       200:
+     *         description: Updated identity
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Identity'
+     *       404:
+     *         description: Identity not found
+     */
+    api.post("/api/v1/identities/:id/tax_numbers", async (req, res, next) =>
+    {
+        try
+        {
+            let identity = await Identity.findOneAndUpdate(
+                { _id: req.params.id },
+                { $set: { [`tax_numbers.${req.body.key}`]: req.body.value } },
+                { new: true }
+            );
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+            else res.send(identity);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/identities/{id}/tax_numbers/{key}:
+     *   delete:
+     *     summary: Remove a tax number from an identity
+     *     tags:
+     *       - identities
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the identity
+     *       - in: path
+     *         name: key
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: The tax number key to remove
+     *     responses:
+     *       200:
+     *         description: Updated identity
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Identity'
+     *       404:
+     *         description: Identity not found
+     */
+    api.delete("/api/v1/identities/:id/tax_numbers/:key", async (req, res, next) =>
+    {
+        try
+        {
+            let identity = await Identity.findOneAndUpdate(
+                { _id: req.params.id },
+                { $unset: { [`tax_numbers.${req.params.key}`]: "" } },
+                { new: true }
+            );
+            if(!identity)
+                res.status(404).send({ error: "not found" });
+            else res.send(identity);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
      * /api/v1/identities/{id}/relationships:
      *   get:
      *     summary: Get all relationships of an identity
