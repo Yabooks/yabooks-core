@@ -418,7 +418,7 @@ module.exports = function(api)
      *                 success:
      *                   type: boolean
      */
-    api.delete("/api/v1/identities/:id", async (req, res) =>
+    api.delete("/api/v1/identities/:id", async (req, res, next) =>
     {
         try
         {
