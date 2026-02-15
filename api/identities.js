@@ -149,6 +149,7 @@ module.exports = function(api)
      * /api/v1/identities/{id}/relationships:
      *   get:
      *     summary: Get all relationships of an identity
+     *     description: Returns all relationships where the identity is either the source (from) or target (to). The from and to fields are populated with full_name and kind.
      *     tags:
      *       - relationships
      *     parameters:
@@ -160,13 +161,33 @@ module.exports = function(api)
      *         description: ID of the identity
      *     responses:
      *       200:
-     *         description: Successful response
+     *         description: List of relationships involving this identity
      *         content:
      *           application/json:
      *             schema:
      *               type: array
      *               items:
-     *                 $ref: '#/components/schemas/Relationship'
+     *                 allOf:
+     *                   - $ref: '#/components/schemas/Relationship'
+     *                   - properties:
+     *                       from:
+     *                         type: object
+     *                         properties:
+     *                           _id:
+     *                             type: string
+     *                           full_name:
+     *                             type: string
+     *                           kind:
+     *                             type: string
+     *                       to:
+     *                         type: object
+     *                         properties:
+     *                           _id:
+     *                             type: string
+     *                           full_name:
+     *                             type: string
+     *                           kind:
+     *                             type: string
      */
     api.get("/api/v1/identities/:id/relationships", async (req, res, next) =>
     {
@@ -186,6 +207,7 @@ module.exports = function(api)
      * /api/v1/identities/{id}/relationships:
      *   post:
      *     summary: Create a relationship from an identity to another
+     *     description: Creates a relationship where the source (from) is set to the identity specified in the path. The request body must include the target identity and relationship type.
      *     tags:
      *       - relationships
      *     parameters:
@@ -194,13 +216,40 @@ module.exports = function(api)
      *         required: true
      *         schema:
      *           type: string
-     *         description: ID of the source identity
+     *         description: ID of the source identity (sets the "from" field)
      *     requestBody:
      *       required: true
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/Relationship'
+     *             type: object
+     *             required:
+     *               - to
+     *               - type
+     *             properties:
+     *               to:
+     *                 type: string
+     *                 description: ID of the target identity
+     *               type:
+     *                 type: string
+     *                 description: Relationship type (e.g. employee, director, shareholder)
+     *               email:
+     *                 $ref: '#/components/schemas/Email'
+     *               address:
+     *                 $ref: '#/components/schemas/Address'
+     *               phone:
+     *                 $ref: '#/components/schemas/Phone'
+     *               valid_from:
+     *                 type: string
+     *                 format: date-time
+     *                 description: Start date of the relationship
+     *               valid_to:
+     *                 type: string
+     *                 format: date-time
+     *                 description: End date of the relationship
+     *               data:
+     *                 type: object
+     *                 description: Arbitrary additional data
      *     responses:
      *       200:
      *         description: The created relationship
@@ -225,6 +274,7 @@ module.exports = function(api)
      * /api/v1/relationships/{id}:
      *   patch:
      *     summary: Update a relationship
+     *     description: Partially updates a relationship. Any provided fields will overwrite existing values.
      *     tags:
      *       - relationships
      *     parameters:
@@ -239,10 +289,34 @@ module.exports = function(api)
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/Relationship'
+     *             type: object
+     *             properties:
+     *               from:
+     *                 type: string
+     *                 description: ID of the source identity
+     *               to:
+     *                 type: string
+     *                 description: ID of the target identity
+     *               type:
+     *                 type: string
+     *                 description: Relationship type
+     *               email:
+     *                 $ref: '#/components/schemas/Email'
+     *               address:
+     *                 $ref: '#/components/schemas/Address'
+     *               phone:
+     *                 $ref: '#/components/schemas/Phone'
+     *               valid_from:
+     *                 type: string
+     *                 format: date-time
+     *               valid_to:
+     *                 type: string
+     *                 format: date-time
+     *               data:
+     *                 type: object
      *     responses:
      *       200:
-     *         description: Successful response
+     *         description: Successful update
      *         content:
      *           application/json:
      *             schema:
@@ -276,6 +350,7 @@ module.exports = function(api)
      * /api/v1/relationships/{id}:
      *   delete:
      *     summary: Delete a relationship
+     *     description: Permanently deletes a relationship between two identities.
      *     tags:
      *       - relationships
      *     parameters:
@@ -284,10 +359,10 @@ module.exports = function(api)
      *         required: true
      *         schema:
      *           type: string
-     *         description: ID of the relationship
+     *         description: ID of the relationship to delete
      *     responses:
      *       200:
-     *         description: Successful response
+     *         description: Relationship deleted
      *         content:
      *           application/json:
      *             schema:

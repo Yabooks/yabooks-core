@@ -72,10 +72,14 @@ const Relationship = mongoose.model("Relationship",
     from: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
     to: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
     type: { type: String, required: true },
+    
+    email: Email,
+    address: Address,
+    phone: Phone,
 
     valid_from: Date,
     valid_to: Date,
-    
+
     data: mongoose.Schema.Types.Mixed
 });
 
