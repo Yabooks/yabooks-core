@@ -43,7 +43,7 @@
                     </li>
                     <li class="contact" v-for="adr in individual.more_addresses">
                         &#x1F3E0;
-                        {{ adr.full_address }}
+                        {{ adr.full_address.split("\n").join(", ") }}
                     </li>
                 </ul>
             </div>
@@ -73,10 +73,17 @@
                 <span class="title">{{ $filters.translate("people.relationships") }}</span>
                 <button class="plus" @click="addRelationship()" :title="$filters.translate('people.relationships.add')">+</button>
                 <ul>
-                    <li class="relationship" v-for="relationship in relationships">
-                        {{ relationship.icon || "\uD83D\uDD17" }}
-                        <span class="tag">{{ relationship.type }}</span>
-                        <a href="">{{ (relationship.from._id == individual._id ? relationship.to : relationship.from).full_name }}</span>
+                    <li class="relationship" v-for="rel in relationships" :set="partner = (rel?.from._id == individual?._id ? rel?.to : rel?.from)">
+                        {{ rel?.icon || "\uD83D\uDD17" }}
+                        <span class="tag" v-if="rel?.from?._id == individual?._id">
+                            {{ rel?.type }}
+                        </span>
+                        <a :href="`${partner?.kind?.toLowerCase?.()}.html?${partner?._id}`">
+                            {{ partner?.full_name }}
+                        </a>
+                        <span class="tag" v-if="rel?.to?._id == individual?._id">
+                            {{ rel?.type }}
+                        </span>
                     </li>
                 </ul>
             </div>
