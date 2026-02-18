@@ -12,7 +12,9 @@
     <body>
         <center>
             <nav>
-                <input type="date" v-model="date" />
+                <input type="date" v-model="from" @change="loadBalances()" />
+                &nbsp;&mdash;&nbsp;
+                <input type="date" v-model="until" @change="loadBalances()" />
             </nav>
             <div class="container" align="center">
                 <chart-component :config="getAssetChartConfig()"></chart-component>

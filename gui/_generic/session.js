@@ -13,12 +13,6 @@ const getSelectedBusinessId = async () =>
     return session.data?.business;
 };
 
-/*const getSelectedBusinessCurrency = async () =>
-{
-    let res = await axios.get(`/api/v1/businesses/${await getSelectedBusinessId()}`);
-    return res.data.default_currency;
-};*/
-
 const getUserLanguage = () =>
 {
     return session.data?.language || navigator.language || navigator.userLanguage;

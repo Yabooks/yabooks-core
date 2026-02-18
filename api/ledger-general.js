@@ -17,13 +17,14 @@ module.exports = function(api)
                 { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", {
                     document_id: "$$ROOT._id",
+                    document_date: "$$ROOT.date",
                     document_type: "$$ROOT.type",
                     document_internal_reference: "$$ROOT.internal_reference",
                     document_external_reference: "$$ROOT.external_reference",
                     business_partner: "$$ROOT.business_partner"
                 } ] } } },
                 { $unset: [ "override_business_partner", "thumbnail", "type" ] },
-                { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0 } },
+                { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, date: 0 } },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
                 { $lookup: { from: Identity.collection.collectionName, localField: "business_partner", foreignField: "_id", as: "business_partner" } },
@@ -48,13 +49,14 @@ module.exports = function(api)
                 { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$ledger_transactions", {
                     document_id: "$$ROOT._id",
+                    document_date: "$$ROOT.date",
                     document_type: "$$ROOT.type",
                     document_internal_reference: "$$ROOT.internal_reference",
                     document_external_reference: "$$ROOT.external_reference",
                     business_partner: "$$ROOT.business_partner"
                 } ] } }  },
                 { $unset: [ "override_business_partner", "thumbnail", "type" ] },
-                { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0 } },
+                { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, date: 0 } },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
                 { $lookup: { from: Identity.collection.collectionName, localField: "business_partner", foreignField: "_id", as: "business_partner" } },
@@ -71,11 +73,21 @@ module.exports = function(api)
     {
         try
         {
+            let date_conditions = [];
+            if(req.query.from) {
+                date_conditions.push({ "ledger_transactions.posting_date": { $gte: new Date(req.query.from) } });
+                req.query.from = undefined;
+            }
+            if(req.query.until) {
+                date_conditions.push({ "ledger_transactions.posting_date": { $lte: new Date(req.query.until) } });
+                req.query.until = undefined;
+            }
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
-                { $match: { "ledger_transactions.alternate_ledger": null } },
+                { $match: { $and: [ { "ledger_transactions.alternate_ledger": null }, ...date_conditions ] } },
                 { $group: { _id: "$ledger_transactions.account", balance: { $sum: "$ledger_transactions.amount" } } },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "_id", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
@@ -91,11 +103,23 @@ module.exports = function(api)
     {
         try
         {
+            let date_conditions = [];
+            if(req.query.from) {
+                date_conditions.push({ "ledger_transactions.posting_date": { $gte: new Date(req.query.from) } });
+                req.query.from = undefined;
+            }
+            if(req.query.until) {
+                date_conditions.push({ "ledger_transactions.posting_date": { $lte: new Date(req.query.until) } });
+                req.query.until = undefined;
+            }
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
-                { $match: { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger } ] } },
+                { $match: { $and: [
+                    { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger } ] },
+                    ...date_conditions ] } },
                 { $group: { _id: "$ledger_transactions.account", balance: { $sum: "$ledger_transactions.amount" } } },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "_id", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },

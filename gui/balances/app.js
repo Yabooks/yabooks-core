@@ -23,7 +23,9 @@ let app = Vue.createApp(
     data()
     {
         return {
-            date: new Date().toISOString().substring(0, 10),
+            business_id: null,
+            from: new Date().toISOString().substring(0, 10),
+            until: new Date().toISOString().substring(0, 10),
             profit: 0,
             accounts: [],
             error: null
@@ -38,25 +40,20 @@ let app = Vue.createApp(
                 .then(loadTranslations({ "code*": "balances." }))
                 .then(this.$forceUpdate);
 
-            let business = await getSelectedBusinessId();
-            if(!business) {
+            this.business_id = await getSelectedBusinessId();
+            if(!this.business_id) {
                 await loadTranslations({ "code": "home.alerts.select-business" });
                 throw this.$filters.translate("home.alerts.select-business");
             }
 
-            let filters = [
-                // TODO "base_ledger_transactions.posting_date__gte=" + encodeURIComponent("2024-12-31")
-                // TODO "base_ledger_transactions.posting_date__lte=" + encodeURIComponent("2026-01-01")
-            ].join("&");
+            const business = await axios.get(`/api/v1/businesses/${this.business_id}`);
+            let from = new Date(`${new Date().getFullYear() - 1}-${business.data.closing_month}-${business.data.closing_day_of_month}`);
+            from.setDate(from.getDate() + 1);
+            this.from = from.toISOString().substring(0, 10);
+            let until = new Date(`${new Date().getFullYear()}-${business.data.closing_month}-${business.data.closing_day_of_month}`);
+            this.until = until.toISOString().substring(0, 10);
 
-            let res = await axios.get(`/api/v1/businesses/${business}/general-ledger-balances?${filters}`);
-            this.accounts = res.data.data;
-            this.error = null;
-
-            this.profit = 0;
-            for(let i in this.accounts)
-                if([ "revenues", "expenses" ].indexOf(this.accounts[i].type) > -1)
-                    this.profit += val(this.accounts[i].balance);
+            await this.loadBalances();
         }
         catch(x)
         {
@@ -67,6 +64,25 @@ let app = Vue.createApp(
 
     methods:
     {
+        async loadBalances()
+        {
+            let filters = [
+                "from=" + encodeURIComponent(this.from),
+                "until=" + encodeURIComponent(this.until)
+            ].join("&");
+
+            // load balances from API
+            let res = await axios.get(`/api/v1/businesses/${this.business_id}/general-ledger-balances?${filters}`);
+            this.accounts = res.data.data;
+            this.error = null;
+
+            // calculate profit
+            this.profit = 0;
+            for(let i in this.accounts)
+                if([ "revenues", "expenses" ].indexOf(this.accounts[i].type) > -1)
+                    this.profit += val(this.accounts[i].balance);
+        },
+
         showLedgerRecords(account)
         {
             self.location = `/ledger/?business=${account.business}&account._id=${account._id}`;
