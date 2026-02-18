@@ -27,6 +27,8 @@ let app = Vue.createApp(
             from: new Date().toISOString().substring(0, 10),
             until: new Date().toISOString().substring(0, 10),
             profit: 0,
+            profit_carried_forward: 0,
+            currency: "USD",
             accounts: [],
             error: null
         };
@@ -52,6 +54,7 @@ let app = Vue.createApp(
             this.from = from.toISOString().substring(0, 10);
             let until = new Date(`${new Date().getFullYear()}-${business.data.closing_month}-${business.data.closing_day_of_month}`);
             this.until = until.toISOString().substring(0, 10);
+            this.currency = business.data.default_currency;
 
             await this.loadBalances();
         }
@@ -66,6 +69,14 @@ let app = Vue.createApp(
     {
         async loadBalances()
         {
+            if(this.from > this.until) // auto adjust from date if it is after until date
+            {
+                let from = new Date(this.until);
+                from.setFullYear(from.getFullYear() - 1);
+                from.setDate(from.getDate() + 1);
+                this.from = from.toISOString().substring(0, 10);
+            }
+
             let filters = [
                 "from=" + encodeURIComponent(this.from),
                 "until=" + encodeURIComponent(this.until)
@@ -78,14 +89,27 @@ let app = Vue.createApp(
 
             // calculate profit
             this.profit = 0;
+            this.profit_carried_forward = 0;
             for(let i in this.accounts)
                 if([ "revenues", "expenses" ].indexOf(this.accounts[i].type) > -1)
+                {
                     this.profit += val(this.accounts[i].balance);
+                    this.profit_carried_forward += val(this.accounts[i].balance_before);
+                }
+
+            this.$forceUpdate();
         },
 
         showLedgerRecords(account)
         {
             self.location = `/ledger/?business=${account.business}&account._id=${account._id}`;
+        },
+
+        getAccountBalance(account)
+        {
+            let balance = account.balance?.$numberDecimal ?? account.balance;
+            let balance_before = account.balance_before?.$numberDecimal ?? account.balance_before;
+            return parseFloat(balance) + parseFloat([ "assets", "equity", "liabilities" ].includes(account.type) ? balance_before : 0);
         },
 
         getRevenueExpenseChartConfig()

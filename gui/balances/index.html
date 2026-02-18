@@ -33,13 +33,13 @@
                         <tr v-if="account?.type == type">
                             <td>{{ account.display_number }} {{ account.display_name }}</td>
                             <td align="right">
-                                <span v-if="(account.balance.$numberDecimal || account.balance) > 0">
-                                    {{ $filters.formatNumber($filters.absolute(account.balance)) }}
+                                <span v-if="getAccountBalance(account) > 0">
+                                    {{ $filters.formatNumber($filters.absolute(getAccountBalance(account)), currency) }}
                                 </span>
                             </td>
                             <td align="right">
-                                <span v-if="(account.balance.$numberDecimal || account.balance) <= 0">
-                                    {{ $filters.formatNumber($filters.absolute(account.balance)) }}
+                                <span v-if="getAccountBalance(account) <= 0">
+                                    {{ $filters.formatNumber($filters.absolute(getAccountBalance(account)), currency) }}
                                 </span>
                             </td>
                             <td>
@@ -53,12 +53,26 @@
                         <td>{{ $filters.translate(-$filters.number(profit) >= 0 ? "balances.current-profit" : "balances.current-loss") }}</td>
                         <td align="right">
                             <span v-if="profit > 0">
-                                {{ $filters.formatNumber($filters.absolute(profit)) }}
+                                {{ $filters.formatNumber($filters.absolute(profit), currency) }}
                             </span>
                         </td>
                         <td align="right">
                             <span  v-if="profit <= 0">
-                                {{ $filters.formatNumber($filters.absolute(profit)) }}
+                                {{ $filters.formatNumber($filters.absolute(profit), currency) }}
+                            </span>
+                        </td>
+                        <td />
+                    </tr>
+                    <tr v-if="type == 'equity'">
+                        <td>{{ $filters.translate(`balances.${-$filters.number(profit_carried_forward) >= 0 ? "profit" : "loss"}-carried-forward`) }}</td>
+                        <td align="right">
+                            <span v-if="profit_carried_forward > 0">
+                                {{ $filters.formatNumber($filters.absolute(profit_carried_forward), currency) }}
+                            </span>
+                        </td>
+                        <td align="right">
+                            <span  v-if="profit_carried_forward <= 0">
+                                {{ $filters.formatNumber($filters.absolute(profit_carried_forward), currency) }}
                             </span>
                         </td>
                         <td />

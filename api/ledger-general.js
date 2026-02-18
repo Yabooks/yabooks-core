@@ -73,9 +73,9 @@ module.exports = function(api)
     {
         try
         {
-            let date_conditions = [];
+            let date_conditions = [], fromDate = null;
             if(req.query.from) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $gte: new Date(req.query.from) } });
+                fromDate = new Date(req.query.from);
                 req.query.from = undefined;
             }
             if(req.query.until) {
@@ -83,12 +83,18 @@ module.exports = function(api)
                 req.query.until = undefined;
             }
 
+            let groupStage = { _id: "$ledger_transactions.account", balance: { $sum: "$ledger_transactions.amount" } };
+            if(fromDate) {
+                groupStage.balance = { $sum: { $cond: [ { $gte: [ "$ledger_transactions.posting_date", fromDate ] }, "$ledger_transactions.amount", 0 ] } };
+                groupStage.balance_before = { $sum: { $cond: [ { $lt: [ "$ledger_transactions.posting_date", fromDate ] }, "$ledger_transactions.amount", 0 ] } };
+            }
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                 { $unwind: "$ledger_transactions" },
                 { $match: { $and: [ { "ledger_transactions.alternate_ledger": null }, ...date_conditions ] } },
-                { $group: { _id: "$ledger_transactions.account", balance: { $sum: "$ledger_transactions.amount" } } },
+                { $group: groupStage },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "_id", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$account" ] } } },
@@ -103,14 +109,20 @@ module.exports = function(api)
     {
         try
         {
-            let date_conditions = [];
+            let date_conditions = [], fromDate = null;
             if(req.query.from) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $gte: new Date(req.query.from) } });
+                fromDate = new Date(req.query.from);
                 req.query.from = undefined;
             }
             if(req.query.until) {
                 date_conditions.push({ "ledger_transactions.posting_date": { $lte: new Date(req.query.until) } });
                 req.query.until = undefined;
+            }
+
+            let groupStage = { _id: "$ledger_transactions.account", balance: { $sum: "$ledger_transactions.amount" } };
+            if(fromDate) {
+                groupStage.balance = { $sum: { $cond: [ { $gte: [ "$ledger_transactions.posting_date", fromDate ] }, "$ledger_transactions.amount", 0 ] } };
+                groupStage.balance_before = { $sum: { $cond: [ { $lt: [ "$ledger_transactions.posting_date", fromDate ] }, "$ledger_transactions.amount", 0 ] } };
             }
 
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
@@ -120,7 +132,7 @@ module.exports = function(api)
                 { $match: { $and: [
                     { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger } ] },
                     ...date_conditions ] } },
-                { $group: { _id: "$ledger_transactions.account", balance: { $sum: "$ledger_transactions.amount" } } },
+                { $group: groupStage },
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "_id", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$account" ] } } },
