@@ -8,14 +8,15 @@ const ChartComponent = (
 
     template: `
         <div :style="{ width, height, display: 'inline-block' }">
-            <canvas ref="chartCanvas"></canvas>
+            <canvas :key="canvasKey" ref="chartCanvas"></canvas>
         </div>
     `,
 
     data()
     {
         return {
-            chart: null
+            chart: null,
+            canvasKey: 0
         };
     },
 
@@ -54,9 +55,11 @@ const ChartComponent = (
             }
         },
 
-        updateChart(config)
+        async updateChart(config)
         {
             this.destroyChart();
+            this.canvasKey++;
+            await this.$nextTick();
             this.buildChart(config);
         }
     }
