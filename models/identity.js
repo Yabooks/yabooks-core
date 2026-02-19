@@ -56,6 +56,8 @@ const Individual = Identity.discriminator("Individual",
 {
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
+    title_pre: String,
+    title_post: String,
     birthdate: Date
 });
 
