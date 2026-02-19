@@ -48,6 +48,7 @@ let app = Vue.createApp(
                 throw this.$filters.translate("home.alerts.select-business");
             }
 
+            // set default balance sheet date
             const business = await axios.get(`/api/v1/businesses/${this.business_id}`);
             let from = new Date(`${new Date().getFullYear() - 1}-${business.data.closing_month}-${business.data.closing_day_of_month}`);
             from.setDate(from.getDate() + 1);
