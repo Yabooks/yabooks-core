@@ -20,52 +20,66 @@ async function extractPdfText(buffer)
 }
 
 // Inject uploaded file into the last user message (or append a new one) for Claude's API format
-function injectFileForClaude(messages, file)
+function injectFileForClaude(messages, files = [])
 {
-    let fileBlock;
-    if(file.mimetype.startsWith("image/"))
-        fileBlock = { type: "image", source: { type: "base64", media_type: file.mimetype, data: file.buffer.toString("base64") } };
-    else if(file.mimetype === "application/pdf")
-        fileBlock = { type: "document", source: { type: "base64", media_type: "application/pdf", data: file.buffer.toString("base64") } };
-    else
-        fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${file.buffer.toString("utf8")}` };
+    for(let file of files)
+    {
+        let fileBlock;
 
-    const lastUserIdx = messages.map(m => m.role).lastIndexOf("user");
-    if(lastUserIdx < 0)
-    {
-        messages.push({ role: "user", content: [fileBlock] });
+        if(file.mimetype.startsWith("image/"))
+            fileBlock = { type: "image", source: { type: "base64", media_type: file.mimetype, data: file.buffer.toString("base64") } };
+
+        else if(file.mimetype === "application/pdf")
+            fileBlock = { type: "document", source: { type: "base64", media_type: "application/pdf", data: file.buffer.toString("base64") } };
+
+        else
+            fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${file.buffer.toString("utf8")}` };
+
+        const lastUserIdx = messages.map(m => m.role).lastIndexOf("user");
+
+        if(lastUserIdx < 0)
+            messages.push({ role: "user", content: [ fileBlock ] });
+        
+        else
+        {
+            const msg = messages[lastUserIdx];
+            const existing = typeof msg.content === "string" ? [{ type: "text", text: msg.content }] : (msg.content ?? []);
+            messages[lastUserIdx] = { ...msg, content: [fileBlock, ...existing] };
+        }
     }
-    else
-    {
-        const msg = messages[lastUserIdx];
-        const existing = typeof msg.content === "string" ? [{ type: "text", text: msg.content }] : (msg.content ?? []);
-        messages[lastUserIdx] = { ...msg, content: [fileBlock, ...existing] };
-    }
+
     return messages;
 }
 
 // Inject uploaded file into the last user message for OpenAI's API format
-async function injectFileForOpenAI(messages, file)
+async function injectFileForOpenAI(messages, files = [])
 {
-    let fileBlock;
-    if(file.mimetype.startsWith("image/"))
-        fileBlock = { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${file.buffer.toString("base64")}` } };
-    else if(file.mimetype === "application/pdf")
-        fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${await extractPdfText(file.buffer)}` };
-    else
-        fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${file.buffer.toString("utf8")}` };
+    for(let file of files)
+    {
+        let fileBlock;
 
-    const lastUserIdx = messages.map(m => m.role).lastIndexOf("user");
-    if(lastUserIdx < 0)
-    {
-        messages.push({ role: "user", content: [fileBlock] });
+        if(file.mimetype.startsWith("image/"))
+            fileBlock = { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${file.buffer.toString("base64")}` } };
+
+        else if(file.mimetype === "application/pdf")
+            fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${await extractPdfText(file.buffer)}` };
+
+        else
+            fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${file.buffer.toString("utf8")}` };
+
+        const lastUserIdx = messages.map(m => m.role).lastIndexOf("user");
+
+        if(lastUserIdx < 0)
+            messages.push({ role: "user", content: [fileBlock] });
+        
+        else
+        {
+            const msg = messages[lastUserIdx];
+            const existing = typeof msg.content === "string" ? [{ type: "text", text: msg.content }] : (msg.content ?? []);
+            messages[lastUserIdx] = { ...msg, content: [fileBlock, ...existing] };
+        }
     }
-    else
-    {
-        const msg = messages[lastUserIdx];
-        const existing = typeof msg.content === "string" ? [{ type: "text", text: msg.content }] : (msg.content ?? []);
-        messages[lastUserIdx] = { ...msg, content: [fileBlock, ...existing] };
-    }
+
     return messages;
 }
 
@@ -141,11 +155,11 @@ module.exports = function(api)
      *       501:
      *         description: YaCob is not configured (missing API key)
      */
-    api.post("/api/v1/ask-yacob", upload.single("file"), async (req, res, next) =>
+    api.post("/api/v1/ask-yacob", upload.any(), async (req, res, next) =>
     {
         try
         {
-            const claude_api_key = process.env.claude_api_key;
+            const claude_api_key = process.env.yacob_claude_api_key;
             const openai_api_key = process.env.yacob_openai_api_key;
 
             if(!claude_api_key && !openai_api_key)
@@ -160,14 +174,14 @@ module.exports = function(api)
 
             if(claude_api_key) // Claude
             {
-                const messages = req.file
-                    ? injectFileForClaude([...params.messages], req.file)
+                const messages = req.files
+                    ? injectFileForClaude([ ...params.messages ], req.files)
                     : params.messages;
 
                 const system = messages.filter(m => m.role === "system").map(m => m.content).join("\n");
 
                 const body = {
-                    model: params.model,
+                    model: params.model ?? "claude-sonnet-4-6",
                     messages: messages.filter(m => m.role !== "system"),
                     max_tokens: params.max_tokens ?? 8096,
                     ...(params.temperature !== undefined && { temperature: params.temperature }),
@@ -186,8 +200,8 @@ module.exports = function(api)
             }
             else // OpenAI
             {
-                const messages = req.file
-                    ? await injectFileForOpenAI([...params.messages], req.file)
+                const messages = req.files
+                    ? await injectFileForOpenAI([ ...params.messages ], req.files)
                     : params.messages;
 
                 response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -196,7 +210,12 @@ module.exports = function(api)
                         "Content-Type": "application/json",
                         "Authorization": `Bearer ${openai_api_key}`
                     },
-                    body: JSON.stringify({ ...params, messages })
+                    body: JSON.stringify({
+                        ...params,
+                        model: params.model ?? "gpt-4o-mini",
+                        messages,
+                        max_tokens: parseInt(params.max_tokens) || undefined
+                    })
                 });
             }
 
