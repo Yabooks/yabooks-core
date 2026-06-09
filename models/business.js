@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
+const { Identity } = require("./identity.js");
 
 // business schema
 const Business = mongoose.model("Business", (function()
@@ -27,8 +28,16 @@ const Business = mongoose.model("Business", (function()
             }
             catch(x)
             {
-                let file = path.join(__dirname, "../gui/people/organization.svg");
-                return await fs.readFile(file);
+                try
+                {
+                    let identity = await Identity.findOne({ _id: this.owner });
+                    return await identity.getPicture();
+                }
+                catch(y)
+                {
+                    let file = path.join(__dirname, "../gui/people/organization.svg");
+                    return await fs.readFile(file);
+                }
             }
         },
 
