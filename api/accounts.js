@@ -75,9 +75,14 @@ module.exports = function(api)
     {
         try
         {
-            let acc = new LedgerAccount({ business: req.params.id, ...req.body });
-            await acc.save();
-            res.send(acc);
+            if(Array.isArray(req.body))
+                res.send(await LedgerAccount.insertMany(req.body.map(acc => ({ business: req.params.id, ...acc }))));
+            else
+            {
+                let acc = new LedgerAccount({ business: req.params.id, ...req.body });
+                await acc.save();
+                res.send(acc);
+            }
         }
         catch(x) { next(x) }
     });
