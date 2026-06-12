@@ -12,12 +12,12 @@ const MAX_STEPS = 10, APPROVAL_HINT = "When a tool execution is not approved by 
 async function getMcpTools(api_key)
 {
     return await getOpenApiTools({
-        "name": "petstore",
+        "name": "yabooks",
         "type": "openapi",
-        "spec": "https://petstore3.swagger.io/api/v3/openapi.json",
-        "baseUrl": "https://petstore3.swagger.io/api/v3",
+        "spec": (process.env.base_url || `http://localhost:${process.env.port}`) + "/api/doc/openapi.json",
+        "baseUrl": process.env.base_url || `http://localhost:${process.env.port}`,
         "headers": { "Authorization": api_key ? `Bearer ${api_key}` : undefined },
-        "autoApprove": ["updatePetStatus"]
+        "autoApprove": []
     });
 }
 

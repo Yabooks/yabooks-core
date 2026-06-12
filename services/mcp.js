@@ -22,6 +22,38 @@ const sanitize = s => s.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
 // parameter names that are auth-related and must never be exposed to the model
 const AUTH_PARAM = /^(api[-_]?key|x[-_]?api[-_]?key|apikey|authorization|auth|token|access[-_]?token|refresh[-_]?token|bearer|secret|client[-_]?secret|client[-_]?id|app[-_]?id|app[-_]?key|session[-_]?id|cookie)$/i;
 
+// openapi-mcp-generator can emit `false` for items/additionalItems when it
+// encounters empty `properties: {}` objects or resolves certain allOf combos.
+// `false` is valid JSON Schema (no items allowed) but the AI SDK rejects it.
+// Recursively replace any boolean schema with a safe equivalent.
+function sanitizeSchema(node, depth = 0)
+{
+    if(depth > 32 || node === null) return node;
+
+    // boolean in schema position: true = any, false = never
+    if(typeof node === "boolean") return node ? {} : { not: {} };
+
+    if(Array.isArray(node)) return node.map(n => sanitizeSchema(n, depth + 1));
+
+    if(typeof node !== "object") return node;
+
+    const out = {};
+
+    for(const [k, v] of Object.entries(node))
+    {
+        if(k === "properties" && (typeof v === "boolean" || v === null))
+            out[k] = {};                            // properties must be an object map
+        else if(k === "properties" && typeof v === "object" && !Array.isArray(v))
+            out[k] = Object.fromEntries(            // recurse into each property schema
+                Object.entries(v).map(([pk, pv]) => [pk, sanitizeSchema(pv, depth + 1)])
+            );
+        else
+            out[k] = sanitizeSchema(v, depth + 1);
+    }
+
+    return out;
+}
+
 // remove auth parameters from the tool schema — the server injects credentials
 // itself (api.headers / api.query), so the model must neither see nor ask for them
 function stripAuthParams(def, api)
@@ -44,12 +76,38 @@ function stripAuthParams(def, api)
     def.executionParameters = (def.executionParameters ?? []).filter(p => !isAuth(p.name));
 }
 
+// strip non-standard per-field `required` from the raw OpenAPI spec before
+// the generator sees it — the YaBooks spec uses `"required": false` as a
+// per-property annotation, which is invalid JSON Schema and trips the AI SDK
+function cleanSpec(node, depth = 0)
+{
+    if(depth > 32 || node === null || typeof node !== "object") return node;
+    if(Array.isArray(node)) return node.map(n => cleanSpec(n, depth + 1));
+
+    const out = {};
+    for(const [k, v] of Object.entries(node))
+    {
+        if(k === "required" && !Array.isArray(v)) continue; // drop per-field required
+        out[k] = cleanSpec(v, depth + 1);
+    }
+    return out;
+}
+
 async function getOpenApiTools(api)
 {
     // openapi-mcp-generator is ESM-only — load via dynamic import (cached by Node)
     const { getToolsFromOpenApi } = await import("openapi-mcp-generator");
 
-    const defs = await getToolsFromOpenApi(api.spec, {
+    // load and clean the spec before the generator processes it
+    const rawSpec = typeof api.spec === "string" && api.spec.startsWith("http")
+        ? await fetch(api.spec).then(r => r.json())
+        : require("fs").existsSync(api.spec)
+            ? JSON.parse(require("fs").readFileSync(api.spec, "utf8"))
+            : api.spec;
+
+    const cleanedSpec = cleanSpec(rawSpec);
+
+    const defs = await getToolsFromOpenApi(cleanedSpec, {
         dereference: true,
         ...(api.baseUrl && { baseUrl: api.baseUrl }),
         ...(api.exclude && { excludeOperationIds: api.exclude }),
@@ -62,12 +120,20 @@ async function getOpenApiTools(api)
     {
         stripAuthParams(def, api);
 
+        try { jsonSchema(def.inputSchema?.jsonSchema ?? def.inputSchema); }
+        catch(e)
+        {
+            console.error(`[yacob/openapi] schema error in "${def.name}":`);
+            console.error(JSON.stringify(def.inputSchema, null, 2));
+            throw e;
+        }
+
         const description = (def.description || `${def.method.toUpperCase()} ${def.pathTemplate}`)
             + " Authentication is handled automatically by the server; never ask the user for API keys or tokens.";
 
         tools[sanitize(`${api.name}__${def.name}`)] = tool({
             description,
-            inputSchema: jsonSchema(def.inputSchema),
+            inputSchema: jsonSchema(def.inputSchema?.jsonSchema ?? def.inputSchema),
             needsApproval: def.method.toUpperCase() !== "GET"
                 && !(api.autoApprove ?? []).includes(def.name),
             execute: args => executeOperation(api, def, args)
