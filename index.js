@@ -51,7 +51,7 @@ app.get("/manuals/:page", async (req, res, next) =>
 });
 
 // api swagger documentation
-app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
+const swaggerDoc = swaggerjsdoc({
     swaggerDefinition: {
         openapi: "3.0.0",
         info: {
@@ -98,7 +98,9 @@ app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerjsdoc({
     apis: [
         "./api/*.js"
     ]
-})));
+});
+app.get("/api/doc/openapi.json", (req, res) => res.json(swaggerDoc));
+app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 // all other routes require to be authenticated
 app.jwt_secret = process.env.secret || require("crypto").randomBytes(32);

@@ -16,7 +16,7 @@ async function getMcpTools(api_key)
         "type": "openapi",
         "spec": (process.env.base_url || `http://localhost:${process.env.port}`) + "/api/doc/openapi.json",
         "baseUrl": process.env.base_url || `http://localhost:${process.env.port}`,
-        "headers": { "Authorization": api_key ? `Bearer ${api_key}` : undefined },
+        "headers": api_key ? { "Authorization": `Bearer ${api_key}` } : {},
         "autoApprove": []
     });
 }
@@ -192,7 +192,7 @@ module.exports = function(api)
                 system: [APPROVAL_HINT, system].filter(Boolean).join("\n"),
                 ...(params.temperature !== undefined && { temperature: Number(params.temperature) }),
                 ...(params.max_tokens && { maxOutputTokens: parseInt(params.max_tokens) }),
-                tools: await getMcpTools(req.auth?.session_token),
+                tools: await getMcpTools(req.headers?.authorization ? req.headers.authorization.split(" ")[1] : req.cookies?.user_token),
                 stopWhen: stepCountIs(MAX_STEPS)
             });
 
