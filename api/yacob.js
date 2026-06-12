@@ -35,6 +35,27 @@ function getModel(requestedModel)
     return null;
 }
 
+// ---------------------------------------------------------------------------
+// Canonical transcript — tool calls, results, and approval parts must round-
+// trip exactly, so every response returns the FULL message history and the
+// client replaces its copy with it. Otherwise tool calls end up in the client
+// history without their results (-> AI_MissingToolResultsError on next turn).
+// Binary file parts are replaced by placeholders so they don't round-trip.
+// ---------------------------------------------------------------------------
+
+function transcript(input, generated)
+{
+    return [ ...input, ...generated ].map(m => Array.isArray(m.content)
+        ? {
+            ...m,
+            content: m.content.map(p =>
+                (p.type === "image" || p.type === "file") && typeof (p.image ?? p.data) !== "string"
+                    ? { type: "text", text: "[an uploaded file was analyzed in a previous turn]" }
+                    : p)
+          }
+        : m);
+}
+
 module.exports = function(api)
 {
     /**
@@ -168,10 +189,10 @@ module.exports = function(api)
             const result = await generateText({
                 model,
                 messages,
-                system: [ APPROVAL_HINT, system ].filter(Boolean).join("\n"),
+                system: [APPROVAL_HINT, system].filter(Boolean).join("\n"),
                 ...(params.temperature !== undefined && { temperature: Number(params.temperature) }),
                 ...(params.max_tokens && { maxOutputTokens: parseInt(params.max_tokens) }),
-                tools: await getMcpTools(req.auth?.session_id),
+                tools: await getMcpTools(req.auth?.session_token),
                 stopWhen: stepCountIs(MAX_STEPS)
             });
 
@@ -188,9 +209,8 @@ module.exports = function(api)
                         toolName: p.toolCall?.toolName ?? p.toolName,
                         input: p.toolCall?.input ?? p.input
                     })),
-                    // the client must append these to its history and send them
-                    // back unchanged (they contain the tool calls being approved)
-                    messages: result.response.messages
+                    // full canonical history — the client must REPLACE its copy with this
+                    messages: transcript(messages, result.response.messages)
                 });
             }
 
@@ -202,7 +222,9 @@ module.exports = function(api)
                 steps: result.steps.map(s => ({
                     toolCalls: s.toolCalls,
                     toolResults: s.toolResults
-                }))
+                })),
+                // full canonical history — the client must REPLACE its copy with this
+                messages: transcript(messages, result.response.messages)
             });
         }
         catch(x) { next(x) }
