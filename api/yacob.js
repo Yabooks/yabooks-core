@@ -1,86 +1,38 @@
 const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
-const pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs");
-const standardFontDataUrl = require("path").dirname(require.resolve("pdfjs-dist/standard_fonts/FoxitFixed.pfb")) + "/";
-const cMapUrl = require("path").dirname(require.resolve("pdfjs-dist/cmaps/78-H.bcmap")) + "/";
+const { generateText, stepCountIs, experimental_createMCPClient: createMCPClient, tool, jsonSchema } = require("ai");
+const { getOpenApiTools } = require("../services/mcp.js");
+const { createAnthropic } = require("@ai-sdk/anthropic");
+const { createOpenAI } = require("@ai-sdk/openai");
 
-async function extractPdfText(buffer)
+const MAX_STEPS = 10, APPROVAL_HINT = "When a tool execution is not approved by the user, do not retry it; "
+    + "acknowledge the denial and continue without it.";
+
+async function getMcpTools(api_key)
 {
-    const pdfjsLib = await pdfjsLibPromise;
-    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
-    let text = "";
-    for(let i = 1; i <= pdf.numPages; i++)
-    {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(" ") + "\n";
-    }
-    return text;
+    return await getOpenApiTools({
+        "name": "petstore",
+        "type": "openapi",
+        "spec": "https://petstore3.swagger.io/api/v3/openapi.json",
+        "baseUrl": "https://petstore3.swagger.io/api/v3",
+        "headers": { "Authorization": api_key ? `Bearer ${api_key}` : undefined },
+        "autoApprove": ["updatePetStatus"]
+    });
 }
 
-// Inject uploaded file into the last user message (or append a new one) for Claude's API format
-function injectFileForClaude(messages, files = [])
+function getModel(requestedModel)
 {
-    for(let file of files)
-    {
-        let fileBlock;
+    const claude_api_key = process.env.yacob_claude_api_key;
+    const openai_api_key = process.env.yacob_openai_api_key;
 
-        if(file.mimetype.startsWith("image/"))
-            fileBlock = { type: "image", source: { type: "base64", media_type: file.mimetype, data: file.buffer.toString("base64") } };
+    if(claude_api_key)
+        return createAnthropic({ apiKey: claude_api_key })(requestedModel ?? "claude-sonnet-4-6");
 
-        else if(file.mimetype === "application/pdf")
-            fileBlock = { type: "document", source: { type: "base64", media_type: "application/pdf", data: file.buffer.toString("base64") } };
+    if(openai_api_key)
+        return createOpenAI({ apiKey: openai_api_key })(requestedModel ?? "gpt-4o-mini");
 
-        else
-            fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${file.buffer.toString("utf8")}` };
-
-        const lastUserIdx = messages.map(m => m.role).lastIndexOf("user");
-
-        if(lastUserIdx < 0)
-            messages.push({ role: "user", content: [ fileBlock ] });
-        
-        else
-        {
-            const msg = messages[lastUserIdx];
-            const existing = typeof msg.content === "string" ? [{ type: "text", text: msg.content }] : (msg.content ?? []);
-            messages[lastUserIdx] = { ...msg, content: [fileBlock, ...existing] };
-        }
-    }
-
-    return messages;
-}
-
-// Inject uploaded file into the last user message for OpenAI's API format
-async function injectFileForOpenAI(messages, files = [])
-{
-    for(let file of files)
-    {
-        let fileBlock;
-
-        if(file.mimetype.startsWith("image/"))
-            fileBlock = { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${file.buffer.toString("base64")}` } };
-
-        else if(file.mimetype === "application/pdf")
-            fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${await extractPdfText(file.buffer)}` };
-
-        else
-            fileBlock = { type: "text", text: `[File: ${file.originalname}]\n\n${file.buffer.toString("utf8")}` };
-
-        const lastUserIdx = messages.map(m => m.role).lastIndexOf("user");
-
-        if(lastUserIdx < 0)
-            messages.push({ role: "user", content: [fileBlock] });
-        
-        else
-        {
-            const msg = messages[lastUserIdx];
-            const existing = typeof msg.content === "string" ? [{ type: "text", text: msg.content }] : (msg.content ?? []);
-            messages[lastUserIdx] = { ...msg, content: [fileBlock, ...existing] };
-        }
-    }
-
-    return messages;
+    return null;
 }
 
 module.exports = function(api)
@@ -91,10 +43,15 @@ module.exports = function(api)
      *   post:
      *     summary: Ask YaCob (AI)
      *     description: >
-     *       Proxies a request to the Claude or OpenAI chat completions API and returns the response.
-     *       Supports an optional file upload (image, PDF, or text) that is injected into the last user message for analysis.
-     *       When `claude_api_key` is set in environment, Claude is used; otherwise falls back to OpenAI (`yacob_openai_api_key`).
-     *       Accepts either `application/json` (no file) or `multipart/form-data` (with file).
+     *       Runs a chat completion via the Vercel AI SDK. Provider is chosen by available API key
+     *       (Claude preferred, OpenAI fallback). Tools from MCP servers and OpenAPI specs configured
+     *       in `yacob_mcp_servers` are executed in an automatic tool-calling loop.
+     *       Write operations (non-GET) of OpenAPI tools require explicit user approval:
+     *       the endpoint then responds with `status: "approval_required"` and a list of
+     *       `pendingApprovals`. The client must show these to the user, append the returned
+     *       `messages` to its conversation history, and re-post the request including an
+     *       `approvals` array with the user's decisions.
+     *       Supports an optional file upload (image, PDF, or text) attached to the last user message.
      *     tags:
      *      - yacob
      *     requestBody:
@@ -104,7 +61,6 @@ module.exports = function(api)
      *           schema:
      *             type: object
      *             required:
-     *               - model
      *               - messages
      *             properties:
      *               model:
@@ -112,28 +68,34 @@ module.exports = function(api)
      *                 example: claude-sonnet-4-6
      *               messages:
      *                 type: array
+     *                 description: >
+     *                   Conversation history. May contain plain {role, content} messages as well as
+     *                   the opaque model messages returned by a previous approval_required response.
+     *                 items:
+     *                   type: object
+     *               temperature:
+     *                 type: number
+     *               max_tokens:
+     *                 type: integer
+     *               approvals:
+     *                 type: array
+     *                 description: User decisions for previously returned pendingApprovals
      *                 items:
      *                   type: object
      *                   required:
-     *                     - role
-     *                     - content
+     *                     - approvalId
+     *                     - approved
      *                   properties:
-     *                     role:
+     *                     approvalId:
      *                       type: string
-     *                       enum: [system, user, assistant]
-     *                     content:
+     *                     approved:
+     *                       type: boolean
+     *                     reason:
      *                       type: string
-     *               temperature:
-     *                 type: number
-     *                 example: 0.7
-     *               max_tokens:
-     *                 type: integer
-     *                 example: 1024
      *         multipart/form-data:
      *           schema:
      *             type: object
      *             required:
-     *               - model
      *               - messages
      *             properties:
      *               model:
@@ -148,10 +110,11 @@ module.exports = function(api)
      *               file:
      *                 type: string
      *                 format: binary
-     *                 description: Image, PDF, or text file to analyze
      *     responses:
      *       200:
-     *         description: AI completion response
+     *         description: >
+     *           Either a completion ({ status: "done", text, steps, usage, finishReason })
+     *           or a pending approval ({ status: "approval_required", pendingApprovals, messages })
      *       501:
      *         description: YaCob is not configured (missing API key)
      */
@@ -159,72 +122,88 @@ module.exports = function(api)
     {
         try
         {
-            const claude_api_key = process.env.yacob_claude_api_key;
-            const openai_api_key = process.env.yacob_openai_api_key;
+            const model = getModel(req.body.model);
 
-            if(!claude_api_key && !openai_api_key)
+            if(!model)
                 return res.status(501).json({ success: false, message: "YaCob is not configured" });
 
-            // multipart sends messages as a JSON string; JSON requests have it parsed already
-            const params = typeof req.body.messages === "string"
-                ? { ...req.body, messages: JSON.parse(req.body.messages) }
-                : req.body;
+            // multipart sends messages/approvals as JSON strings
+            const params = { ...req.body };
+            if(typeof params.messages === "string") params.messages = JSON.parse(params.messages);
+            if(typeof params.approvals === "string") params.approvals = JSON.parse(params.approvals);
 
-            let response;
+            const system = params.messages.filter(m => m.role === "system").map(m => m.content).join("\n");
+            const messages = params.messages.filter(m => m.role !== "system");
 
-            if(claude_api_key) // Claude
+            // file upload: attach to the last user message as a file/image part
+            if(req.files?.length)
             {
-                const messages = req.files
-                    ? injectFileForClaude([ ...params.messages ], req.files)
-                    : params.messages;
+                const last = messages[messages.length - 1];
+                const file = req.files[0];
 
-                const system = messages.filter(m => m.role === "system").map(m => m.content).join("\n");
-
-                const body = {
-                    model: params.model ?? "claude-sonnet-4-6",
-                    messages: messages.filter(m => m.role !== "system"),
-                    max_tokens: params.max_tokens ?? 8096,
-                    ...(params.temperature !== undefined && { temperature: params.temperature }),
-                    ...(system && { system })
-                };
-
-                response = await fetch("https://api.anthropic.com/v1/messages", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-api-key": claude_api_key,
-                        "anthropic-version": "2023-06-01"
-                    },
-                    body: JSON.stringify(body)
-                });
+                last.content = [
+                    { type: "text", text: typeof last.content === "string" ? last.content : "" },
+                    file.mimetype.startsWith("image/")
+                        ? { type: "image", image: file.buffer, mediaType: file.mimetype }
+                        : { type: "file", data: file.buffer, mediaType: file.mimetype }
+                ];
             }
-            else // OpenAI
-            {
-                const messages = req.files
-                    ? await injectFileForOpenAI([ ...params.messages ], req.files)
-                    : params.messages;
 
-                response = await fetch("https://api.openai.com/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${openai_api_key}`
-                    },
-                    body: JSON.stringify({
-                        ...params,
-                        model: params.model ?? "gpt-4o-mini",
-                        messages,
-                        max_tokens: parseInt(params.max_tokens) || undefined
-                    })
+            // user decisions for pending approvals from a previous request:
+            // appended as tool-approval-response parts, so the SDK either
+            // executes the tool (approved) or tells the model it was denied
+            if(params.approvals?.length)
+            {
+                messages.push({
+                    role: "tool",
+                    content: params.approvals.map(a => ({
+                        type: "tool-approval-response",
+                        approvalId: a.approvalId,
+                        approved: a.approved === true || a.approved === "true",
+                        ...(a.reason && { reason: a.reason })
+                    }))
                 });
             }
 
-            const data = await response.json();
+            const result = await generateText({
+                model,
+                messages,
+                system: [ APPROVAL_HINT, system ].filter(Boolean).join("\n"),
+                ...(params.temperature !== undefined && { temperature: Number(params.temperature) }),
+                ...(params.max_tokens && { maxOutputTokens: parseInt(params.max_tokens) }),
+                tools: await getMcpTools(req.auth?.session_id),
+                stopWhen: stepCountIs(MAX_STEPS)
+            });
 
-            if(!response.ok)
-                return res.status(response.status).json(data);
+            // tools with needsApproval don't run yet — the generation stops and
+            // emits tool-approval-request parts that the user must decide on
+            const pending = result.content.filter(p => p.type === "tool-approval-request");
 
-            res.json(data);
+            if(pending.length)
+            {
+                return res.json({
+                    status: "approval_required",
+                    pendingApprovals: pending.map(p => ({
+                        approvalId: p.approvalId,
+                        toolName: p.toolCall?.toolName ?? p.toolName,
+                        input: p.toolCall?.input ?? p.input
+                    })),
+                    // the client must append these to its history and send them
+                    // back unchanged (they contain the tool calls being approved)
+                    messages: result.response.messages
+                });
+            }
+
+            res.json({
+                status: "done",
+                text: result.text,
+                finishReason: result.finishReason,
+                usage: result.totalUsage,
+                steps: result.steps.map(s => ({
+                    toolCalls: s.toolCalls,
+                    toolResults: s.toolResults
+                }))
+            });
         }
         catch(x) { next(x) }
     });

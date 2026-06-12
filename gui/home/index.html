@@ -33,6 +33,10 @@
                     </span>
                 </div>
             </template>
+            <div class="app" @click="navigate({ link: '/yacob/' })">
+                <img class="icon" src="/yacob/icon.svg" />
+                <span>YaCob AI</span>
+            </div>
             <div class="app" @click="navigate({ link: '/apps/' })">
                 <img class="icon" src="/apps/icon.png" />
                 <span>{{ $filters.translate("home.apps.market") }}</span>

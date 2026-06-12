@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YaCob</title>
+<style>
+    :root {
+        --bg: #f6f7f2;
+        --panel: #ffffff;
+        --panel-2: #ffffff;
+        --border: #e2e6d8;
+        --text: #2b3324;
+        --muted: #7c8671;
+        --accent: #3f9e52;
+        --accent-2: #35914a;
+        --ok: #3f9e52;
+        --warn: #e8821e;
+        --danger: #d84a3f;
+        --radius: 14px;
+        font-size: 15px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--panel);
+    }
+    header .logo {
+        width: 30px; height: 30px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, var(--accent), var(--warn));
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 15px; color: #fff;
+    }
+    header h1 { font-size: 16px; font-weight: 600; }
+    header .sub { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+    #chat {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 0 12px;
+    }
+    .inner { max-width: 780px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; gap: 14px; }
+
+    .msg { display: flex; flex-direction: column; max-width: 85%; animation: pop .18s ease-out; }
+    @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.assistant { align-self: flex-start; align-items: flex-start; }
+    .bubble {
+        padding: 11px 15px;
+        border-radius: var(--radius);
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .user .bubble { background: var(--accent-2); color: #fff; border-bottom-right-radius: 4px; }
+    .assistant .bubble { background: var(--panel-2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .meta { font-size: 11px; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .chip {
+        font-size: 11px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 3px 10px;
+        cursor: default;
+    }
+    .chip b { color: var(--text); font-weight: 600; }
+
+    .file-tag {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 12px; color: #fff9;
+        margin-bottom: 6px;
+    }
+
+    /* approval card */
+    .approval {
+        align-self: stretch;
+        background: #fff6e9;
+        border: 1px solid var(--warn);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        animation: pop .18s ease-out;
+    }
+    .approval h3 {
+        font-size: 13px; font-weight: 600; color: #c2690f;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .approval .tool {
+        background: #fff;
+        border: 1px solid #f0dcc0;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+    }
+    .approval .tool .name { font-family: ui-monospace, monospace; font-size: 13px; color: var(--accent); }
+    .approval .tool pre {
+        font-family: ui-monospace, monospace;
+        font-size: 12px; color: var(--muted);
+        white-space: pre-wrap; word-break: break-all;
+        margin-top: 6px;
+    }
+    .approval .actions { display: flex; gap: 8px; margin-top: 4px; }
+    .approval .decided { font-size: 12px; margin-top: 6px; font-weight: 600; }
+    .btn {
+        border: none; border-radius: 9px;
+        padding: 8px 16px;
+        font-size: 13px; font-weight: 600;
+        cursor: pointer;
+        transition: filter .12s;
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .btn.ok { background: var(--ok); color: #fff; }
+    .btn.no { background: var(--danger); color: #fff; }
+
+    .typing { display: flex; gap: 5px; padding: 14px 6px; align-self: flex-start; }
+    .typing span {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--muted);
+        animation: blink 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: .2s; }
+    .typing span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+
+    .error {
+        align-self: stretch;
+        background: #fdedeb;
+        border: 1px solid var(--danger);
+        color: #a93a30;
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+
+    footer {
+        border-top: 1px solid var(--border);
+        background: var(--panel);
+        padding: 14px 20px 18px;
+    }
+    .composer {
+        max-width: 780px; margin: 0 auto;
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 10px 12px;
+        display: flex; flex-direction: column; gap: 8px;
+        transition: border-color .15s;
+    }
+    .composer:focus-within { border-color: var(--accent); }
+    .composer .pending-file {
+        display: none;
+        align-items: center; gap: 8px;
+        font-size: 12px; color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 5px 10px;
+        width: fit-content;
+    }
+    .composer .pending-file button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; }
+    .row { display: flex; align-items: flex-end; gap: 10px; }
+    textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        resize: none;
+        color: var(--text);
+        font: inherit;
+        line-height: 1.5;
+        max-height: 140px;
+        outline: none;
+    }
+    textarea::placeholder { color: var(--muted); }
+    .icon-btn {
+        background: none; border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 6px;
+        border-radius: 8px;
+        transition: color .12s, background .12s;
+    }
+    .icon-btn:hover { color: var(--text); background: var(--bg); }
+    #send {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        width: 38px; height: 38px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: filter .12s;
+        flex-shrink: 0;
+    }
+    #send:hover { filter: brightness(1.12); }
+    #send:disabled { opacity: .4; cursor: default; }
+    .hint { max-width: 780px; margin: 8px auto 0; font-size: 11px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo">Y</div>
+    <h1>YaCob</h1>
+    <div class="sub" id="status">memory only — refresh clears the chat</div>
+</header>
+
+<div id="chat"><div class="inner" id="messages"></div></div>
+
+<footer>
+    <div class="composer">
+        <div class="pending-file" id="pendingFile">
+            <span>📎</span><span id="pendingFileName"></span>
+            <button id="removeFile" title="Remove">✕</button>
+        </div>
+        <div class="row">
+            <button class="icon-btn" id="attach" title="Attach file">📎</button>
+            <textarea id="input" rows="1" placeholder="Ask YaCob…"></textarea>
+            <button id="send" title="Send">➤</button>
+        </div>
+    </div>
+    <div class="hint" id="hint"></div>
+    <input type="file" id="file" hidden accept="image/*,.pdf,.txt,.md,.csv,.json">
+</footer>
+
+<script>
+(function()
+{
+    const API = "/api/v1/ask-yacob";
+
+    // ---- in-memory state only (cleared on refresh, no storage APIs) ----
+    const history = [];          // messages sent to the backend (incl. opaque tool messages)
+    let pendingApprovals = null; // [{approvalId, toolName, input, decision}]
+    let attachedFile = null;
+    let busy = false;
+
+    const $ = id => document.getElementById(id);
+    const messagesEl = $("messages"), chatEl = $("chat"), inputEl = $("input"),
+          sendEl = $("send"), fileEl = $("file"), hintEl = $("hint");
+
+    // ---------------- rendering ----------------
+
+    function scroll() { chatEl.scrollTop = chatEl.scrollHeight; }
+
+    function el(html)
+    {
+        const t = document.createElement("template");
+        t.innerHTML = html.trim();
+        return t.content.firstChild;
+    }
+
+    const esc = s => String(s).replace(/[&<>"']/g, c =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    function addUserMessage(text, fileName)
+    {
+        messagesEl.appendChild(el(`
+            <div class="msg user">
+                ${fileName ? `<div class="bubble"><div class="file-tag">📎 ${esc(fileName)}</div>${esc(text)}</div>` : `<div class="bubble">${esc(text)}</div>`}
+            </div>`));
+        scroll();
+    }
+
+    function addAssistantMessage(text, steps)
+    {
+        const toolCalls = (steps ?? []).flatMap(s => s.toolCalls ?? []);
+        const chips = toolCalls.length
+            ? `<div class="chips">${toolCalls.map(c =>
+                `<span class="chip" title="${esc(JSON.stringify(c.input ?? c.args ?? {}))}">🔧 <b>${esc(c.toolName)}</b></span>`).join("")}</div>`
+            : "";
+
+        messagesEl.appendChild(el(`
+            <div class="msg assistant">
+                ${chips}
+                <div class="bubble">${esc(text || "(no text response)")}</div>
+            </div>`));
+        scroll();
+    }
+
+    function addError(text)
+    {
+        messagesEl.appendChild(el(`<div class="error">⚠️ ${esc(text)}</div>`));
+        scroll();
+    }
+
+    let typingEl = null;
+    function showTyping(on)
+    {
+        if(on && !typingEl)
+        {
+            typingEl = el(`<div class="typing"><span></span><span></span><span></span></div>`);
+            messagesEl.appendChild(typingEl);
+            scroll();
+        }
+        else if(!on && typingEl)
+        {
+            typingEl.remove();
+            typingEl = null;
+        }
+    }
+
+    function setBusy(b)
+    {
+        busy = b;
+        sendEl.disabled = b || !!pendingApprovals;
+        inputEl.disabled = b || !!pendingApprovals;
+        hintEl.textContent = pendingApprovals
+            ? "Waiting for your approval decision above — input is locked until all calls are decided."
+            : "";
+    }
+
+    // ---------------- approval flow ----------------
+
+    function showApprovals(approvals)
+    {
+        pendingApprovals = approvals.map(a => ({ ...a, decision: null }));
+
+        const card = el(`
+            <div class="approval">
+                <h3>⚠️ YaCob wants to perform ${approvals.length === 1 ? "a write operation" : approvals.length + " write operations"} — your approval is required</h3>
+            </div>`);
+
+        for(const a of pendingApprovals)
+        {
+            const toolEl = el(`
+                <div class="tool">
+                    <div class="name">${esc(a.toolName ?? "unknown tool")}</div>
+                    <pre>${esc(JSON.stringify(a.input ?? {}, null, 2))}</pre>
+                    <div class="actions">
+                        <button class="btn ok">Approve</button>
+                        <button class="btn no">Deny</button>
+                    </div>
+                    <div class="decided"></div>
+                </div>`);
+
+            const [okBtn, noBtn] = toolEl.querySelectorAll("button");
+            const decide = approved =>
+            {
+                a.decision = approved;
+                okBtn.disabled = noBtn.disabled = true;
+                const d = toolEl.querySelector(".decided");
+                d.textContent = approved ? "✓ Approved" : "✕ Denied";
+                d.style.color = approved ? "var(--ok)" : "var(--danger)";
+                maybeSubmitApprovals();
+            };
+            okBtn.onclick = () => decide(true);
+            noBtn.onclick = () => decide(false);
+
+            card.appendChild(toolEl);
+        }
+
+        messagesEl.appendChild(card);
+        setBusy(false); // unlock UI state update (input stays locked via pendingApprovals)
+        scroll();
+    }
+
+    function maybeSubmitApprovals()
+    {
+        if(pendingApprovals.some(a => a.decision === null)) return;
+
+        const approvals = pendingApprovals.map(a => ({ approvalId: a.approvalId, approved: a.decision }));
+        pendingApprovals = null;
+        request({ approvals });
+    }
+
+    // ---------------- backend communication ----------------
+
+    async function request({ approvals } = {})
+    {
+        setBusy(true);
+        showTyping(true);
+
+        try
+        {
+            let response;
+
+            if(attachedFile && !approvals)
+            {
+                const fd = new FormData();
+                fd.append("messages", JSON.stringify(history));
+                fd.append("file", attachedFile);
+                attachedFile = null;
+                $("pendingFile").style.display = "none";
+                response = await fetch(API, { method: "POST", body: fd });
+            }
+            else
+            {
+                response = await fetch(API, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ messages: history, ...(approvals && { approvals }) })
+                });
+            }
+
+            const data = await response.json();
+            showTyping(false);
+
+            if(!response.ok)
+                return addError(data.message ?? data.error?.message ?? `Request failed (HTTP ${response.status})`);
+
+            if(data.status === "approval_required")
+            {
+                // append the opaque model messages unchanged — they contain the
+                // tool calls being approved and must round-trip to the backend
+                history.push(...data.messages);
+                return showApprovals(data.pendingApprovals);
+            }
+
+            // done
+            history.push({ role: "assistant", content: data.text || "" });
+            addAssistantMessage(data.text, data.steps);
+        }
+        catch(x)
+        {
+            showTyping(false);
+            addError(x.message ?? String(x));
+        }
+        finally
+        {
+            setBusy(false);
+            inputEl.focus();
+        }
+    }
+
+    function sendMessage()
+    {
+        const text = inputEl.value.trim();
+        if(!text || busy || pendingApprovals) return;
+
+        history.push({ role: "user", content: text });
+        addUserMessage(text, attachedFile?.name);
+
+        inputEl.value = "";
+        inputEl.style.height = "auto";
+        request();
+    }
+
+    // ---------------- wiring ----------------
+
+    sendEl.onclick = sendMessage;
+
+    inputEl.addEventListener("keydown", e =>
+    {
+        if(e.key === "Enter" && !e.shiftKey)
+        {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    inputEl.addEventListener("input", () =>
+    {
+        inputEl.style.height = "auto";
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + "px";
+    });
+
+    $("attach").onclick = () => fileEl.click();
+
+    fileEl.onchange = () =>
+    {
+        attachedFile = fileEl.files[0] ?? null;
+        fileEl.value = "";
+        if(attachedFile)
+        {
+            $("pendingFileName").textContent = attachedFile.name;
+            $("pendingFile").style.display = "flex";
+        }
+    };
+
+    $("removeFile").onclick = () =>
+    {
+        attachedFile = null;
+        $("pendingFile").style.display = "none";
+    };
+
+    inputEl.focus();
+})();
+</script>
+</body>
+</html>
