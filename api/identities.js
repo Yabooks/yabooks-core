@@ -6,7 +6,7 @@ module.exports = function(api)
      * @openapi
      * /api/v1/identities:
      *   get:
-     *     summary: List all identities
+     *     summary: List all identities (people, individuals, organizations, companies, customers, service providers, etc) including personal information
      *     description: Returns a paginated list of all identities (individuals and organizations). Supports filtering and sorting via query parameters.
      *     tags:
      *       - identities
