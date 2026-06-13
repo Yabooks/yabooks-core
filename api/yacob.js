@@ -221,7 +221,11 @@ module.exports = function(api)
                 usage: result.totalUsage,
                 steps: result.steps.map(s => ({
                     toolCalls: s.toolCalls,
-                    toolResults: s.toolResults
+                    toolResults: s.toolResults?.map(r => ({
+                        toolCallId: r.toolCallId,
+                        toolName: r.toolName,
+                        result: r.output ?? r.result
+                    }))
                 })),
                 // full canonical history — the client must REPLACE its copy with this
                 messages: transcript(messages, result.response.messages)
