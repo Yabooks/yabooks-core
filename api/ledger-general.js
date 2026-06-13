@@ -5,6 +5,35 @@ const { Business } = require("../models/business.js"), { Identity } = require(".
 
 module.exports = function(api)
 {
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/general-ledger:
+     *   get:
+     *     summary: Get general ledger entries of a business
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the business
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/GeneralLedgerEntry'
+     */
     api.get("/api/v1/businesses/:id/general-ledger", async (req, res, next) =>
     {
         try
@@ -37,6 +66,41 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/general-ledger/{alternate_ledger}:
+     *   get:
+     *     summary: Get general ledger entries of a business for an alternate ledger
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the business
+     *       - in: path
+     *         name: alternate_ledger
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Identifier of the alternate ledger
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/GeneralLedgerEntry'
+     */
     api.get("/api/v1/businesses/:id/general-ledger/:alternate_ledger", async (req, res, next) =>
     {
         try
@@ -69,6 +133,47 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/general-ledger-balances:
+     *   get:
+     *     summary: Get account balances from the general ledger of a business
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the business
+     *       - in: query
+     *         name: from
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Start date; balance before this date is returned separately as balance_before
+     *       - in: query
+     *         name: until
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Only include transactions posted on or before this date
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/LedgerAccountBalance'
+     */
     api.get("/api/v1/businesses/:id/general-ledger-balances", async (req, res, next) =>
     {
         try
@@ -105,6 +210,53 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/general-ledger-balances/{alternate_ledger}:
+     *   get:
+     *     summary: Get account balances from the general ledger of a business for an alternate ledger
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the business
+     *       - in: path
+     *         name: alternate_ledger
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Identifier of the alternate ledger
+     *       - in: query
+     *         name: from
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Start date; balance before this date is returned separately as balance_before
+     *       - in: query
+     *         name: until
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Only include transactions posted on or before this date
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/LedgerAccountBalance'
+     */
     api.get("/api/v1/businesses/:id/general-ledger-balances/:alternate_ledger", async (req, res, next) =>
     {
         try
@@ -143,6 +295,36 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/open-items:
+     *   get:
+     *     summary: Get open items of a business
+     *     description: Returns ledger transactions on accounts that track open items, enriched with their allocation status and remaining open amount.
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the business
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/OpenItem'
+     */
     api.get("/api/v1/businesses/:id/open-items", async (req, res, next) =>
     {
         try
