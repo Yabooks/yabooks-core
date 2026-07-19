@@ -28,6 +28,7 @@ const TaxCode = mongoose.model("TaxCode", (function()
         rates: [ Number ],
         type: { type: String, enum: [ "tax payable", "input tax receivable", "purchase tax payable and receivable", "tax payment" ], required: true },
         un_ece_5305: String, // https://unece.org/fileadmin/DAM/trade/untdid/d16b/tred/tred5305.htm
+        vatex_code: String, // https://docs.peppol.eu/poacc/billing/3.0/codelist/vatex/
         sub_codes: [ SubTaxCode ],
         owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
     });
