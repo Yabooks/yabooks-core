@@ -19,7 +19,11 @@
   "author": "ducklings tech solutions stb flexco",
   "license": "EUPL-1.2",
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.83",
+    "@ai-sdk/openai": "^3.0.70",
     "@fragaria/address-formatter": "^5.0.0",
+    "@napi-rs/canvas": "^0.1.93",
+    "ai": "^6.0.202",
     "authenticator": "^1.1.5",
     "axios": "^1.2.2",
     "bcrypt": "^5.1.0",
@@ -42,6 +46,7 @@
     "mongoose-to-swagger": "^1.5.1",
     "multer": "^2.1.1",
     "node-fetch": "^2.7.0",
+    "openapi-mcp-generator": "^3.3.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^2.16.105",
     "qrcode": "^1.5.4",
@@ -55,7 +60,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "electron": "^33.3.1",
+    "electron": "^40.4.1",
     "electron-packager": "^17.1.2",
     "eslint": "^9.17.0",
     "globals": "^15.14.0"
