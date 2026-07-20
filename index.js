@@ -17,7 +17,7 @@ app.listen(process.env.port || 0, function() { process.env.port = this.address()
 // inject express middlewares
 const rawBodySaver = (req, res, buf, encoding) => { if(buf && buf.length) req.rawBody = buf };
 app.use(bodyParser.json({ verify: rawBodySaver, limit: "10mb" }));
-app.use(bodyParser.urlencoded({ verify: rawBodySaver, extended: true }));
+app.use(bodyParser.urlencoded({ verify: rawBodySaver, extended: true, limit: "50mb" }));
 app.use((req, res, next) => {
     if(req.headers['content-type']?.startsWith('multipart/form-data'))
         return next();
