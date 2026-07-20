@@ -37,11 +37,11 @@ window.addEventListener("message", async (event) =>
     if([ window, frames.main ].includes(event.source))
     {
         if(event.data?.main_url) // overwrite history state with app location
-    {
-        let url = event.data.main_url.split("http://").join("").split("https://").join("");
-        if(url.indexOf(self.location.host) === 0) url = url.substring(self.location.host.length);
-        history.replaceState(null, null, `#${url}`);
-    }
+        {
+            let url = event.data.main_url.split("http://").join("").split("https://").join("");
+            if(url.indexOf(self.location.host) === 0) url = url.substring(self.location.host.length);
+            history.replaceState(null, null, `#${url}`);
+        }
         
         else if(event.data?.navigate) // allows iFrame to navigate to a core page
         {
