@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
+const { randomUUID: uuid } = require("crypto"), os = require("os");
 
 const omitTimezone = (date) =>
 {
@@ -41,6 +42,7 @@ const LedgerTransaction = (function()
         asset: { type: mongoose.Schema.Types.ObjectId, ref: "Asset", required: false },
         asset_alteration: { type: String, enum: [ "acquisition", "depreciation", "disposal" ], required: false }, // required if asset is referenced
         data: mongoose.Schema.Types.Mixed,
+        deduplication_key: { type: String, index: true, unique: true, default: _ => `${os.hostname()}_${uuid()}` },
 
         alternate_currency: { type: String },
         alternate_currency_amount: { type: mongoose.Schema.Types.Decimal128 },
