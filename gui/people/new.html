@@ -1,0 +1,115 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+        <link rel="stylesheet" type="text/css" href="profile.css" />
+    </head>
+    <body>
+        <main class="single-column">
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.new") }}</span>
+
+                <div class="kind-switch">
+                    <button type="button" :class="{ active: kind === 'individual' }" @click="kind = 'individual'">
+                        {{ $filters.translate("people.new.individual") }}
+                    </button>
+                    <button type="button" :class="{ active: kind === 'organization' }" @click="kind = 'organization'">
+                        {{ $filters.translate("people.new.organization") }}
+                    </button>
+                </div>
+
+                <div class="fields" v-if="kind === 'individual'">
+                    <input type="text" v-model="individual.first_name" :placeholder="$filters.translate('people.first-name')" />
+                    <input type="text" v-model="individual.last_name" :placeholder="$filters.translate('people.last-name')" />
+                    <input type="date" v-model="individual.birthdate" />
+                </div>
+
+                <div class="fields" v-if="kind === 'organization'">
+                    <input type="text" v-model="organization.full_name" :placeholder="$filters.translate('people.full-name')" />
+                    <input type="text" v-model="organization.registration_number" :placeholder="$filters.translate('people.registration-number')" />
+                    <input type="text" v-model="organization.jurisdiction_of_incorporation" :placeholder="$filters.translate('people.jurisdiction')" />
+                </div>
+
+                <span class="error" v-if="error">{{ error }}</span>
+
+                <div class="actions">
+                    <button @click="create()" :disabled="saving">{{ $filters.translate("people.save") }}</button>
+                    <button @click="close()">{{ $filters.translate("people.cancel") }}</button>
+                </div>
+            </div>
+        </main>
+        <script type="text/javascript">
+            let app = Vue.createApp(
+            {
+                data()
+                {
+                    return {
+                        kind: "individual",
+                        individual: {},
+                        organization: {},
+                        saving: false,
+                        error: null
+                    };
+                },
+
+                async mounted()
+                {
+                    await loadTranslations({ "code*": "people." });
+                },
+
+                methods:
+                {
+                    async create()
+                    {
+                        this.error = null;
+
+                        if(this.kind === "individual" && (!this.individual.first_name?.trim() || !this.individual.last_name?.trim()))
+                            return this.error = this.$filters.translate("people.new.error.name-required");
+
+                        if(this.kind === "organization" && !this.organization.full_name?.trim())
+                            return this.error = this.$filters.translate("people.new.error.name-required");
+
+                        this.saving = true;
+
+                        try
+                        {
+                            let res = this.kind === "individual"
+                                ? await axios.post("/api/v1/individuals", {
+                                    ...this.individual,
+                                    birthdate: this.individual.birthdate || undefined
+                                })
+                                : await axios.post("/api/v1/organizations", {
+                                    ...this.organization,
+                                    jurisdiction_of_incorporation: this.organization.jurisdiction_of_incorporation?.trim()
+                                        ? this.organization.jurisdiction_of_incorporation.trim().toUpperCase() : undefined
+                                });
+
+                            // navigate the main frame to the newly created identity and close this modal
+                            window.open(`${this.kind}.html?${res.data._id}`, "main");
+                            parent.document.app.openModal(false);
+                        }
+                        catch(x)
+                        {
+                            this.error = x?.response?.data?.error || x?.message || String(x);
+                        }
+                        finally
+                        {
+                            this.saving = false;
+                        }
+                    },
+
+                    close()
+                    {
+                        parent.document.app.openModal(false);
+                    }
+                }
+            });
+
+            app.config.globalProperties.$filters = { ...filters };
+            app.mount("main");
+        </script>
+    </body>
+</html>

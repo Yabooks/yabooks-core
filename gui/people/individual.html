@@ -10,25 +10,48 @@
     <body>
         <main>
             <div class="widget">
-                <img class="profile_picture" v-if="individual?._id" :src="`/api/v1/identities/${individual._id}/picture`" />
-                <span>
-                    {{ individual.full_name }}
-                    <small v-if="individual.birthdate">&#x1F382; {{ $filters.formatDate(individual.birthdate) }}</small>
-                </span>
+                <div class="profile-row">
+                    <img class="profile_picture" v-if="individual?._id" :src="`/api/v1/identities/${individual._id}/picture`" />
+                    <span v-if="!editing">
+                        {{ individual.full_name }}
+                        <small v-if="individual.birthdate">&#x1F382; {{ $filters.formatDate(individual.birthdate) }}</small>
+                    </span>
+                    <div class="fields" v-else>
+                        <div class="row">
+                            <input type="text" v-model="individual.title_pre" :placeholder="$filters.translate('people.title-pre')" style="max-width: 70px" />
+                            <input type="text" v-model="individual.first_name" :placeholder="$filters.translate('people.first-name')" />
+                            <input type="text" v-model="individual.last_name" :placeholder="$filters.translate('people.last-name')" />
+                            <input type="text" v-model="individual.title_post" :placeholder="$filters.translate('people.title-post')" style="max-width: 70px" />
+                        </div>
+                        <input type="date" v-model="individual.birthdate" />
+                    </div>
+                    <button class="edit-toggle" v-if="!editing" @click="edit()" :title="$filters.translate('people.edit')">&#x270F;&#xFE0F;</button>
+                </div>
+                <div class="actions" v-if="editing">
+                    <button @click="save()" :disabled="saving">{{ $filters.translate("people.save") }}</button>
+                    <button @click="cancel()">{{ $filters.translate("people.cancel") }}</button>
+                </div>
+                <span class="error" v-if="error">{{ error }}</span>
             </div>
             <div class="widget">
                 <span class="title">{{ $filters.translate("people.dba") }}</span>
                 <button class="plus" @click="addDba()" :title="$filters.translate('people.dba.add')">+</button>
-                <ul>
+                <ul v-if="!editing">
                     <li class="dba" v-for="dba in individual.dba">
                         {{ dba }}
+                    </li>
+                </ul>
+                <ul v-else>
+                    <li class="dba editable" v-for="(dba, index) in individual.dba">
+                        <input type="text" v-model="individual.dba[index]" :placeholder="$filters.translate('people.dba-name')" />
+                        <button class="remove" @click="individual.dba.splice(index, 1)" title="&#x2715;">&#x2715;</button>
                     </li>
                 </ul>
             </div>
             <div class="widget">
                 <span class="title">{{ $filters.translate("people.main-contact") }}</span>
                 <button class="plus" @click="addContact()" :title="$filters.translate('people.main-contact.add')">+</button>
-                <ul>
+                <ul v-if="!editing">
                     <li class="contact" v-if="individual.main_email?.address">
                         &#x1F4E7;
                         {{ individual.main_email.address }}
@@ -46,17 +69,106 @@
                         {{ adr.full_address.split("\n").join(", ") }}
                     </li>
                 </ul>
+                <div v-else>
+                    <div class="fields">
+                        <input type="email" v-model="individual.main_email.address" :placeholder="$filters.translate('people.email')" />
+                        <input type="text" v-model="individual.main_phone.number" :placeholder="$filters.translate('people.phone')" />
+                        <div class="row">
+                            <input type="text" v-model="individual.main_address.street" :placeholder="$filters.translate('people.street')" />
+                            <input type="text" v-model="individual.main_address.building_number" :placeholder="$filters.translate('people.building-number')" style="max-width: 90px" />
+                        </div>
+                        <div class="row">
+                            <input type="text" v-model="individual.main_address.zip_code" :placeholder="$filters.translate('people.zip-code')" style="max-width: 110px" />
+                            <input type="text" v-model="individual.main_address.city" :placeholder="$filters.translate('people.city')" />
+                        </div>
+                        <input type="text" v-model="individual.main_address.jurisdiction" :placeholder="$filters.translate('people.jurisdiction')" />
+                    </div>
+                    <div class="fields" v-for="(adr, index) in individual.more_addresses" style="margin-top: 10px">
+                        <div class="row">
+                            <input type="text" v-model="adr.street" :placeholder="$filters.translate('people.street')" />
+                            <input type="text" v-model="adr.building_number" :placeholder="$filters.translate('people.building-number')" style="max-width: 90px" />
+                            <button class="remove" @click="individual.more_addresses.splice(index, 1)">&#x2715;</button>
+                        </div>
+                        <div class="row">
+                            <input type="text" v-model="adr.zip_code" :placeholder="$filters.translate('people.zip-code')" style="max-width: 110px" />
+                            <input type="text" v-model="adr.city" :placeholder="$filters.translate('people.city')" />
+                        </div>
+                        <input type="text" v-model="adr.jurisdiction" :placeholder="$filters.translate('people.jurisdiction')" />
+                    </div>
+                    <button class="add-mini" @click="individual.more_addresses.push({})">+ {{ $filters.translate("people.address.add-another") }}</button>
+                </div>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.bank-connections") }}</span>
+                <button class="plus" @click="addBankAccount()" :title="$filters.translate('people.bank-connections.add')">+</button>
+                <ul v-if="!editing">
+                    <li class="bank-account" v-if="individual.main_bank_account?.iban">
+                        <span class="iban">&#x1F3E6; {{ individual.main_bank_account.iban }}</span>
+                        <span class="meta" v-if="individual.main_bank_account.bank_name || individual.main_bank_account.account_holder_name">
+                            {{ individual.main_bank_account.bank_name }}
+                            {{ individual.main_bank_account.account_holder_name }}
+                        </span>
+                    </li>
+                    <li class="bank-account" v-for="account in (individual.more_bank_accounts || []).filter(a => a.iban)">
+                        <span class="iban">&#x1F3E6; {{ account.iban }}</span>
+                        <span class="meta" v-if="account.bank_name || account.account_holder_name">
+                            {{ account.bank_name }}
+                            {{ account.account_holder_name }}
+                        </span>
+                    </li>
+                    <li v-if="!individual.main_bank_account?.iban && !(individual.more_bank_accounts || []).some(a => a.iban)">
+                        {{ $filters.translate("people.bank-connections.none") }}
+                    </li>
+                </ul>
+                <div v-else>
+                    <div class="fields">
+                        <div class="row">
+                            <input type="text" v-model="individual.main_bank_account.iban" :placeholder="$filters.translate('people.iban')" />
+                            <input type="text" v-model="individual.main_bank_account.bic" :placeholder="$filters.translate('people.bic')" style="max-width: 110px" />
+                        </div>
+                        <div class="row">
+                            <input type="text" v-model="individual.main_bank_account.bank_name" :placeholder="$filters.translate('people.bank-name')" />
+                            <input type="text" v-model="individual.main_bank_account.account_holder_name" :placeholder="$filters.translate('people.bank-account-holder')" />
+                        </div>
+                    </div>
+                    <div class="fields" v-for="(account, index) in individual.more_bank_accounts" style="margin-top: 10px">
+                        <div class="row">
+                            <input type="text" v-model="account.iban" :placeholder="$filters.translate('people.iban')" />
+                            <input type="text" v-model="account.bic" :placeholder="$filters.translate('people.bic')" style="max-width: 110px" />
+                            <button class="remove" @click="individual.more_bank_accounts.splice(index, 1)">&#x2715;</button>
+                        </div>
+                        <div class="row">
+                            <input type="text" v-model="account.bank_name" :placeholder="$filters.translate('people.bank-name')" />
+                            <input type="text" v-model="account.account_holder_name" :placeholder="$filters.translate('people.bank-account-holder')" />
+                        </div>
+                    </div>
+                    <button class="add-mini" @click="individual.more_bank_accounts.push({})">+ {{ $filters.translate("people.bank-connections.add-another") }}</button>
+                </div>
             </div>
             <div class="widget">
                 <span class="title">{{ $filters.translate("people.tax-no") }}</span>
                 <button class="plus" @click="addTaxNo()" :title="$filters.translate('people.tax-no.add')">+</button>
-                <ul>
+                <ul v-if="!editing">
                     <li v-for="(value, key) in individual.tax_numbers">
                         {{ $filters.toFlagEmoji(key?.substring?.(0, 2)) }}
                         <span class="tag">{{ key }}</span>
                         <span class="id">{{ value }}</span>
                     </li>
                 </ul>
+                <div v-else>
+                    <ul>
+                        <li v-for="(value, key) in individual.tax_numbers">
+                            <span class="tag">{{ key }}</span>
+                            <input type="text" class="id" v-model="individual.tax_numbers[key]" />
+                            <button class="remove" @click="removeTaxNumber(key)">&#x2715;</button>
+                        </li>
+                    </ul>
+                    <div class="add-row">
+                        <input type="text" v-model="newTaxNumberKey" :placeholder="$filters.translate('people.tax-number-key')" style="max-width: 110px" />
+                        <input type="text" v-model="newTaxNumberValue" :placeholder="$filters.translate('people.tax-number-value')" />
+                        <button @click="commitTaxNumber()">+</button>
+                    </div>
+                </div>
             </div>
             <div class="widget">
                 <span class="title">{{ $filters.translate("people.businesses") }}</span>
@@ -74,7 +186,7 @@
                 <button class="plus" @click="addRelationship()" :title="$filters.translate('people.relationships.add')">+</button>
                 <ul>
                     <li class="relationship" v-for="rel in relationships" :set="partner = (rel?.from._id == individual?._id ? rel?.to : rel?.from)">
-                        {{ rel?.icon || "\uD83D\uDD17" }}
+                        {{ rel?.icon || "🔗" }}
                         <span class="tag" v-if="rel?.from?._id == individual?._id">
                             {{ rel?.type }}
                         </span>
@@ -96,7 +208,13 @@
                     return {
                         individual: {},
                         businesses: [],
-                        relationships: []
+                        relationships: [],
+                        editing: false,
+                        snapshot: null,
+                        saving: false,
+                        error: null,
+                        newTaxNumberKey: "",
+                        newTaxNumberValue: ""
                     };
                 },
 
@@ -133,14 +251,161 @@
                         this.$forceUpdate();
                     },
 
+                    edit()
+                    {
+                        this.error = null;
+                        this.snapshot = JSON.parse(JSON.stringify(this.individual));
+
+                        this.individual.dba = this.individual.dba || [];
+                        this.individual.tax_numbers = this.individual.tax_numbers || {};
+                        this.individual.main_email = this.individual.main_email || {};
+                        this.individual.main_phone = this.individual.main_phone || {};
+                        this.individual.main_address = this.individual.main_address || {};
+                        this.individual.more_addresses = this.individual.more_addresses || [];
+                        this.individual.main_bank_account = this.individual.main_bank_account || {};
+                        this.individual.more_bank_accounts = this.individual.more_bank_accounts || [];
+
+                        this.editing = true;
+                    },
+
+                    cancel()
+                    {
+                        this.individual = this.snapshot;
+                        this.snapshot = null;
+                        this.editing = false;
+                        this.error = null;
+                    },
+
+                    isAddressBlank(address)
+                    {
+                        return !address || !(address.street || address.building_number ||
+                            address.zip_code || address.city || address.additional_info || address.jurisdiction);
+                    },
+
+                    isAddressComplete(address)
+                    {
+                        return !!(address?.street && address?.building_number && address?.zip_code && address?.city);
+                    },
+
+                    isBankAccountBlank(account)
+                    {
+                        return !account || !(account.iban || account.bic || account.bank_name ||
+                            account.account_holder_name || account.local_account_number || account.local_bank_identifier);
+                    },
+
+                    normalizeBankAccount(account)
+                    {
+                        return {
+                            ...account,
+                            iban: account.iban ? account.iban.toUpperCase().replace(/\s+/g, "") : account.iban,
+                            bic: account.bic ? account.bic.toUpperCase().replace(/\s+/g, "") : account.bic
+                        };
+                    },
+
+                    normalizeAddress(address)
+                    {
+                        let normalized = { ...address };
+
+                        if(normalized.jurisdiction?.trim())
+                            normalized.jurisdiction = normalized.jurisdiction.trim().toUpperCase();
+                        else delete normalized.jurisdiction;
+
+                        return normalized;
+                    },
+
+                    async save()
+                    {
+                        this.error = null;
+
+                        if(this.individual.main_phone?.number && !/^\+[0-9]{6,14}$/.test(this.individual.main_phone.number))
+                            return this.error = this.$filters.translate("people.error.invalid-phone");
+
+                        let addresses = [ this.individual.main_address, ...this.individual.more_addresses ];
+                        if(!addresses.every(a => this.isAddressBlank(a) || this.isAddressComplete(a)))
+                            return this.error = this.$filters.translate("people.error.incomplete-address");
+
+                        this.saving = true;
+
+                        try
+                        {
+                            let payload = {
+                                first_name: this.individual.first_name,
+                                last_name: this.individual.last_name,
+                                title_pre: this.individual.title_pre,
+                                title_post: this.individual.title_post,
+                                birthdate: this.individual.birthdate || undefined,
+                                dba: this.individual.dba.filter(dba => dba?.trim()),
+                                tax_numbers: Object.fromEntries(Object.entries(this.individual.tax_numbers)
+                                    .filter(([ key, value ]) => key?.trim() && value?.trim())),
+                                main_email: this.individual.main_email?.address?.trim() ? this.individual.main_email : null,
+                                main_phone: this.individual.main_phone?.number?.trim() ? this.individual.main_phone : null,
+                                main_address: this.isAddressBlank(this.individual.main_address) ?
+                                    null : this.normalizeAddress(this.individual.main_address),
+                                more_addresses: this.individual.more_addresses
+                                    .filter(a => !this.isAddressBlank(a)).map(this.normalizeAddress),
+                                main_bank_account: this.isBankAccountBlank(this.individual.main_bank_account) ?
+                                    null : this.normalizeBankAccount(this.individual.main_bank_account),
+                                more_bank_accounts: this.individual.more_bank_accounts
+                                    .filter(a => !this.isBankAccountBlank(a)).map(this.normalizeBankAccount)
+                            };
+
+                            await axios.patch(`/api/v1/individuals/${this.individual._id}`, payload);
+                            await this.load();
+
+                            this.editing = false;
+                            this.snapshot = null;
+                        }
+                        catch(x)
+                        {
+                            this.error = x?.response?.data?.error || x?.message || String(x);
+                        }
+                        finally
+                        {
+                            this.saving = false;
+                        }
+                    },
+
+                    removeTaxNumber(key)
+                    {
+                        delete this.individual.tax_numbers[key];
+                    },
+
+                    commitTaxNumber()
+                    {
+                        if(!this.newTaxNumberKey?.trim() || !this.newTaxNumberValue?.trim())
+                            return;
+
+                        this.individual.tax_numbers[this.newTaxNumberKey.trim()] = this.newTaxNumberValue.trim();
+                        this.newTaxNumberKey = "";
+                        this.newTaxNumberValue = "";
+                    },
+
                     addDba()
                     {
-                        // TODO
+                        if(!this.editing)
+                            this.edit();
+
+                        this.individual.dba.push("");
                     },
 
                     addTaxNo()
                     {
-                        // TODO
+                        if(!this.editing)
+                            this.edit();
+                    },
+
+                    addContact()
+                    {
+                        if(!this.editing)
+                            this.edit();
+                    },
+
+                    addBankAccount()
+                    {
+                        if(!this.editing)
+                            this.edit();
+
+                        this.individual.more_bank_accounts.push({});
                     },
 
                     addBusiness()

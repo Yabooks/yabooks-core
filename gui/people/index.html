@@ -3,6 +3,8 @@
     <head>
         <script type="text/javascript" src="/js/axios/axios.min.js"></script>
         <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
         <link rel="stylesheet" type="text/css" href="list.css" />
     </head>
     <body>
@@ -15,9 +17,12 @@
                     </a>
                 </span>
             </div>
+            <button class="newRecord" @click="openNew()" :title="$filters.translate('people.new')">
+                new
+            </button>
         </main>
         <script type="text/javascript">
-            Vue.createApp(
+            let app = Vue.createApp(
             {
                 data()
                 {
@@ -28,11 +33,24 @@
 
                 async mounted()
                 {
+                    await loadTranslations({ "code*": "people." });
+
                     let res = await axios.get(`/api/v1/identities`);
                     this.identities = res.data;
                     this.$forceUpdate();
+                },
+
+                methods:
+                {
+                    openNew()
+                    {
+                        parent.document.app.openModal("/people/new.html");
+                    }
                 }
-            }).mount("main");
+            });
+
+            app.config.globalProperties.$filters = { ...filters };
+            app.mount("main");
         </script>
     </body>
 </html>
