@@ -98,6 +98,10 @@ module.exports = function(api)
      *                 type: number
      *               max_tokens:
      *                 type: integer
+     *               use_tools:
+     *                 type: boolean
+     *                 default: true
+     *                 description: Set to false to disable tool calling entirely, e.g. for pure data-extraction prompts that should never trigger an approval_required response.
      *               approvals:
      *                 type: array
      *                 description: User decisions for previously returned pendingApprovals
@@ -128,6 +132,10 @@ module.exports = function(api)
      *                 type: number
      *               max_tokens:
      *                 type: integer
+     *               use_tools:
+     *                 type: boolean
+     *                 default: true
+     *                 description: Set to false to disable tool calling entirely, e.g. for pure data-extraction prompts that should never trigger an approval_required response.
      *               file:
      *                 type: string
      *                 format: binary
@@ -186,13 +194,16 @@ module.exports = function(api)
                 });
             }
 
+            // callers doing pure data extraction (no agentic actions wanted) can opt out of tool calling
+            const useTools = params.use_tools !== false && params.use_tools !== "false";
+
             const result = await generateText({
                 model,
                 messages,
-                system: [APPROVAL_HINT, system].filter(Boolean).join("\n"),
+                system: [ ...(useTools ? [APPROVAL_HINT] : []), system ].filter(Boolean).join("\n"),
                 ...(params.temperature !== undefined && { temperature: Number(params.temperature) }),
                 ...(params.max_tokens && { maxOutputTokens: parseInt(params.max_tokens) }),
-                tools: await getMcpTools(req.headers?.authorization ? req.headers.authorization.split(" ")[1] : req.cookies?.user_token),
+                ...(useTools && { tools: await getMcpTools(req.headers?.authorization ? req.headers.authorization.split(" ")[1] : req.cookies?.user_token) }),
                 stopWhen: stepCountIs(MAX_STEPS)
             });
 
