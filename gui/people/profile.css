@@ -54,6 +54,16 @@ main
     gap: 20px;
 }
 
+.picture-wrap
+{
+    position: relative;
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
 .profile_picture
 {
     width: 80px;
@@ -62,6 +72,33 @@ main
     object-fit: cover;
     border: 2px solid #ffe4d6;
     flex-shrink: 0;
+    display: block;
+}
+
+.picture-overlay
+{
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4em;
+    color: white;
+    background: rgba(30, 41, 59, 0.55);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.picture-wrap:hover .picture-overlay
+{
+    opacity: 1;
+}
+
+.picture-wrap.uploading .picture-overlay
+{
+    opacity: 1;
+    font-size: 0.75em;
 }
 
 .profile-row > span
@@ -565,6 +602,7 @@ main.single-column
         padding: 16px;
     }
 
+    .picture-wrap,
     .profile_picture
     {
         width: 64px;

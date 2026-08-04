@@ -11,7 +11,11 @@
         <main>
             <div class="widget">
                 <div class="profile-row">
-                    <img class="profile_picture" v-if="individual?._id" :src="`/api/v1/identities/${individual._id}/picture`" />
+                    <div class="picture-wrap" v-if="individual?._id" :class="{ uploading: uploadingPicture }" @click="triggerPictureUpload()" :title="$filters.translate('people.change-picture')">
+                        <img class="profile_picture" :src="pictureUrl" />
+                        <span class="picture-overlay">{{ uploadingPicture ? "…" : "\u{1F4F7}" }}</span>
+                        <input type="file" accept="image/*" ref="pictureInput" style="display: none" @change="uploadPicture($event)" />
+                    </div>
                     <span v-if="!editing">
                         {{ individual.full_name }}
                         <small v-if="individual.birthdate">&#x1F382; {{ $filters.formatDate(individual.birthdate) }}</small>
@@ -214,8 +218,18 @@
                         saving: false,
                         error: null,
                         newTaxNumberKey: "",
-                        newTaxNumberValue: ""
+                        newTaxNumberValue: "",
+                        pictureVersion: Date.now(),
+                        uploadingPicture: false
                     };
+                },
+
+                computed:
+                {
+                    pictureUrl()
+                    {
+                        return `/api/v1/identities/${this.individual._id}/picture?v=${this.pictureVersion}`;
+                    }
                 },
 
                 async mounted()
@@ -378,6 +392,40 @@
                         this.individual.tax_numbers[this.newTaxNumberKey.trim()] = this.newTaxNumberValue.trim();
                         this.newTaxNumberKey = "";
                         this.newTaxNumberValue = "";
+                    },
+
+                    triggerPictureUpload()
+                    {
+                        this.$refs.pictureInput.click();
+                    },
+
+                    async uploadPicture(event)
+                    {
+                        let file = event.target.files[0];
+                        event.target.value = "";
+
+                        if(!file)
+                            return;
+
+                        this.error = null;
+                        this.uploadingPicture = true;
+
+                        try
+                        {
+                            let binary = await file.arrayBuffer();
+                            await axios.put(`/api/v1/identities/${this.individual._id}/picture`, binary,
+                                { headers: { "Content-Type": file.type || "application/octet-stream" } });
+
+                            this.pictureVersion = Date.now();
+                        }
+                        catch(x)
+                        {
+                            this.error = x?.response?.data?.error || this.$filters.translate("people.error.picture-upload");
+                        }
+                        finally
+                        {
+                            this.uploadingPicture = false;
+                        }
                     },
 
                     addDba()
