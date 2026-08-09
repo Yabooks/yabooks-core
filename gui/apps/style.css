@@ -125,7 +125,7 @@
     margin: 0;
     padding: 0.5rem 1rem;
     text-transform: none;
-    background-color: rgb(59, 130, 246);
+    background-color: rgb(249, 143, 94);
     text-transform: uppercase;
     text-decoration: none;
     color: rgb(255, 255, 255);
@@ -144,5 +144,5 @@
 }
 
 .app button:hover, .button:hover {
-    background-color: rgb(37, 99, 235);
+    background-color: rgb(235, 120, 70);
 }
