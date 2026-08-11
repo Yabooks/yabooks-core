@@ -1,10 +1,30 @@
-/* global TagsInput */
+/* global TagsInput, SearchableDropdown */
 
 const GeneralTab = (
 {
     props: [ "doc" ],
 
-    components: { TagsInput },
+    components: { TagsInput, SearchableDropdown },
+
+    data()
+    {
+        return {
+            identities: []
+        };
+    },
+
+    async mounted()
+    {
+        try
+        {
+            let data = await axios.get("/api/v1/identities?limit=1000");
+            this.identities = data.data.data;
+        }
+        catch(x)
+        {
+            console.error(x);
+        }
+    },
 
     template: `
         <div class="item">
@@ -37,15 +57,19 @@ const GeneralTab = (
                 <tr>
                     <td>File</td>
                     <td>
-                        {{ doc.mime_type }}
-                        <button @click="upload">replace</button>
+                        <div class="field-with-button">
+                            <span>{{ doc.mime_type }}</span>
+                            <button @click="upload">replace</button>
+                        </div>
                     </td>
                 </tr>
                 <tr>
                     <td>Link</td>
                     <td>
-                        <input type="text" v-model="doc.uri" />
-                        <button @click="openUri">open</button>
+                        <div class="field-with-button">
+                            <input type="text" v-model="doc.uri" />
+                            <button @click="openUri">open</button>
+                        </div>
                     </td>
                 </tr>
                 <tr>
@@ -66,7 +90,10 @@ const GeneralTab = (
                 </tr>
                 <tr>
                     <td>Business Partner</td>
-                    <td><business-selector :model="doc.business_partner" /></td>
+                    <td>
+                        <searchable-dropdown v-model:selected="doc.business_partner" value="_id" label="full_name"
+                            :options="identities" :autoSelectFirstMatch="true" placeholder="Search business partner..." />
+                    </td>
                 </tr>
             </table>
         </div>
@@ -81,7 +108,8 @@ const GeneralTab = (
 
         openUri()
         {
-            // TODO
+            if(this.doc.uri)
+                window.open(this.doc.uri, "_blank");
         }
     }
 });
