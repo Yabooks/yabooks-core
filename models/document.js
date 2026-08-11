@@ -40,7 +40,7 @@ const LedgerTransaction = (function()
         amount: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
         text: { type: String },
         asset: { type: mongoose.Schema.Types.ObjectId, ref: "Asset", required: false },
-        asset_alteration: { type: String, enum: [ "acquisition", "depreciation", "disposal" ], required: false }, // required if asset is referenced
+        asset_alteration: { type: String, enum: [ "acquisition", "depreciation", "disposal", null ], required: false }, // required if asset is referenced
         data: mongoose.Schema.Types.Mixed,
         deduplication_key: { type: String, index: true, unique: true, default: _ => `${os.hostname()}_${uuid()}` },
 
@@ -81,7 +81,7 @@ const LedgerTransaction = (function()
 const debitCreditValidation = function(transactions)
 {
     const val = (field) => this[field] ?? this?._update?.$set?.[field];
-    const num = (dec) => parseFloat(dec.toString()), day = (iso) => iso.split("T")[0];
+    const num = (dec) => parseFloat(dec?.$numberDecimal ?? dec.toString()), day = (iso) => iso.split("T")[0];
 
     const posted = val("posted");
 
@@ -106,7 +106,7 @@ const debitCreditValidation = function(transactions)
         }
 
         for(let context in totals)
-            if(totals[context] > .01 || totals[context] < -.01)
+            if(totals[context] >= .01 || totals[context] <= -.01)
                 return false;
     }
 
