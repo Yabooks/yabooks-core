@@ -50,10 +50,12 @@ let app = Vue.createApp(
 
             // set default balance sheet date
             const business = await axios.get(`/api/v1/businesses/${this.business_id}`);
-            let from = new Date(`${new Date().getFullYear() - 1}-${business.data.closing_month}-${business.data.closing_day_of_month}`);
+            const closing_month = business.data.closing_month ?? 12;
+            const closing_day_of_month = business.data.closing_day_of_month ?? 31;
+            let from = new Date(`${new Date().getFullYear() - 1}-${closing_month}-${closing_day_of_month}`);
             from.setDate(from.getDate() + 1);
             this.from = from.toISOString().substring(0, 10);
-            let until = new Date(`${new Date().getFullYear()}-${business.data.closing_month}-${business.data.closing_day_of_month}`);
+            let until = new Date(`${new Date().getFullYear()}-${closing_month}-${closing_day_of_month}`);
             this.until = until.toISOString().substring(0, 10);
             this.currency = business.data.default_currency;
 
@@ -110,7 +112,7 @@ let app = Vue.createApp(
         {
             let balance = account.balance?.$numberDecimal ?? account.balance;
             let balance_before = account.balance_before?.$numberDecimal ?? account.balance_before;
-            return parseFloat(balance) + parseFloat([ "assets", "equity", "liabilities" ].includes(account.type) ? balance_before : 0);
+            return parseFloat(balance) + parseFloat([ "assets", "equity", "liabilities", "oci" ].includes(account.type) ? balance_before : 0);
         },
 
         getRevenueExpenseChartConfig()
@@ -119,9 +121,9 @@ let app = Vue.createApp(
             const revenueAccounts = [];
 
             for(let account of this.accounts)
-                if(account.type == "revenues" && val(account.balance) < 0 || account.type == "expenses" && val(account.balance) < 0)
+                if(account.type == "revenues" && val(account.balance) != 0)
                     revenueAccounts.push(account);
-                else if(account.type == "revenues" && val(account.balance) > 0 || account.type == "expenses" && val(account.balance) > 0)
+                else if(account.type == "expenses" && val(account.balance) != 0)
                     expenseAccounts.push(account);
 
             let datasets = [];
@@ -206,10 +208,9 @@ let app = Vue.createApp(
             return {
                 type: "pie",
                 data: {
-                    /*labels: [ // FIXME no possibility to use different labels in multiple datasets/rings of a single pie chart
-                        assetsDataSet.labels,
-                        passivaDataSet.labels,
-                    ],*/
+                    // each ring (dataset) keeps its own labels array; the shared top-level
+                    // labels array Chart.js uses by default can't hold two different label sets,
+                    // so tooltips read the label from the hovered dataset instead (see callback below)
                     datasets: [
                         assetsDataSet,
                         passivaDataSet
@@ -219,6 +220,11 @@ let app = Vue.createApp(
                     plugins: {
                         legend: {
                             display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.labels[context.dataIndex]}: ${this.$filters.formatNumber(context.parsed, this.currency)}`
+                            }
                         }
                     },
                     responsive: true,
