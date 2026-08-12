@@ -125,6 +125,8 @@
     { "code": "general-ledger.credit", "language": "en", "text": "Credit" },
     { "code": "general-ledger.tax", "language": "de", "text": "Steuer" },
     { "code": "general-ledger.tax", "language": "en", "text": "Tax" },
+    { "code": "general-ledger.bp_tax_no", "language": "de", "text": "UID-Nummer Partner" },
+    { "code": "general-ledger.bp_tax_no", "language": "en", "text": "Parter Tax No" },
     { "code": "general-ledger.no-records", "language": "de", "text": "Keine Buchungen gefunden." },
     { "code": "general-ledger.no-records", "language": "en", "text": "No records found." },
     { "code": "quick-recorder.type-here", "language": "de", "text": "Hier tippen und Datei droppen..." },

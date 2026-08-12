@@ -18,6 +18,7 @@
                     <th>{{ $filters.translate("general-ledger.debit") }}</th>
                     <th>{{ $filters.translate("general-ledger.credit") }}</th>
                     <th>{{ $filters.translate("general-ledger.tax") }}</th>
+                    <th>{{ $filters.translate("general-ledger.bp_tax_no") }}</th>
                 </tr>
                 <tr v-for="record in records">
                     <td>
@@ -68,13 +69,26 @@
                             {{ $filters.formatNumber($filters.absolute(record.amount)) }}
                         </span>
                     </td>
-                    <td :title="record.tax_code || record.tax_code_base">
+                    <td :title="getTaxCode(record.tax_code || record.tax_code_base).description">
                         <span v-if="record.tax_code || record.tax_code_base">
-                            {{ $filters.formatTaxCode(record.tax_code ?? record.tax_code_base) }}
+                            <span>
+                                {{ [ getTaxCode(record.tax_code || record.tax_code_base).type ].map(t =>
+                                    t == "tax payable" ? "\u27A1\uFE0F" :
+                                    t == "input tax receivable" ? "\u2B05\uFE0F" :
+                                    t == "purchase tax payable and receivable" ? "\u{1F504}"
+                                    : "\u{1F4B0}").join("") }}
+                                {{ $filters.formatTaxCode(record.tax_code ?? record.tax_code_base) }}
+                            </span>
                             <span v-if="record.tax_code_base || record.tax_code">
                                 {{ $filters.formatNumber(record.tax_percent) }}%
                             </span>
+                            <span v-if="record.tax_code">
+                                &#x1F4B8;
+                            </span>
                         </span>
+                    </td>
+                    <td>
+                        {{ record.business_partner_tax_number }}
                     </td>
                 </tr>
                 <tr v-if="records.length == 0">

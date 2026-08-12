@@ -6,6 +6,7 @@ let app = Vue.createApp(
     {
         return {
             records: [],
+            tax_codes: [],
             error: null,
             session: null
         };
@@ -17,9 +18,16 @@ let app = Vue.createApp(
         {
             let business = await getSelectedBusinessId();
 
+            // load tax codes
+            
+
             // load leger transactions
             let res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
             this.records = res.data.data;
+
+            // load tax codes
+            res = await axios.get("/api/v1/tax-codes");
+            this.tax_codes = res.data.data;
 
             // load ui translations
             await loadTranslations({ "code*": "general-ledger." });
@@ -36,6 +44,15 @@ let app = Vue.createApp(
 
     methods:
     {
+        getTaxCode(tax_code)
+        {
+            for(let tc of this.tax_codes)
+                if(tc.code === tax_code)
+                    return tc;
+
+            return { code: tax_code, description: tax_code };
+        },
+
         async goToAccount(id, business_partner_id = null)
         {
             let url = `/ledger/?business=${await getSelectedBusinessId()}&account._id=${id}`;
