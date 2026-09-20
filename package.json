@@ -1,6 +1,7 @@
 {
-  "name": "core",
+  "name": "net.yabooks.core",
   "productName": "YaBooks",
+  "author": "ducklings tech solutions stb flexco",
   "version": "1.0.0",
   "description": "An easily extendable ERP system for businesses of any size",
   "main": "desktop.js",
@@ -16,7 +17,6 @@
     "package-win": "electron-packager . YaBooks --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico --overwrite"
   },
   "keywords": [],
-  "author": "ducklings tech solutions stb flexco",
   "license": "EUPL-1.2",
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.83",
@@ -48,7 +48,7 @@
     "node-fetch": "^2.7.0",
     "openapi-mcp-generator": "^3.3.0",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^2.16.105",
+    "pdfjs-dist": "^4.10.38",
     "qrcode": "^1.5.4",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.6",
@@ -64,5 +64,9 @@
     "electron-packager": "^17.1.2",
     "eslint": "^9.17.0",
     "globals": "^15.14.0"
+  },
+  "overrides": {
+    "ajv": "^8.18.0",
+    "tar": "^7.5.8"
   }
 }
