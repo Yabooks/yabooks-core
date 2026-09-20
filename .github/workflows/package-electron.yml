@@ -8,7 +8,29 @@ permissions:
   contents: write
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get.outputs.version }}
+      changed: ${{ steps.get.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: get
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build-mac:
+    needs: check-version
+    if: needs.check-version.outputs.changed == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +60,8 @@ jobs:
           retention-days: 7
 
   build-win:
+    needs: check-version
+    if: needs.check-version.outputs.changed == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,7 +90,7 @@ jobs:
           retention-days: 7
 
   release:
-    needs: [build-mac, build-win]
+    needs: [check-version, build-mac, build-win]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -77,8 +101,7 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: Latest build
-          prerelease: true
+          tag_name: v${{ needs.check-version.outputs.version }}
+          name: v${{ needs.check-version.outputs.version }}
           make_latest: true
           files: packages/*.zip
