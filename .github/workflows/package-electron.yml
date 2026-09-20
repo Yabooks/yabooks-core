@@ -1,0 +1,84 @@
+name: Package Electron App
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Package for macOS
+        run: npm run package-mac
+
+      - name: Zip packaged apps
+        run: |
+          cd dist
+          for d in */; do
+            name="${d%/}"
+            zip -r -y "../${name}.zip" "$d"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-packages
+          path: "*.zip"
+          retention-days: 7
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Package for Windows
+        run: npm run package-win
+
+      - name: Zip packaged apps
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path dist -Directory | ForEach-Object {
+            Compress-Archive -Path $_.FullName -DestinationPath "$($_.Name).zip"
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-packages
+          path: "*.zip"
+          retention-days: 7
+
+  release:
+    needs: [build-mac, build-win]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          prerelease: true
+          make_latest: true
+          files: packages/*.zip
