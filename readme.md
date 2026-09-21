@@ -6,7 +6,7 @@ YaBooks Core is the backend/server component of YaBooks. It's a Node.js (Express
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+ and npm
+- [Node.js](https://nodejs.org/) 22+ and npm
 - A MongoDB instance (local, Docker, or hosted — e.g. MongoDB Atlas)
 - Git
 
