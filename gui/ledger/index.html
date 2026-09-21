@@ -79,7 +79,7 @@
                                     : "\u{1F4B0}").join("") }}
                                 {{ $filters.formatTaxCode(record.tax_code ?? record.tax_code_base) }}
                             </span>
-                            <span v-if="record.tax_code_base || record.tax_code">
+                            <span v-if="record.tax_code_base || record.tax_code" style="margin-left: 5px; margin-right: 5px">
                                 {{ $filters.formatNumber(record.tax_percent) }}%
                             </span>
                             <span v-if="record.tax_code">
