@@ -34,10 +34,17 @@ async function requirePermission(subject, action, object, res)
 {
     // an express request object with a session_id and an app_id was provided as subject
     if(subject?.auth?.session_id && subject?.auth?.app_id)
+    {
+        let session = await Session.findOne({ _id: subject.auth.session_id });
+
+        if(!session || !session.user)
+            return _respond(false, res, "not logged in");
+
         return this.requireAnyPermission([
             [ `user::${session.user}`, action, object ],
             [ `app::${subject.auth.app_id}`, action, object ]
         ], res);
+    }
 
     // an express request object with a session_id was provided as subject
     else if(subject?.auth?.session_id)
