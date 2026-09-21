@@ -40,7 +40,7 @@ const Identity = mongoose.model("Identity", (function()
 
         async setPicture(binary)
         {
-            if(typeof binary !== "string" && !binary instanceof Buffer)
+            if(typeof binary !== "string" && !(binary instanceof Buffer))
                 throw "picture binary must be either a string or buffer";
 
             let file = path.join(process.env.persistent_data_dir ?? "./data", this.kind + "_" + this._id);

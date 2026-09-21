@@ -43,7 +43,7 @@ const Business = mongoose.model("Business", (function()
 
         async setLogo(binary)
         {
-            if(typeof binary !== "string" && !binary instanceof Buffer)
+            if(typeof binary !== "string" && !(binary instanceof Buffer))
                 throw "logo binary must be either a string or buffer";
 
             let file = path.join(process.env.persistent_data_dir ?? "./data", "business_" + this._id);
