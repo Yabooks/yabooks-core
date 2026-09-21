@@ -1,6 +1,8 @@
 const { Document, DocumentLink } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
 const fs = require("node:fs").promises, sqlite = require("sqlite"), sqlite3 = require("sqlite3");
-const pdfjsLib = require("pdfjs-dist"), { createCanvas } = require("canvas"), { PDFDocument, PDFArray, PDFName } = require("pdf-lib");
+const pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs"), { createCanvas } = require("@napi-rs/canvas"), { PDFDocument, PDFArray, PDFName } = require("pdf-lib");
+const standardFontDataUrl = require("path").dirname(require.resolve("pdfjs-dist/standard_fonts/FoxitFixed.pfb")) + "/";
+const cMapUrl = require("path").dirname(require.resolve("pdfjs-dist/cmaps/78-H.bcmap")) + "/";
 
 module.exports = function(api)
 {
@@ -157,7 +159,8 @@ module.exports = function(api)
 
             else if(doc.mime_type == "application/pdf")
             {
-                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)) }).promise;
+                const pdfjsLib = await pdfjsLibPromise;
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
 
                 const annotations = [];
                 for(let i = 1; i <= pdf.numPages; ++i)
@@ -167,12 +170,17 @@ module.exports = function(api)
                     for(let annotation of (await page.getAnnotations())
                             .filter(annotation => annotation.subtype == "Ink"))
                         for(let inkList of annotation.inkLists)
+                        {
+                            const points = [];
+                            for(let j = 0; j < inkList.length; j += 2)
+                                points.push({ x: inkList[j], y: inkList[j + 1] });
                             pageAnnotations.push({
                                 color: [ ...annotation.color ],
-                                points: inkList, // [ {x,y} ]
+                                points,
                                 opacity: annotation.opacity ?? 1,
                                 lineWidth: annotation.borderStyle?.width ?? 1
                             });
+                        }
 
                     annotations.push(pageAnnotations);
                 }
@@ -208,7 +216,8 @@ module.exports = function(api)
             // render PDF document page to image preview
             if(doc.mime_type == "application/pdf")
             {
-                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)) }).promise;
+                const pdfjsLib = await pdfjsLibPromise;
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
 
                 if(isNaN(req.params.page) || req.params.page < 1 || req.params.page > pdf.numPages)
                     res.status(404).send({ error: "page not found" });
@@ -334,7 +343,7 @@ module.exports = function(api)
             let editor_url = await App.getWebhook("document.editor", doc.owned_by);
 
             if(req.query.redirect)
-                res.redirect(editor_url.split("$$ID$$").join(eq.params.id));
+                res.redirect(editor_url.split("$$ID$$").join(req.params.id));
 
             else res.json({ url: editor_url.split("$$ID$$").join(req.params.id) });
         }
@@ -362,7 +371,7 @@ module.exports = function(api)
                     owned_by: req.auth.app_id
                 };
 
-                doc = await Document.findOneAndUpdate(criteria, criteria, { upsert: true });
+                doc = await Document.findOneAndUpdate(criteria, criteria, { upsert: true, new: true });
                 req.params.id = doc._id;
             }
 
