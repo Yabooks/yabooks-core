@@ -207,100 +207,15 @@ html, body
     }
 }
 
-#loadMore {
-    display: block;
-    margin: 40px auto;
-    padding: 12px 32px;
-    border: 2px solid #ffe4d6;
-    border-radius: 100px;
-    background: white;
+#scroll_sentinel {
+    height: 40px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #f98f5e;
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-#loadMore::before {
-    content: "⬇";
-    margin-right: 8px;
-    font-size: 1.1em;
-    display: inline-block;
-    transition: transform 0.3s ease;
-}
-
-#loadMore:hover {
-    background: linear-gradient(135deg, #fff7f4 0%, #ffe4d6 100%);
-    border-color: #ffc9ad;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(249, 143, 94, 0.2);
-}
-
-#loadMore:hover::before {
-    transform: translateY(3px);
-    animation: bounce 0.6s ease infinite;
-}
-
-#loadMore:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(249, 143, 94, 0.15);
-}
-
-#loadMore::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(249, 143, 94, 0.1);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-#loadMore:active::after {
-    width: 300px;
-    height: 300px;
-}
-
-@keyframes bounce {
-    0%, 100% {
-        transform: translateY(3px);
-    }
-    50% {
-        transform: translateY(6px);
-    }
-}
-
-/* Loading state (optional - add class via JS) */
-#loadMore.loading {
-    pointer-events: none;
-    opacity: 0.6;
-}
-
-#loadMore.loading::before {
-    content: "⟳";
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-    #loadMore {
-        width: calc(100% - 40px);
-        margin: 30px 20px;
-    }
 }
 
 #upload {

@@ -53,6 +53,9 @@
                     </div>
                 </div>
             </div>
+            <div id="scroll_sentinel">
+                <span v-if="loadingMore">loading more…</span>
+            </div>
             <span v-if="error">
                 {{ error }}
             </span>
@@ -60,9 +63,6 @@
                 <input type="file" multiple style="display: none" id="upload_file_selector" />
                 <button id="upload" @click="uploadFile()" @dragover.prevent @drop.prevent="handleDrop">
                     upload documents
-                </button>
-                <button id="loadMore" @click="loadDocuments(true)">
-                    load more
                 </button>
             </div>
             <div id="notification" v-if="notifications?.length > 0" @click="notifications = []">

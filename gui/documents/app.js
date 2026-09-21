@@ -11,6 +11,8 @@ let app = Vue.createApp(
             error: null,
             business: null,
             notifications: [],
+            hasMore: false, // becomes true once the initial load determines more documents are available
+            loadingMore: false,
 
             params: self.location.search,
             searchOptions: {
@@ -46,6 +48,12 @@ let app = Vue.createApp(
     {
         this.loadDocuments();
 
+        new IntersectionObserver((entries) =>
+        {
+            if(entries[0].isIntersecting)
+                this.loadMoreDocuments();
+        }, { rootMargin: "200px" }).observe(document.querySelector("#scroll_sentinel"));
+
         addEventListener("popstate", (event) => // on history.back()
         {
             if(event.state?.params)
@@ -73,6 +81,7 @@ let app = Vue.createApp(
                     let res = await axios.get(`/api/v1/businesses/${this.business}/documents?${params}`);
                     if(loadMore) this.docs.push(...res.data.data);
                     else this.docs = res.data.data;
+                    this.hasMore = this.docs.length < res.data.total;
                     this.error = null;
 
                     // remember params for when history.back() is triggered
@@ -84,6 +93,7 @@ let app = Vue.createApp(
                 else
                 {
                     this.docs = [];
+                    this.hasMore = false;
 
                     await loadTranslations({ "code": "home.alerts.select-business" });
                     this.error = this.$filters.translate("home.alerts.select-business");
@@ -92,12 +102,23 @@ let app = Vue.createApp(
             catch(x)
             {
                 this.docs = [];
+                this.hasMore = false;
                 this.error = x?.message || x;
             }
             finally
             {
                 this.$forceUpdate();
             }
+        },
+
+        async loadMoreDocuments()
+        {
+            if(this.loadingMore || !this.hasMore)
+                return;
+
+            this.loadingMore = true;
+            try { await this.loadDocuments(true); }
+            finally { this.loadingMore = false; }
         },
 
         filterForDocType(docType)
