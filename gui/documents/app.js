@@ -1,4 +1,4 @@
-/* global getSelectedBusinessId, filters, FilterBar */
+/* global getSelectedBusinessId, filters, FilterBar, loadTranslations */
 
 let app = Vue.createApp(
 {

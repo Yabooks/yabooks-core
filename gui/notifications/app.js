@@ -1,4 +1,4 @@
-/* global filters */
+/* global filters, loadTranslations */
 
 let app = Vue.createApp(
 {

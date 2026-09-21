@@ -1,3 +1,5 @@
+/* global Chart */
+
 const ChartComponent = (
 {
     props: {

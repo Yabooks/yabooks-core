@@ -1,3 +1,5 @@
+/* global CurrencyInput */
+
 const FinancialTab = (
 {
     props: [ "doc" ],

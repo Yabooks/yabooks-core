@@ -1,4 +1,4 @@
-/* global loadSession, sleep */
+/* global loadSession, sleep, Page */
 
 Vue.createApp(
 {

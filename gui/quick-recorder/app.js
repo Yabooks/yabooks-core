@@ -1,4 +1,4 @@
-/* global getSelectedBusinessId, filters, wildguess, guessTaxCode */
+/* global getSelectedBusinessId, filters, wildguess, guessTaxCode, loadTranslations */
 
 let app = Vue.createApp(
 {

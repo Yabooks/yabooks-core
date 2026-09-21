@@ -1,4 +1,4 @@
-/* global getSelectedBusinessId, filters, ChartComponent */
+/* global getSelectedBusinessId, filters, ChartComponent, loadTranslations */
 
 const shade = (rgba1, rgba2, steps, step) =>
 {

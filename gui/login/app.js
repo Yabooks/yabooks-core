@@ -1,3 +1,5 @@
+/* global loadTranslations, filters */
+
 let app = Vue.createApp(
 {
     data()
@@ -50,7 +52,6 @@ let app = Vue.createApp(
         catch(x)
         {
             console.error(x);
-            reject(x);
         }
     },
 

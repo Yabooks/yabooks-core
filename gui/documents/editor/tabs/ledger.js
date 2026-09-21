@@ -1,3 +1,5 @@
+/* global CurrencyInput, SearchableDropdown, TaxCodeSelector */
+
 const LedgerTab = (
 {
     props: [ "doc" ],
@@ -95,7 +97,7 @@ const LedgerTab = (
         {
             let balance = 0;
 
-            for(let tx of this.doc?.ledger_transactions)
+            for(let tx of this.doc?.ledger_transactions ?? [])
                 balance += parseFloat(tx?.amount?.$numberDecimal ?? tx?.amount ?? 0);
 
             return balance;
