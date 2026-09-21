@@ -380,6 +380,9 @@ module.exports = function(api)
                     { $sum: "$open_items_allocated.amount" }
                 ] } } },
 
+                // drop fully cleared items (net open amount ~0) — this is a list of *open* items
+                { $match: { $expr: { $gte: [ { $abs: "$open_amount" }, 0.01 ] } } },
+
                 // sort by account display number, due date, and posting date
                 { $sort: { "account.display_number": 1, "due_date": 1, "posting_date": 1 } }
             ]));
@@ -425,6 +428,13 @@ module.exports = function(api)
      *                             type: string
      *                           open_amount:
      *                             type: number
+     *                             description: Net sum of open amounts. Can be zero even with open items present if they happen to offset — use credit_amount/debit_amount to tell that apart from "no open items".
+     *                           credit_amount:
+     *                             type: number
+     *                             description: Sum of positive (credit) open amounts only.
+     *                           debit_amount:
+     *                             type: number
+     *                             description: Sum of negative (debit) open amounts only.
      *                           item_count:
      *                             type: integer
      *                           business_partners:
@@ -439,6 +449,10 @@ module.exports = function(api)
      *                                   type: string
      *                                   nullable: true
      *                                 open_amount:
+     *                                   type: number
+     *                                 credit_amount:
+     *                                   type: number
+     *                                 debit_amount:
      *                                   type: number
      *                                 item_count:
      *                                   type: integer
@@ -480,14 +494,23 @@ module.exports = function(api)
                     { $sum: "$open_items_allocated.amount" }
                 ] } } },
 
-                // group by account + business partner
+                // drop fully cleared items (net open amount ~0) — a cleared item shouldn't count
+                // towards a group's item_count or amounts at all
+                { $match: { $expr: { $gte: [ { $abs: "$open_amount" }, 0.01 ] } } },
+
+                // group by account + business partner. Credit/debit are kept apart (not just netted
+                // into open_amount) so a group holding e.g. one +100 and one -100 open item — two
+                // distinct open items that happen to offset, not a cleared pair — doesn't summarize
+                // as "€ 0,00" and look fully cleared.
                 { $group: {
                     _id: { account: "$account._id", business_partner: "$business_partner._id" },
                     account_display_number: { $first: "$account.display_number" },
                     account_display_name: { $first: "$account.display_name" },
                     business_partner_name: { $first: "$business_partner.full_name" },
-                    open_amount: { $sum: "$open_amount" },
-                    item_count: { $sum: 1 }
+                    open_amount:   { $sum: "$open_amount" },
+                    credit_amount: { $sum: { $cond: [ { $gt: [ "$open_amount", 0 ] }, "$open_amount", 0 ] } },
+                    debit_amount:  { $sum: { $cond: [ { $lt: [ "$open_amount", 0 ] }, "$open_amount", 0 ] } },
+                    item_count:    { $sum: 1 }
                 } },
 
                 // group by account, collecting the business partner breakdown
@@ -495,12 +518,16 @@ module.exports = function(api)
                     _id: "$_id.account",
                     display_number: { $first: "$account_display_number" },
                     display_name: { $first: "$account_display_name" },
-                    open_amount: { $sum: "$open_amount" },
-                    item_count: { $sum: "$item_count" },
+                    open_amount:   { $sum: "$open_amount" },
+                    credit_amount: { $sum: "$credit_amount" },
+                    debit_amount:  { $sum: "$debit_amount" },
+                    item_count:    { $sum: "$item_count" },
                     business_partners: { $push: {
                         _id: "$_id.business_partner",
                         name: "$business_partner_name",
                         open_amount: "$open_amount",
+                        credit_amount: "$credit_amount",
+                        debit_amount: "$debit_amount",
                         item_count: "$item_count"
                     } }
                 } },
