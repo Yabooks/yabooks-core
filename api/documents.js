@@ -1,8 +1,42 @@
 const { Document, DocumentLink } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
 const fs = require("node:fs").promises, sqlite = require("sqlite"), sqlite3 = require("sqlite3");
-const pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs"), { createCanvas } = require("@napi-rs/canvas"), { PDFDocument, PDFArray, PDFName } = require("pdf-lib");
+const pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs"), { createCanvas, loadImage } = require("@napi-rs/canvas"), { PDFDocument, PDFArray, PDFName } = require("pdf-lib");
 const standardFontDataUrl = require("path").dirname(require.resolve("pdfjs-dist/standard_fonts/FoxitFixed.pfb")) + "/";
 const cMapUrl = require("path").dirname(require.resolve("pdfjs-dist/cmaps/78-H.bcmap")) + "/";
+
+const THUMBNAIL_MAX_SIZE = 256;
+
+// generates a small preview image for images and the first page of PDF documents; returns null for any other file type
+const generateThumbnail = async (mime_type, bytes) =>
+{
+    if(typeof mime_type === "string" && mime_type.indexOf("image/") === 0)
+    {
+        const image = await loadImage(bytes);
+        const scale = Math.min(1, THUMBNAIL_MAX_SIZE / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale)), height = Math.max(1, Math.round(image.height * scale));
+
+        const canvas = createCanvas(width, height);
+        canvas.getContext("2d").drawImage(image, 0, 0, width, height);
+        return canvas.toBuffer("image/png");
+    }
+
+    if(mime_type === "application/pdf")
+    {
+        const pdfjsLib = await pdfjsLibPromise;
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
+        const page = await pdf.getPage(1);
+
+        const unscaledViewport = page.getViewport({ scale: 1 });
+        const scale = THUMBNAIL_MAX_SIZE / Math.max(unscaledViewport.width, unscaledViewport.height);
+        const viewport = page.getViewport({ scale });
+
+        const canvas = createCanvas(viewport.width, viewport.height);
+        await page.render({ viewport, canvasContext: canvas.getContext("2d"), annotationMode: pdfjsLib.AnnotationMode.DISABLE }).promise;
+        return canvas.toBuffer("image/png");
+    }
+
+    return null; // no thumbnail for other file types
+};
 
 module.exports = function(api)
 {
@@ -106,6 +140,15 @@ module.exports = function(api)
                 await Document.updateOne({ _id: req.params.id }, { mime_type: req.headers["content-type"] });
 
             await Document.overwriteCurrentVersion(req.params.id, req.rawBody);
+
+            try
+            {
+                let thumbnail = await generateThumbnail(req.headers["content-type"], req.rawBody);
+                if(thumbnail)
+                    await Document.updateOne({ _id: req.params.id }, { thumbnail });
+            }
+            catch(x) { console.error(`thumbnail generation failed for document ${req.params.id}:`, x); }
+
             res.send({ success: true });
 
             //await Logger.logRecordUpdated("document", , );
@@ -118,7 +161,7 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, [ "thumbnail" ]);
+            let doc = await Document.findOne({ _id: req.params.id }, [ "name", "thumbnail" ]);
 
             if(doc.thumbnail && doc.thumbnail.length < 67) // assume unicode emoji
             {
@@ -136,8 +179,8 @@ module.exports = function(api)
                 if(doc.name && doc.name.indexOf(".") > -1)
                     ext = doc.name.substring(doc.name.indexOf(".") + 1).toUpperCase();
 
-                const extColors = { 0: 0, /*D*/3: 4302318, /*P*/15: 16720150, /*X*/23: 1596471, 25: 0 };
-                extColors.get = (i) => extColors[i] ? extColors[i] : 0;//FIXME (extColors.get(i-1) + extColors.get(i+1))/2;
+                const extColors = { 0: 0, /*D*/3: 4302318, /*P*/15: 16720150, /*X*/23: 1596471, /*C*/2: 1596471, 25: 0 };
+                extColors.get = (i) => extColors[i] ? extColors[i] : 0;
                 extColors.getColor = (str) => "#" + extColors.get(str.charCodeAt(0) - 65).toString(16);
 
                 let svg = await fs.readFile("./gui/documents/file.svg", "utf8");
