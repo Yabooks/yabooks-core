@@ -1,6 +1,160 @@
 html, body
 {
+    margin: 0;
     font-family: "Roboto", sans-serif;
+}
+
+#app
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px 90px 16px;
+}
+
+/* tab bar, styled like the one in the documents editor */
+nav.menubar
+{
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    box-sizing: border-box;
+    width: calc(100% + 32px);
+    margin: 0 -16px;
+    min-height: 75px;
+    padding: 8px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(235, 228, 219, .6);
+    backdrop-filter: blur(12px);
+}
+
+nav.menubar .menuitem
+{
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    border-radius: 8px;
+    padding: 4px 10px;
+    filter: grayscale();
+    transition: background 0.2s ease, filter 0.2s ease;
+}
+
+nav.menubar .menuitem:hover:not(:disabled)
+{
+    filter: none;
+    background: rgba(255, 255, 255, .3);
+}
+
+nav.menubar .menuitem:disabled
+{
+    cursor: default;
+    opacity: .5;
+}
+
+nav.menubar .menuitem .icon
+{
+    font-size: 32px;
+}
+
+nav.menubar .menuitem label
+{
+    display: block;
+    cursor: inherit;
+}
+
+nav.menubar .period
+{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .6);
+    box-shadow: 0 1px 3px rgba(141, 75, 54, .15);
+}
+
+nav.menubar .period .icon
+{
+    font-size: 24px;
+}
+
+nav.menubar .period .separator
+{
+    color: #9ca3af;
+    align-self: flex-end;
+    padding-bottom: 6px;
+}
+
+nav.menubar .date-field
+{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+nav.menubar .date-field span
+{
+    font-size: 0.65em;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+
+nav.menubar .date-field input
+{
+    font: inherit;
+    font-size: 0.95em;
+    color: #111827;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .8);
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+nav.menubar .date-field input:hover
+{
+    border-color: #fdc9ae;
+}
+
+nav.menubar .date-field input:focus
+{
+    outline: none;
+    border-color: rgb(249, 143, 94);
+    box-shadow: 0 0 0 3px rgba(249, 143, 94, .2);
+}
+
+.print-header
+{
+    display: none;
+}
+
+.error
+{
+    margin-top: 1rem;
+    padding: 10px 16px;
+    border-radius: 8px;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+}
+
+.container.charts
+{
+    text-align: center;
+}
+
+.container.loading
+{
+    opacity: .6;
+    transition: opacity 0.2s ease;
 }
 
 .container
@@ -91,4 +245,105 @@ html, body
 .newRecord:focus-visible {
     outline: none;
     animation: pulse 2s infinite;
+}
+
+/* print preview: only the account list with a header naming business and period */
+@page
+{
+    margin: 15mm;
+}
+
+@media print
+{
+    nav.menubar, .charts, .newRecord, .error, .actions
+    {
+        display: none !important;
+    }
+
+    #app
+    {
+        display: block;
+        padding: 0;
+    }
+
+    .print-header
+    {
+        display: block;
+        margin-bottom: 8mm;
+        padding-bottom: 3mm;
+        border-bottom: 2px solid #333;
+    }
+
+    .print-header h1
+    {
+        margin: 0 0 2mm 0;
+        font-size: 16pt;
+    }
+
+    .print-header p
+    {
+        margin: 0;
+        font-size: 10pt;
+        color: #555;
+    }
+
+    .container
+    {
+        width: 100%;
+        padding: 0;
+        margin: 0 0 6mm 0;
+        border-radius: 0;
+        opacity: 1 !important;
+    }
+
+    .container h1
+    {
+        font-size: 12pt;
+        margin: 0 0 2mm 0;
+        break-after: avoid;
+    }
+
+    .container table
+    {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9pt;
+    }
+
+    .container table th
+    {
+        text-align: right;
+        border-bottom: 1px solid #333;
+        padding: 1mm 0;
+    }
+
+    .container table td
+    {
+        padding: 1mm 0;
+        border-bottom: 1px solid #ddd;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .container table td:first-child
+    {
+        width: auto;
+    }
+
+    .container table td:not(:first-child)
+    {
+        width: 30mm;
+    }
+
+    .container table tr
+    {
+        break-inside: avoid;
+    }
+}
+
+@media screen
+{
+    .container h1
+    {
+        text-align: center;
+    }
 }

@@ -10,24 +10,46 @@
         <script type="text/javascript" src="chart-component.js"></script>
     </head>
     <body>
-        <center>
-            <nav>
-                <input type="date" v-model="from" @change="loadBalances()" />
-                &nbsp;&mdash;&nbsp;
-                <input type="date" v-model="until" @change="loadBalances()" />
+        <main id="app">
+            <nav class="menubar">
+                <button class="menuitem" @click="loadBalances('none')" :disabled="loading">
+                    <span class="icon">&#x1F504;</span>
+                    <label>{{ $filters.translate("balances.refresh") }}</label>
+                </button>
+                <div class="period">
+                    <span class="icon">&#x1F4C5;</span>
+                    <label class="date-field">
+                        <span>{{ $filters.translate("balances.from") }}</span>
+                        <input type="date" v-model="from" :max="until" @change="loadBalances()" />
+                    </label>
+                    <span class="separator">&ndash;</span>
+                    <label class="date-field">
+                        <span>{{ $filters.translate("balances.until") }}</span>
+                        <input type="date" v-model="until" @change="loadBalances()" />
+                    </label>
+                </div>
+                <button class="menuitem" @click="print()" :disabled="loading">
+                    <span class="icon">&#x1F5A8;&#xFE0F;</span>
+                    <label>{{ $filters.translate("balances.print") }}</label>
+                </button>
             </nav>
-            <div class="container" align="center">
-                <chart-component :config="getAssetChartConfig()"></chart-component>
-                <chart-component :config="getRevenueExpenseChartConfig()"></chart-component>
+            <header class="print-header">
+                <h1>{{ business_name }}</h1>
+                <p>{{ $filters.formatDate(from + "T00:00") }} &ndash; {{ $filters.formatDate(until + "T00:00") }}</p>
+            </header>
+            <div class="error" v-if="error">{{ error }}</div>
+            <div class="container charts" :class="{ loading }">
+                <chart-component :config="assetChartConfig"></chart-component>
+                <chart-component :config="revenueExpenseChartConfig"></chart-component>
             </div>
-            <div v-for="type in [ 'assets', 'equity', 'liabilities', 'revenues', 'expenses', 'oci' ]" class="container">
+            <div v-for="type in accountTypes" class="container accounts" :class="{ loading }">
                 <h1>{{ $filters.translate("accounts.types." + type) }}</h1>
                 <table>
                     <tr>
                         <th></th>
                         <th>{{ $filters.translate("balances.debit") }}</th>
                         <th>{{ $filters.translate("balances.credit") }}</th>
-                        <th />
+                        <th class="actions" />
                     </tr>
                     <template v-for="account in accounts">
                         <tr v-if="account?.type == type">
@@ -42,7 +64,7 @@
                                     {{ $filters.formatNumber($filters.absolute(getAccountBalance(account)), currency) }}
                                 </span>
                             </td>
-                            <td>
+                            <td class="actions">
                                 <button @click="showLedgerRecords(account)" :title="$filters.translate('balances.show-records')">
                                     &#x1F4CB;
                                 </button>
@@ -61,7 +83,7 @@
                                 {{ $filters.formatNumber($filters.absolute(profit), currency) }}
                             </span>
                         </td>
-                        <td />
+                        <td class="actions" />
                     </tr>
                     <tr v-if="type == 'equity'">
                         <td>{{ $filters.translate(`balances.${-$filters.number(profit_carried_forward) >= 0 ? "profit" : "loss"}-carried-forward`) }}</td>
@@ -75,20 +97,20 @@
                                 {{ $filters.formatNumber($filters.absolute(profit_carried_forward), currency) }}
                             </span>
                         </td>
-                        <td />
+                        <td class="actions" />
                     </tr>
                     <tr v-if="type != 'equity' && accounts.filter(a => a.type == type).length == 0">
                         <td>{{ $filters.translate("balances.none") }}</td>
                         <td />
                         <td />
-                        <td />
+                        <td class="actions" />
                     </tr>
                 </table>
             </div>
             <button class="newRecord" @click="openQuickRecorder()">
                 Quick Recorder
             </button>
-        </center>
+        </main>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>
