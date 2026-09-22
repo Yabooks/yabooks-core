@@ -6,6 +6,14 @@ const listeners = {};
 
 module.exports = function(api)
 {
+    /**
+     * Websocket endpoint for real-time notification/task delivery.
+     * Not documented via @openapi since Swagger/OpenAPI does not model websocket protocols.
+     * On connect, the authenticated session's user is registered as a listener; every notification
+     * or task subsequently created for that user (see POST /api/v1/notifications) is pushed as a
+     * JSON-serialized Notification over the socket. Incoming client messages are ignored and only
+     * serve to keep the connection alive.
+     */
     api.ws("/api/v1/notifications/ws", async (ws, req) =>
     {
         try
@@ -29,6 +37,49 @@ module.exports = function(api)
         }
     });
 
+    /**
+     * @openapi
+     * /api/v1/notifications:
+     *   post:
+     *     summary: Create a notification or task
+     *     description: >
+     *       Creates a notification or task (type "user_task") for a user and pushes it in real time
+     *       to any of that user's open notification websocket connections (see
+     *       /api/v1/notifications/ws). Optionally generates a QR code (optical code) for the
+     *       notification's link.
+     *     tags:
+     *       - notifications
+     *     parameters:
+     *       - in: query
+     *         name: optical_code
+     *         schema:
+     *           type: boolean
+     *         description: If true and the notification has a link, also returns an optical_code (QR code data URL) encoding it
+     *       - in: query
+     *         name: type
+     *         schema:
+     *           type: string
+     *           enum: [ app_notification, user_notification, user_task ]
+     *         description: If set, only pushes the real-time websocket update when the created notification's type matches
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Notification'
+     *     responses:
+     *       200:
+     *         description: The created notification
+     *         content:
+     *           application/json:
+     *             schema:
+     *               allOf:
+     *                 - $ref: '#/components/schemas/Notification'
+     *                 - properties:
+     *                     optical_code:
+     *                       type: string
+     *                       description: QR code as a data URL, only present when requested via ?optical_code=true and a link is set
+     */
     api.post("/api/v1/notifications", async (req, res, next) =>
     {
         try
@@ -57,6 +108,38 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/notifications:
+     *   get:
+     *     summary: List notifications and tasks
+     *     description: >
+     *       Returns a paginated list of notifications and tasks belonging to the current session's
+     *       user, plus any tasks owned by the authenticated app. Supports filtering by read status.
+     *     tags:
+     *       - notifications
+     *     parameters:
+     *       - in: query
+     *         name: read
+     *         schema:
+     *           type: string
+     *           enum: [ "true", "false" ]
+     *         description: Filter by read status - "false" returns unread only, "true" returns read only
+     *     responses:
+     *       200:
+     *         description: Paginated list of notifications
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/Notification'
+     */
     api.get("/api/v1/notifications", async (req, res, next) =>
     {
         try
@@ -81,6 +164,30 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/notifications/{id}:
+     *   get:
+     *     summary: Get a notification or task by ID
+     *     tags:
+     *       - notifications
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the notification
+     *     responses:
+     *       200:
+     *         description: The notification
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Notification'
+     *       404:
+     *         description: Notification not found
+     */
     api.get("/api/v1/notifications/:id", async (req, res, next) =>
     {
         try
@@ -93,6 +200,25 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/notifications/{id}/read:
+     *   put:
+     *     summary: Mark a notification or task as read
+     *     description: Sets the read timestamp to the current date/time.
+     *     tags:
+     *       - notifications
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the notification
+     *     responses:
+     *       204:
+     *         description: Successfully marked as read
+     */
     api.put("/api/v1/notifications/:id/read", async (req, res, next) =>
     {
         try
@@ -103,6 +229,25 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/notifications/{id}/unread:
+     *   put:
+     *     summary: Mark a notification or task as unread
+     *     description: Clears the read timestamp.
+     *     tags:
+     *       - notifications
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the notification
+     *     responses:
+     *       204:
+     *         description: Successfully marked as unread
+     */
     api.put("/api/v1/notifications/:id/unread", async (req, res, next) =>
     {
         try
@@ -113,6 +258,24 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/notifications/{id}:
+     *   delete:
+     *     summary: Delete a notification or task
+     *     tags:
+     *       - notifications
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the notification to be deleted
+     *     responses:
+     *       204:
+     *         description: Successfully deleted
+     */
     api.delete("/api/v1/notifications/:id", async (req, res, next) =>
     {
         try
