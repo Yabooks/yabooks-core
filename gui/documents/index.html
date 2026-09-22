@@ -12,32 +12,39 @@
         <div id="doc_list">
             <filter-bar :keys="searchOptions.keys" :types="searchOptions.types" @update="applyFilterFromBar"></filter-bar>
             <div class="doc" v-for="doc in docs">
-                <img class="thumbnail" :src="'/api/v1/documents/' + doc._id + '/thumbnail'" height="50" />
+                <div class="thumbnail">
+                    <img :src="'/api/v1/documents/' + doc._id + '/thumbnail'" alt="" loading="lazy" />
+                </div>
                 <div class="description">
-                    <span class="label" :title="doc.posted ? 'posted' : 'draft'">
-                        {{ doc.posted ? "\uD83D\uDD12" : "\uD83D\uDCDD" }}
-                    </span>
-                    <span class="label internal_reference" v-if="doc.type || doc.internal_reference">
-                        <a class="link" @click="filterForDocType(doc.type)" v-if="doc.type">
-                            {{ doc.type }}
-                        </a>
-                        {{ doc.internal_reference }}
-                    </span>
-                    <span class="label external_reference" v-if="doc.external_reference">
-                        {{ doc.external_reference }}
-                    </span>
-                    <span class="label name" v-if="doc.name">
-                        {{ doc.name }}
-                    </span>
-                    <span class="label date" v-if="doc.date">
-                        {{ $filters.formatDate(doc.date) }}
-                    </span>
-                    <span class="label tag" v-for="tag in doc.tags">
-                        <a class="link" @click="filterForTag(tag)">
-                            {{ tag }}
-                        </a>
-                    </span>
-                    <div>
+                    <div class="labels">
+                        <span class="label status" :title="doc.posted ? 'posted' : 'draft'">
+                            {{ doc.posted ? "\uD83D\uDD12" : "\uD83D\uDCDD" }}
+                        </span>
+                        <span class="label external_reference" v-if="doc.external_reference">
+                            <a class="link" @click="filterForDocType(doc.type)" v-if="doc.type">
+                                {{ doc.type }}
+                            </a>
+                            {{ doc.external_reference }}
+                        </span>
+                        <span class="label internal_reference" v-if="!doc.external_reference && (doc.type || doc.internal_reference)" :title="[doc.type, doc.internal_reference].filter(Boolean).join(' ')">
+                            <a class="link" @click="filterForDocType(doc.type)" v-if="doc.type">
+                                {{ doc.type }}
+                            </a>
+                            {{ doc.internal_reference ?? "" }}
+                        </span>
+                        <span class="label name" v-if="doc.name" :title="doc.name">
+                            {{ doc.name }}
+                        </span>
+                        <span class="label date" v-if="doc.date">
+                            {{ $filters.formatDate(doc.date) }}
+                        </span>
+                        <span class="label tag" v-for="tag in doc.tags">
+                            <a class="link" @click="filterForTag(tag)">
+                                {{ tag }}
+                            </a>
+                        </span>
+                    </div>
+                    <div class="actions">
                         <button @click="downloadDocument(doc)" v-if="doc.mime_type" title="download document">
                             &#x2193;
                         </button>
@@ -47,7 +54,7 @@
                         <button @click="editDocument(doc)" title="edit document">
                             &#x270F;&#xFE0F;
                         </button>
-                        <button @click="deleteDocument(doc)" title="delete document">
+                        <button class="delete" @click="deleteDocument(doc)" title="delete document">
                             &#128465;
                         </button>
                     </div>

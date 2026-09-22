@@ -13,45 +13,65 @@ html, body
 }
 
 .doc {
-    height: auto;
-    min-height: 90px;
     position: relative;
-    margin: 15px 0;
-    padding: 20px 20px 20px 110px;
+    margin: 12px 0;
+    padding: 14px 18px;
     border-radius: 12px;
     background: white;
-    box-shadow: 0 2px 8px rgba(249, 143, 94, 0.1);
+    box-shadow: 0 1px 3px rgba(249, 143, 94, 0.08);
     border: 1px solid #ffe4d6;
-    transition: all 0.2s ease;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
     display: flex;
     align-items: center;
+    gap: 18px;
 }
 
 .doc:hover {
-    box-shadow: 0 4px 16px rgba(249, 143, 94, 0.2);
-    /*transform: translateY(-2px);*/
+    border-color: #fdc9ae;
+    box-shadow: 0 6px 20px rgba(249, 143, 94, 0.16);
 }
 
+/* Fixed-size frame; the image is scaled down to fit regardless of aspect ratio */
 .doc .thumbnail {
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 70px;
+    flex: 0 0 64px;
+    width: 64px;
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #fff7f4;
+    border: 1px solid #ffe4d6;
+    box-sizing: border-box;
+    padding: 8px;
+}
+
+.doc .thumbnail img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
-    max-height: none;
-    border-radius: 6px;
     object-fit: contain;
 }
 
 .doc .description {
-    position: static;
-    height: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.doc .labels {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .label {
@@ -60,17 +80,29 @@ html, body
     font-weight: 600;
     padding: 4px 10px;
     font-size: 0.75em;
+    line-height: 1.4;
     border-radius: 100px;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease;
     white-space: nowrap;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
-.label:first-child {
-    font-size: 1.1em;
-    padding: 4px 8px;
+.label.status {
+    font-size: 1em;
+    padding: 2px 4px;
+}
+
+/* Block-level inline box so text-overflow works (it doesn't on flex containers) */
+.label.internal_reference,
+.label.name {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .label.internal_reference {
+    max-width: 250px;
     color: #16a34a;
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
@@ -109,6 +141,7 @@ html, body
     color: #7c3aed;
     background: #faf5ff;
     border: 1px solid #e9d5ff;
+    font-variant-numeric: tabular-nums;
 }
 
 .label.tag {
@@ -117,21 +150,19 @@ html, body
     border: 1px solid #fed7aa;
 }
 
-.doc .description > div {
+.doc .actions {
     display: flex;
     gap: 6px;
-    flex-shrink: 0;
 }
 
 .doc button {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     padding: 0;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
+    border-radius: 8px;
+    font-size: 15px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
     background: #fff7f4;
     color: #f98f5e;
     border: 1px solid #ffe4d6;
@@ -143,7 +174,7 @@ html, body
 
 .doc button:hover {
     background: #ffe4d6;
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(249, 143, 94, 0.2);
 }
 
@@ -151,59 +182,42 @@ html, body
     transform: translateY(0);
 }
 
-.doc button:nth-of-type(4) {
+.doc button:focus-visible {
+    outline: 2px solid #f98f5e;
+    outline-offset: 2px;
+}
+
+.doc button.delete {
     color: #dc2626;
     background: #fef2f2;
     border-color: #fee2e2;
 }
 
-.doc button:nth-of-type(4):hover {
+.doc button.delete:hover {
     background: #fee2e2;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
-    .doc {
-        padding: 15px 15px 15px 95px;
-        min-height: 70px;
-    }
-    
-    .doc .thumbnail {
-        width: 60px;
-        left: 15px;
-    }
-    
-    .doc .description {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .doc .description > div {
-        margin-left: 0;
-        margin-top: 8px;
-    }
-}
-
 @media (max-width: 480px) {
     .doc {
-        padding: 80px 15px 15px 15px;
-        min-height: auto;
+        padding: 12px;
+        gap: 12px;
+        align-items: flex-start;
     }
-    
+
     .doc .thumbnail {
-        width: 50px;
-        left: 50%;
-        top: 15px;
-        transform: translateX(-50%);
+        flex-basis: 48px;
+        width: 48px;
+        height: 64px;
     }
-    
+
     .label {
         font-size: 0.7em;
     }
-    
-    .doc .description > div {
-        width: 100%;
-        justify-content: center;
+
+    .label.internal_reference {
+        max-width: 100%;
     }
 }
 

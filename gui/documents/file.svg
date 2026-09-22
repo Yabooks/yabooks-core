@@ -8,10 +8,10 @@
     <g>
         <style>
             .ext {
-                font: 33px sans-serif;
+                font: bold 20px sans-serif;
                 fill: $$COLOR;
             }
         </style>
-        <text x="4" y="68" class="ext">$$EXTENSION</text>
+        <text x="37.66" y="62" class="ext" text-anchor="middle">$$EXTENSION</text>
     </g>
 </svg>

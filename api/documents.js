@@ -176,8 +176,8 @@ module.exports = function(api)
             else
             {
                 let ext = "";
-                if(doc.name && doc.name.indexOf(".") > -1)
-                    ext = doc.name.substring(doc.name.indexOf(".") + 1).toUpperCase();
+                if(doc.name && doc.name.lastIndexOf(".") > -1)
+                    ext = doc.name.substring(doc.name.lastIndexOf(".") + 1).toUpperCase().substring(0, 4);
 
                 const extColors = { 0: 0, /*D*/3: 4302318, /*P*/15: 16720150, /*X*/23: 1596471, /*C*/2: 1596471, 25: 0 };
                 extColors.get = (i) => extColors[i] ? extColors[i] : 0;
