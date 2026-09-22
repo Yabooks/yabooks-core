@@ -1,6 +1,6 @@
-/* global loadSession, sleep, Page */
+/* global loadSession, loadTranslations, sleep, filters, Page */
 
-Vue.createApp(
+const app = Vue.createApp(
 {
     components: { Page },
 
@@ -9,6 +9,7 @@ Vue.createApp(
         return {
             _id: null,
             file_name: "",
+            has_binary: false,
             annotations_supported: false,
             annotations: [],
             pages: null,
@@ -35,6 +36,8 @@ Vue.createApp(
             // TODO connect websocket and consume incoming app notifications on tablets
         }
 
+        loadTranslations({ "code*": "documents.editor." }).then(() => this.$forceUpdate());
+
         if(reqParams.get("doc_id"))
             this.loadDocument(reqParams.get("doc_id"));
     },
@@ -46,7 +49,8 @@ Vue.createApp(
             let doc = await axios.get(`/api/v1/documents/${doc_id}/preview`);
 
             this._id = doc_id;
-            this.file_name = doc.data.name ?? doc.data.mime_type ?? "no preview available";
+            this.file_name = doc.data.name ?? doc.data.mime_type ?? "";
+            this.has_binary = doc.data.has_binary !== false;
             this.annotations_supported = doc.data.annotations_supported;
             this.annotations = doc.data.annotations ?? [];
             this.pages = doc.data.pages;
@@ -61,7 +65,8 @@ Vue.createApp(
 
         downloadDocument()
         {
-            self.location = `/api/v1/documents/${this._id}/binary`;
+            if(this.has_binary)
+                self.location = `/api/v1/documents/${this._id}/binary`;
         },
 
         pagePreviewSrc(page)
@@ -153,4 +158,7 @@ Vue.createApp(
             }
         }
     }
-}).mount("main");
+});
+
+app.config.globalProperties.$filters = { ...filters };
+app.mount("main");

@@ -198,7 +198,12 @@ module.exports = function(api)
             const doc = await Document.findOne({ _id: req.params.id }, [ "name", "mime_type" ]);
 
             if(!doc)
-                res.status(404).send({ error: "not found" });
+                return res.status(404).send({ error: "not found" });
+
+            const has_binary = await Document.hasCurrentVersion(doc._id);
+
+            if(!has_binary)
+                res.json({ name: doc.name, mime_type: doc.mime_type, has_binary, annotations_supported: false, pages: 0 });
 
             else if(doc.mime_type == "application/pdf")
             {
@@ -231,6 +236,7 @@ module.exports = function(api)
                 res.json({
                     name: doc.name,
                     mime_type: doc.mime_type,
+                    has_binary,
                     annotations_supported: true,
                     pages: pdf.numPages,
                     annotations
@@ -238,10 +244,10 @@ module.exports = function(api)
             }
 
             else if(typeof doc.mime_type == "string" && doc.mime_type.indexOf("image/") === 0)
-                res.json({ annotations_supported: false, pages: 1 });
+                res.json({ name: doc.name, mime_type: doc.mime_type, has_binary, annotations_supported: false, pages: 1 });
 
             else
-                res.json({ annotations_supported: false, pages: 0 });
+                res.json({ name: doc.name, mime_type: doc.mime_type, has_binary, annotations_supported: false, pages: 0 });
 
         }
         catch(x) { next(x) }

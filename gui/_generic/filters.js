@@ -23,6 +23,9 @@ const loadTranslations = async (filters = {}) =>
 
     window.translations = window.translations || [];
 
+    // the API paginates (100 records by default), which would silently drop translations of larger modules
+    filters = { limit: 10000, ...filters };
+
     let data = await axios.get("/api/v1/translations?" +
         Object.keys(filters).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(filters[key])}`).join("&"));
 

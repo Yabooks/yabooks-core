@@ -1,63 +1,54 @@
-/* global CurrencyInput, SearchableDropdown, TaxCodeSelector */
+/* global CurrencyInput, SearchableDropdown, TaxCodeSelector, LedgerTransactionSettings */
 
+// stable row keys, so removing a record doesn't make Vue reuse the input components of another row
+const ledgerRowKeys = new WeakMap();
+let ledgerRowKeyCounter = 0;
+
+/**
+ * ledger records of a document; either those of the general ledger (alternate === false)
+ * or those recorded in alternate ledgers, e.g. for tax or management purposes (alternate === true)
+ */
 const LedgerTab = (
 {
-    props: [ "doc" ],
+    props: [ "doc", "options", "alternate" ],
 
-    components: { CurrencyInput, SearchableDropdown, TaxCodeSelector },
+    components: { CurrencyInput, SearchableDropdown, TaxCodeSelector, LedgerTransactionSettings },
 
     data()
     {
         return {
-            accounts: [],
-            tax_codes: [],
-            cost_centers: [],
-            assets: [],
-            identities: [],
-            moreSettingsIndex: null
+            moreSettingsTx: null
         };
-    },
-
-    async mounted()
-    {
-        try
-        {
-            // load available tax codes
-            let data = await axios.get("/api/v1/tax-codes");
-            this.tax_codes = data.data.data;
-            this.$forceUpdate();
-
-            // load available ledger accounts
-            data = await axios.get(`/api/v1/businesses/${this.doc.business}/ledger-accounts`);
-            this.accounts = data.data.data.map(account => ({ ...account, description: `${account.display_number} ${account.display_name}` }));
-            this.$forceUpdate();
-
-            // load available cost centers
-            data = await axios.get(`/api/v1/businesses/${this.doc.business}/cost-centers`);
-            this.cost_centers = data.data.data;
-            this.$forceUpdate();
-
-            // load available assets
-            data = await axios.get(`/api/v1/businesses/${this.doc.business}/assets`);
-            this.assets = data.data.data;
-            this.$forceUpdate();
-
-            // load available business partners
-            data = await axios.get("/api/v1/identities?limit=1000");
-            this.identities = data.data.data;
-            this.$forceUpdate();
-        }
-        catch(x)
-        {
-            console.error(x);
-        }
     },
 
     computed:
     {
-        moreSettingsTx()
+        records()
         {
-            return this.moreSettingsIndex === null ? null : this.doc?.ledger_transactions?.[this.moreSettingsIndex];
+            // null/missing = general ledger (same as the API's ledger queries); a string, even an
+            // empty one that is still being typed, keeps the record in the alternate ledger tab
+            return (this.doc?.ledger_transactions ?? []).filter(tx =>
+                this.alternate ? typeof tx.alternate_ledger === "string" : tx.alternate_ledger == null);
+        },
+
+        alternateLedgerNames()
+        {
+            return [ ...new Set((this.doc?.ledger_transactions ?? []).map(tx => tx.alternate_ledger).filter(Boolean)) ];
+        },
+
+        // debit and credit have to be balanced per booking date and ledger (see document model validation)
+        imbalances()
+        {
+            const totals = {};
+
+            for(let tx of this.records)
+            {
+                const key = `${tx.alternate_ledger ?? ""}|${tx.posting_date ?? ""}`;
+                totals[key] = totals[key] ?? { ledger: tx.alternate_ledger, date: tx.posting_date, balance: 0 };
+                totals[key].balance += parseFloat(tx?.amount?.$numberDecimal ?? tx?.amount ?? 0) || 0;
+            }
+
+            return Object.values(totals).filter(total => total.balance < -.005 || total.balance > .005);
         }
     },
 
@@ -65,13 +56,15 @@ const LedgerTab = (
     {
         addLedgerTransaction()
         {
+            const previous = this.records[this.records.length - 1];
+
             this.doc.ledger_transactions.push({
-                posting_date: new Date().toISOString().substring(0, 10),
-                alternate_ledger: null,
+                posting_date: previous?.posting_date || this.doc.date?.substring(0, 10) || new Date().toISOString().substring(0, 10),
+                alternate_ledger: this.alternate ? (previous?.alternate_ledger ?? "") : null,
                 account: null,
                 override_default_cost_center: null,
-                amount: 0,
-                text: "",
+                amount: this.imbalances.length === 1 ? String(-this.imbalances[0].balance.toFixed(2)) : 0,
+                text: previous?.text ?? "",
                 asset: null,
                 asset_alteration: null,
                 data: {},
@@ -84,164 +77,96 @@ const LedgerTab = (
                 tax_sub_code: null,
                 tax_sub_code_base: null,
                 tax_percent: null,
-                tax_number: null
+                business_partner_tax_number: null
             });
         },
 
-        removeLedgerTransaction(index)
+        rowKey(tx)
         {
-            this.doc.ledger_transactions.splice(index, 1);
+            tx = Vue.toRaw(tx);
+            if(!ledgerRowKeys.has(tx))
+                ledgerRowKeys.set(tx, ++ledgerRowKeyCounter);
+            return ledgerRowKeys.get(tx);
         },
 
-        getBalance()
+        removeLedgerTransaction(tx)
         {
-            let balance = 0;
-
-            for(let tx of this.doc?.ledger_transactions ?? [])
-                balance += parseFloat(tx?.amount?.$numberDecimal ?? tx?.amount ?? 0);
-
-            return balance;
-        },
-        
-        more(i) // show additional fields in modal dialog window
-        {
-            this.moreSettingsIndex = i;
+            this.doc.ledger_transactions.splice(this.doc.ledger_transactions.indexOf(tx), 1);
         },
 
-        closeMoreSettings()
+        describeImbalance(imbalance)
         {
-            this.moreSettingsIndex = null;
+            const context = [ imbalance.ledger, imbalance.date && this.$filters.formatDate(imbalance.date + "T00:00") ].filter(Boolean);
+            return `${this.$filters.formatNumber(-imbalance.balance, this.options.currency)}${context.length ? ` (${context.join(", ")})` : ""}`;
         }
     },
 
     template: `
         <div class="item">
-            <h3>General Ledger Transactions</h3>
-            <table>
+            <h3>{{ $filters.translate(alternate ? "documents.editor.alternate-ledger-transactions" : "documents.editor.gl-transactions") }}</h3>
+            <datalist id="alternate-ledger-names">
+                <option v-for="name in alternateLedgerNames" :value="name" />
+            </datalist>
+            <table class="records">
                 <tr>
-                    <th>Account</th>
-                    <th>Text</th>
-                    <th>Amount</th>
-                    <th>Tax Code</th>
-                    <th />
+                    <th class="date">{{ $filters.translate("documents.editor.booking-date") }}</th>
+                    <th v-if="alternate">{{ $filters.translate("documents.editor.alternate-ledger") }}</th>
+                    <th>{{ $filters.translate("documents.editor.account") }}</th>
+                    <th>{{ $filters.translate("documents.editor.text") }}</th>
+                    <th class="amount">{{ $filters.translate("documents.editor.amount") }}</th>
+                    <th v-if="!alternate">{{ $filters.translate("documents.editor.tax-code") }}</th>
+                    <th class="actions" />
                 </tr>
-                <tr v-for="(tx, i) in (doc?.ledger_transactions || [])">
-                    <template v-if="true">
-                        <td>
-                            <searchable-dropdown v-model:selected="tx.account" value="_id" label="description" :options="accounts" :autoSelectFirstMatch="true" />
-                        </td>
-                        <td>
-                            <input type="text" v-model="tx.text" />
-                        </td>
-                        <td><currency-input v-model="tx.amount" currency="EUR" locale="de-AT"></currency-input></td>
-                        <td>
-                            <tax-code-selector :tax_codes="tax_codes"
-                                v-model:tax_code="tx.tax_code" v-model:tax_code_base="tx.tax_code_base"
-                                v-model:tax_sub_code="tx.tax_sub_code" v-model:tax_sub_code_base="tx.tax_sub_code_base"
-                                v-model:tax_percent="tx.tax_percent" />
-                        </td>
-                        <td>
-                            <button @click="more(i)">
-                                &mldr;
-                            </button>
-                            <button @click="removeLedgerTransaction(i)">
-                                &#x1F5D1;&#xFE0F;
-                            </button>
-                        </td>
-                    </template>
+                <tr v-for="tx in records" :key="rowKey(tx)">
+                    <td class="date">
+                        <input type="date" v-model="tx.posting_date" required />
+                    </td>
+                    <td v-if="alternate">
+                        <input type="text" v-model="tx.alternate_ledger" list="alternate-ledger-names" required
+                            :class="{ invalid: !tx.alternate_ledger.trim() }"
+                            :placeholder="$filters.translate('documents.editor.alternate-ledger-placeholder')" />
+                    </td>
+                    <td>
+                        <searchable-dropdown v-model:selected="tx.account" @emptied="tx.account = null"
+                            value="_id" label="description" :options="options.accounts" :autoSelectFirstMatch="true"
+                            :placeholder="$filters.translate('documents.editor.search-account')" />
+                    </td>
+                    <td>
+                        <input type="text" v-model="tx.text" />
+                    </td>
+                    <td class="amount">
+                        <currency-input v-model="tx.amount" :currency="options.currency" locale="de-AT"></currency-input>
+                    </td>
+                    <td v-if="!alternate">
+                        <tax-code-selector :tax_codes="options.tax_codes"
+                            v-model:tax_code="tx.tax_code" v-model:tax_code_base="tx.tax_code_base"
+                            v-model:tax_sub_code="tx.tax_sub_code" v-model:tax_sub_code_base="tx.tax_sub_code_base"
+                            v-model:tax_percent="tx.tax_percent" />
+                    </td>
+                    <td class="actions">
+                        <button @click="moreSettingsTx = tx" :title="$filters.translate('documents.editor.more')">
+                            &mldr;
+                        </button>
+                        <button class="delete" @click="removeLedgerTransaction(tx)" :title="$filters.translate('documents.editor.remove')">
+                            &#x1F5D1;&#xFE0F;
+                        </button>
+                    </td>
                 </tr>
-                <tr>
-                    <td>
-                        <button @click="addLedgerTransaction()">+</button>
-                    </td>
-                    <td />
-                    <td>
-                        <span v-if="getBalance() < -.005 || getBalance() > .005">
-                            &#x26A0;&#xFE0F;
-                            Missing:
-                            {{ $filters.formatNumber(-getBalance()) }}
-                        </span>
-                    </td>
-                    <td />
+                <tr v-if="records.length === 0">
+                    <td colspan="6" class="empty">{{ $filters.translate("documents.editor.no-records") }}</td>
                 </tr>
             </table>
-
-            <teleport to="body" v-if="moreSettingsTx">
-                <div class="modal-overlay" @click.self="closeMoreSettings">
-                    <div class="modal-dialog">
-                        <h3>Additional Transaction Settings</h3>
-                        <table>
-                            <tr>
-                                <td>Booking Date</td>
-                                <td><input type="date" v-model="moreSettingsTx.posting_date" /></td>
-                            </tr>
-                            <tr>
-                                <td>Due Date</td>
-                                <td><input type="date" v-model="moreSettingsTx.due_date" /></td>
-                            </tr>
-                            <tr>
-                                <td>Alternate Ledger</td>
-                                <td><input type="text" v-model="moreSettingsTx.alternate_ledger" placeholder="e.g. tax, management" /></td>
-                            </tr>
-                            <tr>
-                                <td>Cost Center</td>
-                                <td>
-                                    <searchable-dropdown v-model:selected="moreSettingsTx.override_default_cost_center"
-                                        value="_id" label="display_name" :options="cost_centers" placeholder="Search cost center..." />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Business Partner</td>
-                                <td>
-                                    <searchable-dropdown v-model:selected="moreSettingsTx.override_business_partner"
-                                        value="_id" label="full_name" :options="identities" placeholder="Search business partner..." />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Tax Number</td>
-                                <td><input type="text" v-model="moreSettingsTx.tax_number" /></td>
-                            </tr>
-                            <tr>
-                                <td>Asset</td>
-                                <td>
-                                    <searchable-dropdown v-model:selected="moreSettingsTx.asset"
-                                        value="_id" label="name" :options="assets" placeholder="Search asset..." />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Asset Alteration</td>
-                                <td>
-                                    <select v-model="moreSettingsTx.asset_alteration">
-                                        <option :value="null">-</option>
-                                        <option value="acquisition">acquisition</option>
-                                        <option value="depreciation">depreciation</option>
-                                        <option value="disposal">disposal</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>FX Currency</td>
-                                <td><input type="text" v-model="moreSettingsTx.alternate_currency" placeholder="e.g. USD" maxlength="3" style="text-transform: uppercase" /></td>
-                            </tr>
-                            <tr>
-                                <td>FX Amount</td>
-                                <td><currency-input v-model="moreSettingsTx.alternate_currency_amount" :currency="moreSettingsTx.alternate_currency || 'EUR'" locale="de-AT"></currency-input></td>
-                            </tr>
-                            <tr>
-                                <td>FX Currency 2</td>
-                                <td><input type="text" v-model="moreSettingsTx.alternate_currency2" placeholder="e.g. USD" maxlength="3" style="text-transform: uppercase" /></td>
-                            </tr>
-                            <tr>
-                                <td>FX Amount 2</td>
-                                <td><currency-input v-model="moreSettingsTx.alternate_currency2_amount" :currency="moreSettingsTx.alternate_currency2 || 'EUR'" locale="de-AT"></currency-input></td>
-                            </tr>
-                        </table>
-                        <div class="modal-actions">
-                            <button @click="closeMoreSettings">Close</button>
-                        </div>
-                    </div>
+            <div class="records-footer">
+                <button class="add" @click="addLedgerTransaction()" :title="$filters.translate('documents.editor.add')">+</button>
+                <div class="imbalances">
+                    <span v-for="imbalance in imbalances">
+                        &#x26A0;&#xFE0F; {{ $filters.translate("documents.editor.missing") }} {{ describeImbalance(imbalance) }}
+                    </span>
                 </div>
-            </teleport>
+            </div>
+
+            <ledger-transaction-settings v-if="moreSettingsTx" :tx="moreSettingsTx" :options="options"
+                @close="moreSettingsTx = null"></ledger-transaction-settings>
         </div>
     `
 });

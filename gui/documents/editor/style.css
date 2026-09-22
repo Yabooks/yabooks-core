@@ -103,14 +103,16 @@ main
         border: 0;
         height: 100%;
         position: absolute;
-        width: calc(100% - 800px);
+        width: min(650px, calc(100% - 800px));
     }
 
-    #tabs
+    main #tabs
     {
         top: 0;
         right: 0;
-        width: 800px;
+        left: min(650px, calc(100% - 800px));
+        width: auto;
+        max-width: none;
         height: 100%;
         overflow-y: auto;
         position: absolute;
@@ -185,7 +187,8 @@ main #tabs
     vertical-align: middle;
 }
 
-.tab .item td:first-child
+/* label column of form-like tables (field name | input) */
+.tab .item table.form td:first-child
 {
     font-weight: 500;
     color: var(--text-secondary);
@@ -215,7 +218,7 @@ main #tabs
     border-bottom: none;
 }
 
-.tab .item input[type="text"], .tab .item input[type="datetime-local"], .tab .item select
+.tab .item input[type="text"], .tab .item input[type="date"], .tab .item input[type="datetime-local"], .tab .item select
 {
     width: 100%;
     padding: 6px 8px;
@@ -229,14 +232,14 @@ main #tabs
     box-sizing: border-box;
 }
 
-.tab .item input[type="text"]:focus, .tab .item input[type="datetime-local"]:focus, .tab .item select:focus
+.tab .item input[type="text"]:focus, .tab .item input[type="date"]:focus, .tab .item input[type="datetime-local"]:focus, .tab .item select:focus
 {
     outline: none;
     border-color: var(--input-focus);
     box-shadow: 0 0 0 3px rgba(249, 143, 94, 0.1);
 }
 
-.tab .item input[type="text"]:disabled, .tab .item input[type="datetime-local"]:disabled, .tab .item select:disabled
+.tab .item input[type="text"]:disabled, .tab .item input[type="date"]:disabled, .tab .item input[type="datetime-local"]:disabled, .tab .item select:disabled
 {
     background: var(--surface);
     color: var(--text-secondary);
@@ -310,7 +313,7 @@ main #tabs
     outline-offset: 2px;
 }
 
-.tab .item tr:last-child button
+.tab .item button.add
 {
     background: var(--primary-color);
     color: white;
@@ -320,20 +323,20 @@ main #tabs
     font-weight: 600;
 }
 
-.tab .item tr:last-child button:hover:not(:disabled)
+.tab .item button.add:hover:not(:disabled)
 {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
 }
 
-.tab .item td:last-child button:last-child
+.tab .item button.delete
 {
     color: white;
     border-color: var(--danger-color);
     background: var(--danger-color);
 }
 
-.tab .item td:last-child button:last-child:hover:not(:disabled)
+.tab .item button.delete:hover:not(:disabled)
 {
     background: var(--danger-hover);
     border-color: var(--danger-hover);
@@ -373,7 +376,7 @@ main #tabs
 }
 
 /* Tags container */
-.tab .item td span > span
+.tab .item .tags > span > span
 {
     display: flex;
     flex-wrap: wrap;
@@ -381,7 +384,7 @@ main #tabs
     gap: 4px;
 }
 
-.tab .item td span > span input[type="text"]
+.tab .item .tags > span > input[type="text"]
 {
     flex: 1;
     min-width: 150px;
@@ -446,15 +449,74 @@ main #tabs
     color: var(--text-secondary);
 }
 
+/* Ledger records table */
+.tab .item table.records th.date, .tab .item table.records td.date
+{
+    width: 130px;
+}
+
+.tab .item table.records th.amount, .tab .item table.records td.amount
+{
+    width: 140px;
+    text-align: right;
+}
+
+.tab .item table.records td.empty
+{
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 16px;
+}
+
+.tab .item input.invalid
+{
+    border-color: var(--danger-color);
+}
+
+.tab .item .records-footer
+{
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 8px 6px 0 6px;
+}
+
+.tab .item .records-footer .imbalances
+{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--danger-hover);
+}
+
+/* Searchable dropdown result list: always left aligned, readable, highlighted on hover */
+.tab .item span[style*="position: relative"] > div, .modal-dialog span[style*="position: relative"] > div
+{
+    text-align: left;
+    white-space: normal;
+    font-weight: normal;
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+}
+
+.tab .item span[style*="position: relative"] > div > div:hover, .modal-dialog span[style*="position: relative"] > div > div:hover
+{
+    background: var(--surface);
+}
+
 /* Action buttons column */
-.tab .item td:last-child
+.tab .item td.actions, .tab .item th.actions
 {
     width: 90px;
     text-align: right;
     white-space: nowrap;
 }
 
-.tab .item td:last-child button
+.tab .item td.actions button
 {
     margin-left: 4px;
     padding: 5px 10px;
@@ -515,7 +577,7 @@ main #tabs
     vertical-align: middle;
 }
 
-.modal-dialog td:first-child
+.modal-dialog table.form td:first-child
 {
     font-weight: 500;
     color: var(--text-secondary);
@@ -541,6 +603,30 @@ main #tabs
     outline: none;
     border-color: var(--input-focus);
     box-shadow: 0 0 0 3px rgba(249, 143, 94, 0.1);
+}
+
+.modal-dialog span[style*="position: relative"]
+{
+    display: block !important;
+    width: 100%;
+}
+
+.modal-dialog input[type="text"][style*="text-align: right"]
+{
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+}
+
+.modal-dialog input.currency-code
+{
+    text-transform: uppercase;
+    width: 80px;
+}
+
+.modal-dialog select:disabled
+{
+    background: var(--surface);
+    color: var(--text-secondary);
 }
 
 .modal-dialog .modal-actions
@@ -580,7 +666,7 @@ main #tabs
         padding: 12px;
     }
 
-    .tab .item td:first-child
+    .tab .item table.form td:first-child
     {
         width: 120px;
         font-size: 12px;

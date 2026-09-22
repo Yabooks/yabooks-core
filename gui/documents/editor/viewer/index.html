@@ -28,36 +28,36 @@
                 <!-- show thumbnail for every other file type -->
                 <div v-if="pages === 0">
                     <img :src="thumbnailSrc()" style="max-width: 25%; max-height: 50%">
-                    <h3>{{ file_name }}</h3>
+                    <h3>{{ file_name || $filters.translate("documents.editor.no-preview") }}</h3>
                 </div>
             </div>
             <div id="toolbar">
-                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('pencil')" title="Draw">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('pencil')" :title="$filters.translate('documents.editor.draw')">
                     &#x270F;&#xFE0F;
                 </button>
-                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('pen')" title="Draw">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('pen')" :title="$filters.translate('documents.editor.draw')">
                     &#x1F58A;&#xFE0F;
                 </button>
-                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('fountain-pen')" title="Draw">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('fountain-pen')" :title="$filters.translate('documents.editor.draw')">
                     &#x1F58B;&#xFE0F;
                 </button>
-                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('paintbrush')" title="Draw">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('paintbrush')" :title="$filters.translate('documents.editor.draw')">
                     &#x1F58C;&#xFE0F;
                 </button>
-                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('crayon')" title="Draw">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('crayon')" :title="$filters.translate('documents.editor.draw')">
                     &#x1F58D;&#xFE0F;
                 </button>
-                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('eraser')" title="Erase">
+                <button class="toolButton" v-if="annotations_supported" @click="chooseTool('eraser')" :title="$filters.translate('documents.editor.erase')">
                     &#x1F5D1;&#xFE0F;
                 </button>
-                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(-.1)" :disabled="zoom <= .01" title="Zoom Out">
-                    &#x2796;
+                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(-.1)" :disabled="zoom <= .01" :title="$filters.translate('documents.editor.zoom-out')">
+                    &minus;
                 </button>
-                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(+.1)" :disabled="zoom > 5" title="Zoom In">
-                    &#x2795;
+                <button class="toolButton" v-if="pages > 0" @click="adaptZoomLevel(+.1)" :disabled="zoom > 5" :title="$filters.translate('documents.editor.zoom-in')">
+                    +
                 </button>
                 <button class="toolButton" v-if="!isSecondScreen" @click="useSecondScreen()"
-                        :disabled="isPreparingSecondScreen" title="Open on tablet">
+                        :disabled="isPreparingSecondScreen" :title="$filters.translate('documents.editor.second-screen')">
                     <template v-if="isPreparingSecondScreen">
                         &#x23F3;
                     </template>
@@ -65,7 +65,8 @@
                         &#x1F4F2;
                     </template>
                 </button>
-                <button class="toolButton" @click="downloadDocument()" title="Download PDF">
+                <button class="toolButton" @click="downloadDocument()" :disabled="!has_binary"
+                        :title="$filters.translate(has_binary ? 'documents.editor.download' : 'documents.editor.no-file-to-download')">
                     &#x1F4E9;
                 </button>
             </div>

@@ -12,11 +12,11 @@
             <nav class="menubar">
                 <button class="menuitem" @click="back()">
                     <span class="icon">&#x2B05;&#xFE0F;</span>
-                    <label>Back</label>
+                    <label>{{ $filters.translate("documents.editor.back") }}</label>
                 </button>
                 <button class="menuitem" :class="{ selected: tab === 'general' }" @click="selectTab('general')">
                     <span class="icon">&#x2139;&#xFE0F;</span>
-                    <label>General</label>
+                    <label>{{ $filters.translate("documents.editor.general") }}</label>
                 </button>
                 <!--<button class="menuitem" :class="{ selected: tab === 'financial' }" @click="selectTab('financial')">
                     <span class="icon">&#x1F4B8;</span>
@@ -24,40 +24,53 @@
                 </button>-->
                 <button class="menuitem" :class="{ selected: tab === 'ledger' }" @click="selectTab('ledger')">
                     <span class="icon">&#x1F4D6;</span>
-                    <label>Ledger</label>
+                    <label>{{ $filters.translate("documents.editor.ledger") }}</label>
+                </button>
+                <button class="menuitem" :class="{ selected: tab === 'alternate' }" @click="selectTab('alternate')">
+                    <span class="icon">&#x1F4D2;</span>
+                    <label>{{ $filters.translate("documents.editor.alternate-ledgers") }}</label>
                 </button>
                 <!--<button class="menuitem" :class="{ selected: tab === 'costs' }" @click="selectTab('costs')">
                     <span class="icon">&#x1F4B5;</span>
                     <label>Costs</label>
                 </button>-->
-                <button class="menuitem" @click="save()">
+                <button class="menuitem" @click="save()" :disabled="!doc._id">
                     <span class="icon">&#x1F4BE;</span>
-                    <label>Save</label>
+                    <label>{{ $filters.translate("documents.editor.save") }}</label>
                 </button>
             </nav>
-            <iframe v-if="doc._id" :src="`viewer/?doc_id=${doc._id}`" id="preview"></iframe>
-            <div id="tabs">
-                <div class="tab" v-if="tab === 'general'">
-                    <general-tab :doc="doc"></general-tab>
+            <iframe v-if="doc._id" :key="previewVersion" :src="`viewer/?doc_id=${doc._id}`" id="preview"></iframe>
+            <div id="tabs" v-if="loaded">
+                <div class="tab error" v-if="error">
+                    <div class="item">{{ error }}</div>
                 </div>
-                <div class="tab" v-if="tab === 'financial'">
-                    <financial-tab :doc="doc"></financial-tab>
-                </div>
-                <div class="tab" v-if="tab === 'ledger'">
-                    <ledger-tab :doc="doc"></ledger-tab>
-                </div>
-                <div class="tab" v-if="tab === 'costs'">
-                    <!-- TODO -->
-                </div>
-                <div class="tab" v-if="tab === 'inventory'">
-                    <!-- TODO -->
-                </div>
+                <template v-else>
+                    <div class="tab" v-if="tab === 'general'">
+                        <general-tab :doc="doc" :options="options" @file-replaced="previewVersion++"></general-tab>
+                    </div>
+                    <div class="tab" v-if="tab === 'financial'">
+                        <financial-tab :doc="doc" :options="options"></financial-tab>
+                    </div>
+                    <div class="tab" v-if="tab === 'ledger'">
+                        <ledger-tab :doc="doc" :options="options" :alternate="false"></ledger-tab>
+                    </div>
+                    <div class="tab" v-if="tab === 'alternate'">
+                        <ledger-tab :doc="doc" :options="options" :alternate="true"></ledger-tab>
+                    </div>
+                    <div class="tab" v-if="tab === 'costs'">
+                        <!-- TODO -->
+                    </div>
+                    <div class="tab" v-if="tab === 'inventory'">
+                        <!-- TODO -->
+                    </div>
+                </template>
             </div>
         </main>
         <script type="text/javascript" src="/js/yabooks/searchable-dropdown.js"></script>
         <script type="text/javascript" src="/js/yabooks/tax-code-selector.js"></script>
         <script type="text/javascript" src="/js/yabooks/currency-input.js"></script>
         <script type="text/javascript" src="/js/yabooks/tags-input.js"></script>
+        <script type="text/javascript" src="components/ledger-transaction-settings.js"></script>
         <script type="text/javascript" src="tabs/general.js"></script>
         <script type="text/javascript" src="tabs/financial.js"></script>
         <script type="text/javascript" src="tabs/ledger.js"></script>
