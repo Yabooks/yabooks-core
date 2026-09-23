@@ -10,14 +10,15 @@
     </head>
     <body>
         <div id="doc_list">
-            <filter-bar :keys="searchOptions.keys" :types="searchOptions.types" @update="applyFilterFromBar"></filter-bar>
+            <filter-bar :keys="searchOptions.keys" :types="searchOptions.types" :labels="filterBarLabels" :texts="filterBarTexts"
+                :query="filterBarQuery" @update="applyFilterFromBar"></filter-bar>
             <div class="doc" v-for="doc in docs">
                 <div class="thumbnail">
                     <img :src="'/api/v1/documents/' + doc._id + '/thumbnail'" alt="" loading="lazy" />
                 </div>
                 <div class="description">
                     <div class="labels">
-                        <span class="label status" :title="doc.posted ? 'posted' : 'draft'">
+                        <span class="label status" :title="$filters.translate(doc.posted ? 'documents.list.posted' : 'documents.list.draft')">
                             {{ doc.posted ? "\uD83D\uDD12" : "\uD83D\uDCDD" }}
                         </span>
                         <span class="label external_reference" v-if="doc.external_reference">
@@ -35,6 +36,12 @@
                         <span class="label name" v-if="doc.name" :title="doc.name">
                             {{ doc.name }}
                         </span>
+                        <span class="label business_partner" v-if="businessPartners[doc.business_partner]"
+                            :title="$filters.translate('documents.list.business-partner') + ': ' + businessPartners[doc.business_partner].full_name">
+                            <a class="link" @click="filterForBusinessPartner(doc.business_partner)">
+                                {{ businessPartners[doc.business_partner].full_name }}
+                            </a>
+                        </span>
                         <span class="label date" v-if="doc.date">
                             {{ $filters.formatDate(doc.date) }}
                         </span>
@@ -45,23 +52,23 @@
                         </span>
                     </div>
                     <div class="actions">
-                        <button @click="downloadDocument(doc)" v-if="doc.mime_type" title="download document">
+                        <button @click="downloadDocument(doc)" v-if="doc.mime_type" :title="$filters.translate('documents.list.download')">
                             &#x2193;
                         </button>
-                        <button @click="showLedgerRecords(doc)" title="show ledger records">
+                        <button @click="showLedgerRecords(doc)" :title="$filters.translate('documents.list.ledger-records')">
                             &#128209;
                         </button>
-                        <button @click="editDocument(doc)" title="edit document">
+                        <button @click="editDocument(doc)" :title="$filters.translate('documents.list.edit')">
                             &#x270F;&#xFE0F;
                         </button>
-                        <button class="delete" @click="deleteDocument(doc)" title="delete document">
+                        <button class="delete" @click="deleteDocument(doc)" :title="$filters.translate('documents.list.delete')">
                             &#128465;
                         </button>
                     </div>
                 </div>
             </div>
             <div id="scroll_sentinel">
-                <span v-if="loadingMore">loading more…</span>
+                <span v-if="loadingMore">{{ $filters.translate("documents.list.loading-more") }}</span>
             </div>
             <span v-if="error">
                 {{ error }}
@@ -69,7 +76,7 @@
             <div v-if="!error">
                 <input type="file" multiple style="display: none" id="upload_file_selector" />
                 <button id="upload" @click="uploadFile()" @dragover.prevent @drop.prevent="handleDrop">
-                    upload documents
+                    {{ $filters.translate("documents.list.upload") }}
                 </button>
             </div>
             <div id="notification" v-if="notifications?.length > 0" @click="notifications = []">

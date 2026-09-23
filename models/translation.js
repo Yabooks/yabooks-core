@@ -28,7 +28,7 @@ for(let knownTranslation of require("../assets/translations.json"))
         if(!x?.message || !x.message.includes("duplicate key error"))
             console.error(`[${new Date().toLocaleString()}]`, "could not import translation from file", x?.message || x);
 
-        else FieldTranslation.findOne({}).then(existingTranslation => // replace if changes have occurred
+        else FieldTranslation.findOne({ code: knownTranslation.code, language: knownTranslation.language }).then(existingTranslation => // replace if changes have occurred
         {
             if(existingTranslation.text != knownTranslation.text)
                 FieldTranslation.updateOne({

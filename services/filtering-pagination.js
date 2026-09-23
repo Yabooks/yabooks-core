@@ -95,7 +95,19 @@ module.exports = async function(req, res, next)
 
         if(req.query.q) // ?q={}
         {
-            let query = JSON.parse(req.query.q);
+            // revive extended JSON dates and object IDs, e.g. { "date": { "$gte": { "$date": "2024-01-01T00:00" } } }
+            let query = JSON.parse(req.query.q, (_, value) =>
+            {
+                if(value && typeof value === "object" && Object.keys(value).length === 1)
+                {
+                    if(typeof value.$date === "string")
+                        return new Date(value.$date);
+
+                    if(typeof value.$oid === "string" && mongoose.Types.ObjectId.isValid(value.$oid))
+                        return new mongoose.Types.ObjectId(value.$oid);
+                }
+                return value;
+            });
             pipeline.push({ $match: query });
         }
 

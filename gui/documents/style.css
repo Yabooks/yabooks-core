@@ -137,6 +137,20 @@ html, body
     font-weight: 700;
 }
 
+.label.business_partner {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+    color: #0f766e;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+}
+
+.label.business_partner:hover {
+    background: #ccfbf1;
+}
+
 .label.date {
     color: #7c3aed;
     background: #faf5ff;
