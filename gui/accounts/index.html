@@ -31,7 +31,10 @@
                             <option value="oci">{{ $filters.translate("accounts.types.oci") }}</option>
                         </select>
                         <tags-input v-model="account.tags"></tags-input>
-                        <label><input type="checkbox" v-model="account.track_open_items" />{{ $filters.translate("accounts.track_open_items") }}</label>
+                        <label>
+                            <input type="checkbox" v-model="account.track_open_items" />
+                            {{ $filters.translate("accounts.track_open_items") }}
+                        </label>
                         <input type="date" placeholder="valid only from" v-model="account.valid_from" />
                         <input type="date" placeholder="valid only until" v-model="account.valid_to" />
                         <span class="buttons">
@@ -41,6 +44,7 @@
                         </span>
                     </div>
                 </div>
+                <a name="newAccount" />
                 <div v-if="accounts.length === 0" class="message">
                     no accounts available
                 </div>

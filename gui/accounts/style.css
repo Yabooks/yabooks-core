@@ -28,7 +28,7 @@ html, body
     margin: 0;
     padding: 0;
     color: var(--text-primary);
-    background: var(--page-bg);
+    /*background: var(--page-bg);*/
     font-family: "Roboto", sans-serif;
 }
 

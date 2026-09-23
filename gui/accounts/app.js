@@ -44,6 +44,7 @@ let app = Vue.createApp(
                 editing: true,
                 business: this.business
             });
+            self.location = '#newAccount';
         },
 
         editAccount(account)
