@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { LedgerAccount } = require("../models/account.js"), { CostCenter, Article, Store } = require("../models/costcenter.js");
 const { Document } = require("../models/document.js"), { Asset } = require("../models/asset.js");
-const { Business } = require("../models/business.js"), { Identity } = require("../models/identity.js");
+const { Business } = require("../models/business.js"), { Identity } = require("../models/identity.js"), { App } = require("../models/app.js");
 
 // enriches ledger transactions with their open item relations and, on accounts that track open items, with the remaining open amount;
 // by convention, the ledger transaction holding an open item allocation is the payment, discount, transfer or cancelation of the
@@ -87,6 +87,38 @@ const offsetAccountStages = (inLedger) => (
     ] } } } } },
     { $unset: [ "document_ledger_transactions", "offset_ledger_transactions", "offset_account_details" ] }
 ]);
+
+// helpers for creating cancelation and accrual records: calendar days as "YYYY-MM-DD", amounts in cents to avoid rounding drift
+const toDay = (date) => !date ? null : date instanceof Date ? date.toISOString().slice(0, 10) : new Date(date.split("Z")[0] + "Z").toISOString().slice(0, 10);
+const toCents = (amount) => Math.round(parseFloat(amount?.toString() ?? "0") * 100);
+const fromCents = (cents) => mongoose.Types.Decimal128.fromString((cents / 100).toFixed(2));
+const lastDayOfMonth = (year, month) => new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10); // month 1-12
+
+// the business' locked_until day or null; posting dates must lie after it
+const getLockedUntil = async (business) => toDay((await Business.findOne({ _id: business }, "locked_until"))?.locked_until);
+
+// ids of ledger transactions of a business that were canceled by another ledger transaction or are cancelations themselves
+const getCancelationRelatedIds = async (business, ids) =>
+{
+    const docs = await Document.find({ business, "ledger_transactions.open_item_allocations.type": "cancelation" }, "ledger_transactions");
+    const related = new Set();
+
+    for(let doc of docs)
+        for(let tx of doc.ledger_transactions)
+            for(let allocation of tx.open_item_allocations ?? [])
+                if(allocation.type === "cancelation")
+                    related.add(tx._id.toString()).add(allocation.ledger_transaction.toString());
+
+    return ids.map(id => id.toString()).filter(id => related.has(id));
+};
+
+// ids of ledger transactions of a business referencing one of the given ledger transactions by accrual_of
+const getAccruals = async (business, ids) =>
+{
+    const docs = await Document.find({ business, "ledger_transactions.accrual_of": { $in: ids } }, "ledger_transactions");
+    const idSet = new Set(ids.map(id => id.toString()));
+    return docs.flatMap(doc => doc.ledger_transactions.filter(tx => tx.accrual_of && idSet.has(tx.accrual_of.toString())).map(tx => tx._id.toString()));
+};
 
 module.exports = function(api)
 {
@@ -634,6 +666,205 @@ module.exports = function(api)
                 { $unset: "_id" },
                 { $sort: { display_number: 1 } }
             ]));
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/ledger-transactions/{ledger_transaction}/cancel:
+     *   post:
+     *     summary: Cancel a posting by adding reversing ledger transactions to the document
+     *     description: Reverses all ledger transactions of the document that share the posting day and ledger of the given ledger transaction (so that debit and credit stay balanced). Each reversing ledger transaction holds an open item allocation of type cancelation referencing the ledger transaction it reverses. Fails if the posting date is not after the business' locked_until date, if one of the ledger transactions was already canceled or is a cancelation itself, or if one of them was accrued by ledger transactions outside the posting.
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the document
+     *       - in: path
+     *         name: ledger_transaction
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the ledger transaction to cancel
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [ posting_date ]
+     *             properties:
+     *               posting_date:
+     *                 type: string
+     *                 format: date
+     *                 description: posting date of the cancelation records
+     *     responses:
+     *       200:
+     *         description: The added cancelation ledger transactions
+     *       400:
+     *         description: The ledger transaction cannot be canceled
+     */
+    api.post("/api/v1/documents/:id/ledger-transactions/:ledger_transaction/cancel", async (req, res, next) =>
+    {
+        try
+        {
+            const doc = await Document.findOne({ _id: req.params.id }, "-thumbnail");
+            const tx = doc?.ledger_transactions.id(req.params.ledger_transaction);
+            if(!doc || !tx)
+                return res.status(404).send({ error: "not found" });
+
+            const posting_date = req.body?.posting_date;
+            if(!doc.posted)
+                return res.status(400).send({ error: "document is not posted" });
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(posting_date ?? "") || isNaN(new Date(posting_date)))
+                return res.status(400).send({ error: "posting_date must be a date (YYYY-MM-DD)" });
+
+            const lockedUntil = await getLockedUntil(doc.business);
+            if(lockedUntil && posting_date <= lockedUntil)
+                return res.status(400).send({ error: `posting date must be after ${lockedUntil} (business is locked until then)` });
+
+            // the whole posting (same day and ledger) is reversed, as a single ledger transaction cannot be reversed on its own
+            const posting = doc.ledger_transactions.filter(other => toDay(other.posting_date) === toDay(tx.posting_date) &&
+                (other.alternate_ledger ?? null) === (tx.alternate_ledger ?? null));
+            const postingIds = posting.map(other => other._id.toString());
+
+            if((await getCancelationRelatedIds(doc.business, postingIds)).length)
+                return res.status(400).send({ error: "posting was already canceled or is a cancelation itself" });
+            if((await getAccruals(doc.business, postingIds)).some(id => !postingIds.includes(id)))
+                return res.status(400).send({ error: "posting was accrued; cancel its accruals first" });
+
+            const cancelations = posting.map(original =>
+            {
+                const { _id, deduplication_key: _key, open_item_allocations: _allocations, posting_date: _date, amount, ...fields } = original.toObject({ getters: false });
+                const reversedAmount = fromCents(-toCents(amount));
+                return { ...fields, posting_date, amount: reversedAmount,
+                    open_item_allocations: [ { ledger_transaction: original._id, type: "cancelation", amount: reversedAmount } ] };
+            });
+
+            doc.ledger_transactions.push(...cancelations);
+            await doc.save();
+            res.send(doc.ledger_transactions.slice(-cancelations.length));
+
+            App.callWebhooks("document.updated", { document_id: doc._id }, doc.owned_by);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/ledger-transactions/{ledger_transaction}/accrue:
+     *   post:
+     *     summary: Accrue a ledger transaction linearly over a period of months
+     *     description: Adds a neutralization of the ledger transaction against the given accrual account (tagged "accruals") on its posting date and distributes the amount linearly over the months of the period, posting a record against the accrual account on the last day of each month. All added ledger transactions reference the accrued ledger transaction by accrual_of. All posting dates must be after the business' locked_until date.
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the document
+     *       - in: path
+     *         name: ledger_transaction
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the ledger transaction to accrue
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [ account, from, to ]
+     *             properties:
+     *               account:
+     *                 type: string
+     *                 description: ID of the intermediary accrual account (tagged "accruals")
+     *               from:
+     *                 type: string
+     *                 description: first month of the period (YYYY-MM)
+     *               to:
+     *                 type: string
+     *                 description: last month of the period (YYYY-MM), at least one month after from
+     *     responses:
+     *       200:
+     *         description: The added accrual ledger transactions
+     *       400:
+     *         description: The ledger transaction cannot be accrued
+     */
+    api.post("/api/v1/documents/:id/ledger-transactions/:ledger_transaction/accrue", async (req, res, next) =>
+    {
+        try
+        {
+            const doc = await Document.findOne({ _id: req.params.id }, "-thumbnail");
+            const tx = doc?.ledger_transactions.id(req.params.ledger_transaction);
+            if(!doc || !tx)
+                return res.status(404).send({ error: "not found" });
+
+            const { account, from, to } = req.body ?? {};
+            if(!doc.posted)
+                return res.status(400).send({ error: "document is not posted" });
+            if(!/^\d{4}-\d{2}$/.test(from ?? "") || !/^\d{4}-\d{2}$/.test(to ?? "") || from >= to)
+                return res.status(400).send({ error: "from and to must be months (YYYY-MM), to at least one month after from" });
+            if(!mongoose.isValidObjectId(account))
+                return res.status(400).send({ error: "account is required" });
+
+            const accrualAccount = await LedgerAccount.findOne({ _id: account, business: doc.business, tags: "accruals" });
+            if(!accrualAccount)
+                return res.status(400).send({ error: "account must be an accrual account of the business" });
+            if(accrualAccount._id.equals(tx.account))
+                return res.status(400).send({ error: "ledger transaction is already posted on the accrual account" });
+
+            const cents = toCents(tx.amount);
+            if(!cents)
+                return res.status(400).send({ error: "ledger transaction has no amount" });
+            if(tx.accrual_of)
+                return res.status(400).send({ error: "ledger transaction is an accrual itself" });
+            if((await getAccruals(doc.business, [ tx._id ])).length)
+                return res.status(400).send({ error: "ledger transaction was already accrued" });
+            if((await getCancelationRelatedIds(doc.business, [ tx._id ])).length)
+                return res.status(400).send({ error: "ledger transaction was canceled or is a cancelation itself" });
+
+            // last days of the months within the period
+            const monthEnds = [];
+            for(let [ year, month ] = from.split("-").map(Number); `${year}-${String(month).padStart(2, "0")}` <= to; month == 12 ? (year++, month = 1) : month++)
+                monthEnds.push(lastDayOfMonth(year, month));
+
+            if(monthEnds.length > 600)
+                return res.status(400).send({ error: "period is too long" });
+
+            const lockedUntil = await getLockedUntil(doc.business);
+            const originalDay = toDay(tx.posting_date);
+            if(lockedUntil && [ originalDay, ...monthEnds ].some(day => day <= lockedUntil))
+                return res.status(400).send({ error: `posting dates must be after ${lockedUntil} (business is locked until then)` });
+
+            // pair of ledger transactions moving the given amount from the accrual account back to the original account (or vice versa)
+            const common = { alternate_ledger: tx.alternate_ledger, accrual_of: tx._id };
+            const pair = (posting_date, amountCents, text) => (
+            [
+                { ...common, posting_date, account: tx.account, override_default_cost_center: tx.override_default_cost_center, amount: fromCents(amountCents), text },
+                { ...common, posting_date, account: accrualAccount._id, amount: fromCents(-amountCents), text }
+            ]);
+
+            // neutralize the original amount, then distribute it linearly; the last month takes the rounding difference
+            const monthlyCents = Math.trunc(cents / monthEnds.length);
+            const accruals = [ ...pair(originalDay, -cents, tx.text) ];
+            monthEnds.forEach((day, i) => accruals.push(...pair(day,
+                i < monthEnds.length - 1 ? monthlyCents : cents - monthlyCents * (monthEnds.length - 1),
+                `${tx.text ?? ""} (${i + 1}/${monthEnds.length})`.trim())));
+
+            doc.ledger_transactions.push(...accruals);
+            await doc.save();
+            res.send(doc.ledger_transactions.slice(-accruals.length));
+
+            App.callWebhooks("document.updated", { document_id: doc._id }, doc.owned_by);
         }
         catch(x) { next(x) }
     });

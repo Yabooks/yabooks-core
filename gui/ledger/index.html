@@ -20,6 +20,7 @@
                     <th>{{ $filters.translate("general-ledger.credit") }}</th>
                     <th class="taxColumn">{{ $filters.translate("general-ledger.tax") }}</th>
                     <th>{{ $filters.translate("general-ledger.bp_tax_no") }}</th>
+                    <th class="actionsColumn"></th>
                 </tr>
                 <tr v-for="record in records">
                     <td>
@@ -66,7 +67,7 @@
                         </span>
                     </td>
                     <td>
-                        <span :class="{ struck: isCanceledOrTransferred(record) }">{{ record.text }}</span>
+                        <span :class="{ struck: isStruck(record) }">{{ record.text }}</span>
                         <span v-for="tag in getTags(record)" :key="tag" :class="[ 'tag', 'tag-' + tag ]">
                             {{ $filters.translate("general-ledger.tag." + tag) }}
                         </span>
@@ -99,16 +100,78 @@
                             </span>
                         </span>
                     </td>
-                    <td>
+                    <td class="taxNumberColumn">
                         {{ record.business_partner_tax_number }}
+                    </td>
+                    <td class="actionsColumn">
+                        <button class="kebab" @click.stop="toggleMenu(record, $event)">&#x22EE;</button>
                     </td>
                 </tr>
                 <tr v-if="records.length == 0">
-                    <td colspan="9">
+                    <td colspan="10">
                         {{ $filters.translate("general-ledger.no-records") }}
                     </td>
                 </tr>
             </table>
+            <div v-if="menu" class="kebabMenu" :style="{ top: menu.top + 'px', right: menu.right + 'px' }" @click.stop>
+                <button :disabled="!canCancel(menu.record)" @click="openCancel(menu.record)">
+                    {{ $filters.translate("general-ledger.actions.cancel") }}
+                </button>
+                <button :disabled="!canAccrue(menu.record)" @click="openAccrue(menu.record)">
+                    {{ $filters.translate("general-ledger.actions.accrue") }}
+                </button>
+            </div>
+            <div v-if="dialog" class="modalShadow" @click.self="dialog = null">
+                <form class="modal" @submit.prevent="submitDialog()">
+                    <h3 v-if="dialog.type == 'cancel'">{{ $filters.translate("general-ledger.actions.cancel") }}</h3>
+                    <h3 v-else>{{ $filters.translate("general-ledger.actions.accrue") }}</h3>
+                    <p class="modalRecord">
+                        <span :class="[ 'tag', dialog.type == 'cancel' ? 'tag-cancelation' : 'tag-accrual' ]">
+                            <b>{{ $filters.translate("general-ledger.reference." + (dialog.type == "cancel" ? "cancelation" : "accrual")) }}</b>
+                            {{ $filters.formatDate(dialog.record.posting_date) }} &middot;
+                            {{ dialog.record.account.display_number }} &middot;
+                            {{ dialog.record.text }} &middot;
+                            {{ $filters.formatNumber(dialog.record.amount) }}
+                        </span>
+                        <span v-if="dialog.more" class="more">
+                            {{ $filters.translate("general-ledger.reference.more").replace("{count}", dialog.more) }}
+                        </span>
+                    </p>
+                    <template v-if="dialog.type == 'cancel'">
+                        <p class="modalHint">{{ $filters.translate("general-ledger.cancel.hint") }}</p>
+                        <label>
+                            {{ $filters.translate("general-ledger.cancel.posting-date") }}
+                            <input type="date" v-model="dialog.posting_date" :min="dialog.min_date" required />
+                        </label>
+                    </template>
+                    <template v-else>
+                        <label>
+                            {{ $filters.translate("general-ledger.accrue.account") }}
+                            <select v-model="dialog.account" required>
+                                <option v-for="account in accrual_accounts" :key="account._id" :value="account._id">
+                                    {{ account.display_number }} {{ account.display_name }}
+                                </option>
+                            </select>
+                        </label>
+                        <p v-if="accrual_accounts.length == 0" class="modalHint">
+                            {{ $filters.translate("general-ledger.accrue.no-accounts") }}
+                        </p>
+                        <label>
+                            {{ $filters.translate("general-ledger.accrue.from") }}
+                            <input type="month" v-model="dialog.from" :min="dialog.min_month" required @change="ensurePeriodEnd()" />
+                        </label>
+                        <label>
+                            {{ $filters.translate("general-ledger.accrue.to") }}
+                            <input type="month" v-model="dialog.to" :min="addMonths(dialog.from, 1)" required />
+                        </label>
+                    </template>
+                    <p v-if="dialog.error" class="modalError">{{ dialog.error }}</p>
+                    <div class="modalButtons">
+                        <button type="button" @click="dialog = null">{{ $filters.translate("general-ledger.dialog.abort") }}</button>
+                        <button type="submit" class="primary" :disabled="dialog.busy">{{ $filters.translate("general-ledger.dialog.confirm") }}</button>
+                    </div>
+                </form>
+            </div>
             <span v-if="error">
                 {{ error }}
             </span>

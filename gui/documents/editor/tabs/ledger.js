@@ -81,6 +81,14 @@ const LedgerTab = (
             });
         },
 
+        // highlights ledger transactions holding a reference to another one: an open item allocation (payment, discount,
+        // transfer or cancelation of the referenced ledger transaction) or accrual_of (accrual of the referenced one)
+        referenceClass(tx)
+        {
+            const type = tx.open_item_allocations?.[0]?.type ?? (tx.accrual_of ? "accrual" : null);
+            return type ? `reference-${type}` : null;
+        },
+
         rowKey(tx)
         {
             tx = Vue.toRaw(tx);
@@ -117,7 +125,7 @@ const LedgerTab = (
                     <th v-if="!alternate">{{ $filters.translate("documents.editor.tax-code") }}</th>
                     <th class="actions" />
                 </tr>
-                <tr v-for="tx in records" :key="rowKey(tx)">
+                <tr v-for="tx in records" :key="rowKey(tx)" :class="referenceClass(tx)">
                     <td class="date">
                         <input type="date" v-model="tx.posting_date" required />
                     </td>
@@ -165,7 +173,7 @@ const LedgerTab = (
                 </div>
             </div>
 
-            <ledger-transaction-settings v-if="moreSettingsTx" :tx="moreSettingsTx" :options="options"
+            <ledger-transaction-settings v-if="moreSettingsTx" :tx="moreSettingsTx" :doc="doc" :options="options"
                 @close="moreSettingsTx = null"></ledger-transaction-settings>
         </div>
     `

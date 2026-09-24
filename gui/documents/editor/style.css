@@ -147,7 +147,6 @@ main #tabs .tab
 
 main #tabs
 {
-    max-width: 1200px;
     color: var(--text-primary);
     line-height: 1.4;
     font-size: 13px;
@@ -695,4 +694,55 @@ main #tabs
         font-size: 15px;
         margin-bottom: 12px;
     }
+}
+/* ledger transactions holding a reference to another ledger transaction (open item allocation or accrual) */
+.tab .item table.records tr.reference-cancelation td { background: #fde8e8; }
+.tab .item table.records tr.reference-transfer td { background: #e6effd; }
+.tab .item table.records tr.reference-discount td { background: #fdf6e3; }
+.tab .item table.records tr.reference-payment td { background: #e6f6ec; }
+.tab .item table.records tr.reference-accrual td { background: #f3e8fd; }
+
+.modal-dialog .references
+{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: -6px 0 16px 0;
+}
+
+.modal-dialog .reference
+{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 4px 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: #eeeeee;
+    color: #555555;
+}
+
+.modal-dialog .reference-cancelation { background: #fde8e8; color: #b91c1c; }
+.modal-dialog .reference-transfer { background: #e6effd; color: #1d4ed8; }
+.modal-dialog .reference-discount { background: #fdf6e3; color: #a16207; }
+.modal-dialog .reference-payment { background: #e6f6ec; color: #15803d; }
+.modal-dialog .reference-accrual { background: #f3e8fd; color: #7e22ce; }
+
+.modal-dialog .reference button.remove
+{
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0 4px;
+    font-size: 11px;
+    cursor: pointer;
+    opacity: .6;
+}
+
+.modal-dialog .reference button.remove:hover
+{
+    border: none;
+    background: transparent;
+    opacity: 1;
 }

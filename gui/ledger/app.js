@@ -8,7 +8,11 @@ let app = Vue.createApp(
             records: [],
             tax_codes: [],
             error: null,
-            session: null
+            session: null,
+            business: null,
+            accrual_accounts: [],
+            menu: null, // open kebab menu: { record, top, right }
+            dialog: null // open cancel or accrue dialog
         };
     },
 
@@ -16,17 +20,10 @@ let app = Vue.createApp(
     {
         try
         {
-            let business = await getSelectedBusinessId();
+            await this.loadRecords();
 
             // load tax codes
-            
-
-            // load leger transactions
-            let res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
-            this.records = res.data.data;
-
-            // load tax codes
-            res = await axios.get("/api/v1/tax-codes");
+            let res = await axios.get("/api/v1/tax-codes");
             this.tax_codes = res.data.data;
 
             // load ui translations
@@ -44,6 +41,133 @@ let app = Vue.createApp(
 
     methods:
     {
+        async loadRecords()
+        {
+            let business = await getSelectedBusinessId();
+            let res = await axios.get(`/api/v1/businesses/${business}/general-ledger${self.location.search}`);
+            this.records = res.data.data;
+        },
+
+        toggleMenu(record, event)
+        {
+            if(this.menu?.record === record)
+                return this.menu = null;
+
+            // positioned fixed, as the table clips overflowing content
+            const rect = event.currentTarget.getBoundingClientRect();
+            this.menu = { record, top: rect.bottom + 4, right: document.documentElement.clientWidth - rect.right };
+        },
+
+        canCancel(record)
+        {
+            const tags = this.getTags(record);
+            return !tags.includes("canceled") && !tags.includes("cancelation");
+        },
+
+        canAccrue(record)
+        {
+            const tags = this.getTags(record);
+            return ![ "canceled", "cancelation", "accrual", "accrued" ].some(tag => tags.includes(tag));
+        },
+
+        // "YYYY-MM-DD" of a posting date, which is stored without time zone
+        toDay(date)
+        {
+            return date ? String(date).slice(0, 10) : null;
+        },
+
+        async loadBusinessSettings()
+        {
+            const business = await getSelectedBusinessId();
+            const [ businessRes, accountsRes ] = await Promise.all([
+                axios.get(`/api/v1/businesses/${business}`),
+                axios.get(`/api/v1/businesses/${business}/ledger-accounts?tags=accruals`)
+            ]);
+            this.business = businessRes.data;
+            this.accrual_accounts = accountsRes.data.data;
+        },
+
+        // first day after the business' locked_until date, or null if not locked
+        firstUnlockedDay()
+        {
+            if(!this.business?.locked_until)
+                return null;
+
+            const day = new Date(this.toDay(this.business.locked_until) + "T00:00:00Z");
+            day.setUTCDate(day.getUTCDate() + 1);
+            return day.toISOString().slice(0, 10);
+        },
+
+        async openCancel(record)
+        {
+            this.menu = null;
+            await this.loadBusinessSettings();
+
+            // the whole posting (ledger transactions of the document with the same posting day and ledger) is canceled
+            const doc = (await axios.get(`/api/v1/documents/${record.document_id}`)).data;
+            const others = (doc.ledger_transactions ?? []).filter(tx => tx._id !== record._id &&
+                this.toDay(tx.posting_date) === this.toDay(record.posting_date) && (tx.alternate_ledger ?? null) === (record.alternate_ledger ?? null));
+
+            // suggest the original posting date, but not a locked one
+            const min_date = this.firstUnlockedDay(), original = this.toDay(record.posting_date);
+            this.dialog = { type: "cancel", record, min_date, posting_date: min_date && min_date > original ? min_date : original,
+                more: others.length };
+        },
+
+        async openAccrue(record)
+        {
+            this.menu = null;
+            await this.loadBusinessSettings();
+
+            // suggest a period of twelve months, starting with the month of the posting
+            const from = this.toDay(record.posting_date).slice(0, 7);
+            this.dialog = { type: "accrue", record, from, to: this.addMonths(from, 11),
+                min_month: this.firstUnlockedDay()?.slice(0, 7), account: this.accrual_accounts[0]?._id };
+        },
+
+        // "YYYY-MM" plus the given number of months
+        addMonths(month, count)
+        {
+            if(!month)
+                return null;
+
+            const date = new Date(month + "-01T00:00:00Z");
+            date.setUTCMonth(date.getUTCMonth() + count);
+            return date.toISOString().slice(0, 7);
+        },
+
+        // the accrual period ends at least one month after it starts
+        ensurePeriodEnd()
+        {
+            const earliest = this.addMonths(this.dialog.from, 1);
+            if(earliest && (!this.dialog.to || this.dialog.to < earliest))
+                this.dialog.to = earliest;
+        },
+
+        async submitDialog()
+        {
+            const { type, record } = this.dialog;
+            if(type == "accrue" && !(this.dialog.to > this.dialog.from))
+                return this.dialog.error = this.$filters.translate("general-ledger.accrue.period-too-short");
+
+            const body = type == "cancel" ? { posting_date: this.dialog.posting_date } :
+                { account: this.dialog.account, from: this.dialog.from, to: this.dialog.to };
+
+            try
+            {
+                this.dialog.busy = true;
+                this.dialog.error = null;
+                await axios.post(`/api/v1/documents/${record.document_id}/ledger-transactions/${record._id}/${type}`, body);
+                this.dialog = null;
+                await this.loadRecords();
+            }
+            catch(x)
+            {
+                this.dialog.error = x.response?.data?.error ?? x.message;
+                this.dialog.busy = false;
+            }
+        },
+
         // tags describing a ledger transaction's open item status and its relations to other ledger transactions;
         // by convention, the ledger transaction holding an open item allocation is the payment, discount, transfer or
         // cancelation of the referenced ledger transaction, which in turn is paid, discounted, transferred or canceled
@@ -71,11 +195,11 @@ let app = Vue.createApp(
             return order.filter(tag => tags.has(tag));
         },
 
-        // ledger transaction was canceled or transferred by another ledger transaction
-        isCanceledOrTransferred(record)
+        // ledger transaction was canceled or transferred by another ledger transaction, or is a cancelation or transfer itself
+        isStruck(record)
         {
             const tags = this.getTags(record);
-            return tags.includes("canceled") || tags.includes("transferred");
+            return [ "canceled", "transferred", "cancelation", "transfer" ].some(tag => tags.includes(tag));
         },
 
         getTaxCode(tax_code)
@@ -123,4 +247,12 @@ let app = Vue.createApp(
 });
 
 app.config.globalProperties.$filters = { ...filters };
-app.mount("#table");
+const vm = app.mount("#table");
+
+// close the kebab menu on any click outside of it and on escape, which also closes the dialog
+document.addEventListener("click", () => vm.menu = null);
+document.addEventListener("keydown", event =>
+{
+    if(event.key === "Escape")
+        vm.menu = vm.dialog = null;
+});

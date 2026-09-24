@@ -88,7 +88,7 @@ td[align="right"] {
     white-space: normal;
 }
 
-/* booking text of canceled or transferred ledger transactions */
+/* booking text of canceled or transferred ledger transactions and of cancelations and transfers */
 .struck {
     text-decoration: line-through;
     color: #999999;
@@ -124,7 +124,7 @@ td[align="right"] {
 }
 
 /* Tax Column Styling */
-td:last-child {
+td.taxNumberColumn {
     font-size: 12px;
     color: #666666;
 }
@@ -188,7 +188,7 @@ td:last-child {
         /*text-decoration: underline;*/
     }
 
-    .editRecord, .newRecord {
+    .editRecord, .newRecord, .actionsColumn {
         display: none;
         visibility: hidden;
     }
@@ -255,4 +255,150 @@ td:last-child {
 .newRecord:focus-visible {
     outline: none;
     animation: pulse 2s infinite;
+}
+
+/* kebab menu with actions on a ledger transaction */
+.actionsColumn {
+    width: 32px;
+    padding-left: 0;
+    padding-right: 4px;
+    text-align: center;
+}
+
+.kebab {
+    border: none;
+    background: transparent;
+    color: #999999;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.kebab:hover {
+    background: #fff1e6;
+    color: #ff6b35;
+}
+
+.kebabMenu {
+    position: fixed;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    padding: 4px 0;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.kebabMenu button {
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #333333;
+    cursor: pointer;
+}
+
+.kebabMenu button:hover:not(:disabled) {
+    background: #fff5f0;
+    color: #ff6b35;
+}
+
+.kebabMenu button:disabled {
+    color: #bbbbbb;
+    cursor: default;
+}
+
+/* cancel and accrue dialog */
+.modalShadow {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.modal {
+    width: min(420px, calc(100vw - 32px));
+    padding: 20px 24px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    color: #333333;
+}
+
+.modal h3 {
+    margin: 0 0 8px 0;
+}
+
+.modal label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+    font-weight: 500;
+}
+
+.modal input, .modal select {
+    padding: 6px 8px;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.modalRecord .tag {
+    margin-left: 0;
+    white-space: normal;
+    border-radius: 12px;
+    padding: 3px 10px;
+}
+
+.modalRecord .more {
+    margin-left: 6px;
+    white-space: nowrap;
+}
+
+.modalRecord, .modalHint {
+    margin: 0 0 8px 0;
+    color: #666666;
+    font-size: 13px;
+}
+
+.modalError {
+    margin: 12px 0 0 0;
+    color: #b91c1c;
+}
+
+.modalButtons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.modalButtons button {
+    padding: 6px 16px;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.modalButtons button.primary {
+    border-color: #ff6b35;
+    background: #ff6b35;
+    color: #ffffff;
+}
+
+.modalButtons button:disabled {
+    opacity: 0.6;
+    cursor: default;
 }

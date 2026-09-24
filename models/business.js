@@ -11,6 +11,7 @@ const Business = mongoose.model("Business", (function()
         fictive: { type: Boolean, required: true, default: false }, // whether business should not be considered for tax and similar purposes
         default_currency: { type: String, default: "EUR", required: true }, // ISO 4217
         business_number: String,
+        alternate_ledgers: [ String ],
         closing_month: Number,
         closing_day_of_month: Number,
         locked_until: Date,

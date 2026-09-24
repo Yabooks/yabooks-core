@@ -3,14 +3,79 @@
 /** modal dialog with the less frequently used fields of a ledger transaction */
 const LedgerTransactionSettings = (
 {
-    props: [ "tx", "options" ],
+    props: [ "tx", "doc", "options" ],
 
     emits: [ "close" ],
 
     components: { CurrencyInput, SearchableDropdown },
 
+    data()
+    {
+        return {
+            referencedTransactions: {} // referenced ledger transactions by id, with document_id and document_reference
+        };
+    },
+
+    computed:
+    {
+        // references held by this ledger transaction: open item allocations (this is the payment, discount, transfer or
+        // cancelation of the referenced ledger transaction) and accrual_of (this is an accrual of the referenced one)
+        references()
+        {
+            return [
+                ...(this.tx.open_item_allocations ?? []).map(allocation => ({ type: allocation.type, id: allocation.ledger_transaction, allocation })),
+                ...(this.tx.accrual_of ? [ { type: "accrual", id: this.tx.accrual_of } ] : [])
+            ];
+        }
+    },
+
+    async mounted()
+    {
+        const ids = [ ...new Set(this.references.map(reference => String(reference.id))) ];
+        if(!ids.length)
+            return;
+
+        try
+        {
+            const res = await axios.post(`/api/v1/businesses/${this.doc.business}/documents/query`, [
+                { $match: { "ledger_transactions._id": { $exists: true } } },
+                { $unwind: "$ledger_transactions" },
+                { $match: { $expr: { $in: [ { $toString: "$ledger_transactions._id" }, ids ] } } },
+                { $project: { _id: 0, tx: "$ledger_transactions", document_id: "$_id",
+                    document_reference: { $ifNull: [ "$external_reference", { $concat: [ { $ifNull: [ "$type", "" ] }, " ", { $ifNull: [ "$internal_reference", "" ] } ] } ] } } }
+            ]);
+
+            for(let { tx, document_id, document_reference } of res.data)
+                this.referencedTransactions[String(tx._id)] = { ...tx, document_id, document_reference };
+        }
+        catch(x) { console.error(x); }
+    },
+
     methods:
     {
+        describeReference(reference)
+        {
+            const referenced = this.referencedTransactions[String(reference.id)];
+            if(!referenced)
+                return this.$filters.translate("documents.editor.reference.unknown");
+
+            const account = this.options.accounts.find(account => account._id === referenced.account);
+            return [
+                referenced.document_id !== this.doc._id ? referenced.document_reference?.trim() : null,
+                this.$filters.formatDate(referenced.posting_date),
+                account?.display_number,
+                referenced.text,
+                this.$filters.formatNumber(referenced.amount, this.options.currency)
+            ].filter(Boolean).join(" \u00B7 ");
+        },
+
+        removeReference(reference)
+        {
+            if(reference.allocation)
+                this.tx.open_item_allocations.splice(this.tx.open_item_allocations.indexOf(reference.allocation), 1);
+            else this.tx.accrual_of = null;
+        },
+
         setCurrency(field, value)
         {
             this.tx[field] = value.replace(/[^a-z]/gi, "").toUpperCase() || null;
@@ -29,6 +94,14 @@ const LedgerTransactionSettings = (
             <div class="modal-overlay" @click.self="$emit('close')" @keydown.esc="$emit('close')">
                 <div class="modal-dialog">
                     <h3>{{ $filters.translate("documents.editor.additional-settings") }}</h3>
+                    <div class="references" v-if="references.length">
+                        <span v-for="reference in references" :key="reference.type + reference.id" :class="[ 'reference', 'reference-' + reference.type ]">
+                            <b>{{ $filters.translate("documents.editor.reference." + reference.type) }}</b>
+                            {{ describeReference(reference) }}
+                            <button class="remove" @click="removeReference(reference)"
+                                :title="$filters.translate('documents.editor.reference.remove')">&#x2715;</button>
+                        </span>
+                    </div>
                     <table class="form">
                         <tr>
                             <td>{{ $filters.translate("documents.editor.due-date") }}</td>
