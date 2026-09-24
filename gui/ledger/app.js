@@ -44,6 +44,33 @@ let app = Vue.createApp(
 
     methods:
     {
+        // tags describing a ledger transaction's open item status and its relations to other ledger transactions;
+        // by convention, the ledger transaction holding an open item allocation is the payment, discount, transfer or
+        // cancelation of the referenced ledger transaction, which in turn is paid, discounted, transferred or canceled
+        getTags(record)
+        {
+            const num = (value) => parseFloat(value?.$numberDecimal ?? value ?? 0);
+            const settled = { cancelation: "canceled", transfer: "transferred", discount: "discounted", payment: "paid" };
+            const tags = new Set();
+
+            if(record.account?.track_open_items && record.open_amount != null && Math.abs(num(record.open_amount)) >= .01)
+                tags.add(Math.abs(num(record.open_amount) - num(record.amount)) < .01 ? "open" : "partly-open");
+
+            for(let relation of record.open_item_relations ?? [])
+                if(settled[relation.type])
+                    tags.add(relation.allocated_by_this ? relation.type : settled[relation.type]);
+
+            const order = [ "open", "partly-open", "canceled", "transferred", "cancelation", "transfer", "discount", "payment", "paid", "discounted" ];
+            return order.filter(tag => tags.has(tag));
+        },
+
+        // ledger transaction was canceled or transferred by another ledger transaction
+        isCanceledOrTransferred(record)
+        {
+            const tags = this.getTags(record);
+            return tags.includes("canceled") || tags.includes("transferred");
+        },
+
         getTaxCode(tax_code)
         {
             for(let tc of this.tax_codes)

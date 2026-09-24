@@ -3,6 +3,55 @@ const { LedgerAccount } = require("../models/account.js"), { CostCenter, Article
 const { Document } = require("../models/document.js"), { Asset } = require("../models/asset.js");
 const { Business } = require("../models/business.js"), { Identity } = require("../models/identity.js");
 
+// enriches ledger transactions with their open item relations and, on accounts that track open items, with the remaining open amount;
+// by convention, the ledger transaction holding an open item allocation is the payment, discount, transfer or cancelation of the
+// ledger transaction the allocation references; allocations are collected for the whole business at once (uncorrelated lookup,
+// executed only once) so that relations can be resolved in both directions
+const openItemStatusStages = (business, alternateLedgerFilter) => (
+[
+    { $lookup: { from: Document.collection.collectionName, as: "all_open_item_allocations", pipeline: [
+        { $match: { business, posted: true } },
+        { $unwind: "$ledger_transactions" },
+        { $match: alternateLedgerFilter },
+        { $unwind: "$ledger_transactions.open_item_allocations" },
+        { $replaceRoot: { newRoot: {
+            holder: "$ledger_transactions._id",
+            holder_posting_date: "$ledger_transactions.posting_date",
+            target: "$ledger_transactions.open_item_allocations.ledger_transaction",
+            type: "$ledger_transactions.open_item_allocations.type",
+            amount: "$ledger_transactions.open_item_allocations.amount"
+        } } },
+        { $lookup: { from: Document.collection.collectionName, let: { target: "$target" }, as: "target_posting_date", pipeline: [
+            { $match: { business, posted: true } },
+            { $unwind: "$ledger_transactions" },
+            { $match: { $expr: { $eq: [ "$ledger_transactions._id", "$$target" ] } } },
+            { $replaceRoot: { newRoot: { posting_date: "$ledger_transactions.posting_date" } } }
+        ] } },
+        { $set: { target_posting_date: { $first: "$target_posting_date.posting_date" } } }
+    ] } },
+
+    // relations to other ledger transactions, seen from this ledger transaction: allocated_by_this means this ledger transaction
+    // settles the other one (e.g. is its payment), otherwise the other ledger transaction settles this one (e.g. it was paid)
+    { $set: { open_item_relations: { $concatArrays: [
+        { $map: { input: { $filter: { input: "$all_open_item_allocations", cond: { $eq: [ "$$this.holder", "$_id" ] } } }, in: {
+            ledger_transaction: "$$this.target", type: "$$this.type", amount: "$$this.amount",
+            allocated_by_this: true, posting_date: "$$this.target_posting_date"
+        } } },
+        { $map: { input: { $filter: { input: "$all_open_item_allocations", cond: { $eq: [ "$$this.target", "$_id" ] } } }, in: {
+            ledger_transaction: "$$this.holder", type: "$$this.type", amount: "$$this.amount",
+            allocated_by_this: false, posting_date: "$$this.holder_posting_date"
+        } } }
+    ] } } },
+    { $unset: "all_open_item_allocations" },
+
+    // own allocations reduce the open amount, allocations of others against this ledger transaction add to it
+    { $set: { open_amount: { $cond: [ "$account.track_open_items", { $add: [
+        "$amount",
+        { $multiply: [ { $sum: { $map: { input: { $filter: { input: "$open_item_relations", cond: "$$this.allocated_by_this" } }, in: "$$this.amount" } } }, -1 ] },
+        { $sum: { $map: { input: { $filter: { input: "$open_item_relations", cond: { $not: [ "$$this.allocated_by_this" ] } } }, in: "$$this.amount" } } }
+    ] }, null ] } } }
+]);
+
 module.exports = function(api)
 {
     /**
@@ -10,6 +59,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger:
      *   get:
      *     summary: Get general ledger entries of a business
+     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -60,6 +110,7 @@ module.exports = function(api)
                 { $unwind: { path: "$business_partner", preserveNullAndEmptyArrays: true } },
                 { $lookup: { from: Asset.collection.collectionName, localField: "asset", foreignField: "_id", as: "asset" } },
                 { $unwind: { path: "$asset", preserveNullAndEmptyArrays: true } },
+                ...openItemStatusStages(new mongoose.Types.ObjectId(req.params.id), { "ledger_transactions.alternate_ledger": null }),
                 { $sort: { "posting_date": 1 } }
             ]));
         }
@@ -71,6 +122,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger/{alternate_ledger}:
      *   get:
      *     summary: Get general ledger entries of a business for an alternate ledger
+     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -127,6 +179,7 @@ module.exports = function(api)
                 { $unwind: { path: "$business_partner", preserveNullAndEmptyArrays: true } },
                 { $lookup: { from: Asset.collection.collectionName, localField: "asset", foreignField: "_id", as: "asset" } },
                 { $unwind: { path: "$asset", preserveNullAndEmptyArrays: true } },
+                ...openItemStatusStages(new mongoose.Types.ObjectId(req.params.id), { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger } ] }),
                 { $sort: { "posting_date": 1 } }
             ]));
         }
@@ -300,7 +353,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/open-items:
      *   get:
      *     summary: Get open items of a business
-     *     description: Returns ledger transactions on accounts that track open items, enriched with their allocation status and remaining open amount.
+     *     description: Returns ledger transactions on accounts that track open items, enriched with their allocation status and remaining open amount. By convention, the ledger transaction holding an open item allocation (open_item_allocations) is the payment, discount, transfer or cancelation of the ledger transaction the allocation references; open_items_allocated lists the allocations other ledger transactions hold against this one.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -352,7 +405,7 @@ module.exports = function(api)
                 // filter for ledger transactions of accounts only that track open items
                 { $match: { "account.track_open_items": true } },
 
-                // look up ledger transactions that have this transaction linked as open item allocation
+                // look up ledger transactions that settle this one, i.e. hold an open item allocation referencing it
                 { $lookup: { from: Document.collection.collectionName, let: { localId: "$_id" }, as: "open_items_allocated", pipeline: [
                     { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                     { $unwind: "$ledger_transactions" },
@@ -477,7 +530,7 @@ module.exports = function(api)
                 // filter for ledger transactions of accounts only that track open items
                 { $match: { "account.track_open_items": true } },
 
-                // look up open item allocations made by other ledger transactions against this one
+                // look up open item allocations held by ledger transactions that settle this one
                 { $lookup: { from: Document.collection.collectionName, let: { localId: "$_id" }, as: "open_items_allocated", pipeline: [
                     { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
                     { $unwind: "$ledger_transactions" },

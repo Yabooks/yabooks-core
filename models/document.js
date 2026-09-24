@@ -12,12 +12,15 @@ const omitTimezone = (date) =>
     return null;
 };
 
+// open item allocation, held by the ledger transaction that settles another one: the holder is the payment, discount, transfer
+// or cancelation (depending on type) of the ledger transaction referenced by ledger_transaction; amount carries the holder's sign,
+// is deducted from the holder's open amount and added to the referenced ledger transaction's open amount
 const OpenItemAllocation = (function()
 {
     const schemaDefinition = (
     {
-        ledger_transaction: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerTransaction", required: true },
-        type: { type: String, enum: [ "cancelation", "discount", "payment" ], required: true },
+        ledger_transaction: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerTransaction", required: true }, // the tx being paid or canceled
+        type: { type: String, enum: [ "cancelation", "transfer", "discount", "payment" ], required: true },
         amount: { type: mongoose.Schema.Types.Decimal128, required: true }
     });
 
@@ -41,6 +44,7 @@ const LedgerTransaction = (function()
         text: { type: String },
         asset: { type: mongoose.Schema.Types.ObjectId, ref: "Asset", required: false },
         asset_alteration: { type: String, enum: [ "acquisition", "depreciation", "disposal", null ], required: false }, // required if asset is referenced
+        accrual_of: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerTransaction", required: false },
         data: mongoose.Schema.Types.Mixed,
         deduplication_key: { type: String, index: true, unique: true, default: _ => `${os.hostname()}_${uuid()}` },
 

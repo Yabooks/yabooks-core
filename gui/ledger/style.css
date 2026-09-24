@@ -79,6 +79,49 @@ td[align="right"] {
     font-size: 13px;
 }
 
+/* fixed width tax column */
+.taxColumn {
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    box-sizing: border-box;
+    white-space: normal;
+}
+
+/* booking text of canceled or transferred ledger transactions */
+.struck {
+    text-decoration: line-through;
+    color: #999999;
+}
+
+/* open item status tags */
+.tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    white-space: nowrap;
+    vertical-align: middle;
+    background: #eeeeee;
+    color: #555555;
+}
+
+.tag-open, .tag-partly-open { background: #fff1e6; color: #c2410c; }
+.tag-canceled, .tag-cancelation { background: #fde8e8; color: #b91c1c; }
+.tag-transferred, .tag-transfer { background: #e6effd; color: #1d4ed8; }
+.tag-discount, .tag-discounted { background: #fdf6e3; color: #a16207; }
+.tag-payment, .tag-paid { background: #e6f6ec; color: #15803d; }
+
+@media print {
+    .tag {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
 /* Tax Column Styling */
 td:last-child {
     font-size: 12px;

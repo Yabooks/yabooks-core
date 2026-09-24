@@ -17,7 +17,7 @@
                     <th>{{ $filters.translate("general-ledger.text") }}</th>
                     <th>{{ $filters.translate("general-ledger.debit") }}</th>
                     <th>{{ $filters.translate("general-ledger.credit") }}</th>
-                    <th>{{ $filters.translate("general-ledger.tax") }}</th>
+                    <th class="taxColumn">{{ $filters.translate("general-ledger.tax") }}</th>
                     <th>{{ $filters.translate("general-ledger.bp_tax_no") }}</th>
                 </tr>
                 <tr v-for="record in records">
@@ -57,7 +57,10 @@
                         </span>
                     </td>
                     <td>
-                        {{ record.text }}
+                        <span :class="{ struck: isCanceledOrTransferred(record) }">{{ record.text }}</span>
+                        <span v-for="tag in getTags(record)" :key="tag" :class="[ 'tag', 'tag-' + tag ]">
+                            {{ $filters.translate("general-ledger.tag." + tag) }}
+                        </span>
                     </td>
                     <td align="right">
                         <span v-if="(record.amount.$numberDecimal || record.amount) > 0">
@@ -69,7 +72,7 @@
                             {{ $filters.formatNumber($filters.absolute(record.amount)) }}
                         </span>
                     </td>
-                    <td :title="getTaxCode(record.tax_code || record.tax_code_base).description">
+                    <td class="taxColumn" :title="getTaxCode(record.tax_code || record.tax_code_base).description">
                         <span v-if="record.tax_code || record.tax_code_base">
                             <span>
                                 {{ [ getTaxCode(record.tax_code || record.tax_code_base).type ].map(t =>
