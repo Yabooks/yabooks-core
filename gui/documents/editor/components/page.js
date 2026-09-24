@@ -40,7 +40,8 @@ const Page = ( // PDF drawing editor
                 this.ctx = this.canvas.getContext("2d");
                 this.drawAllAnnotations();
             }
-            
+
+            this.$emit("loaded", { width: this.$refs.img.naturalWidth, height: this.$refs.img.naturalHeight });
             this.$forceUpdate();
         };
     },

@@ -15,6 +15,13 @@ main
 {
     direction: ltr;
     padding-bottom: 70px; /* space for toolbar */
+
+    /* grow with zoomed pages; as body is rtl, wider content overflows to the left, which keeps it horizontally scrollable */
+    width: max-content;
+    min-width: 100%;
+    box-sizing: border-box;
+    padding-left: 20px;
+    padding-right: 20px;
 }
 
 #preview
@@ -67,9 +74,9 @@ main
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 4px;
-    padding: 4px 10px;
-    height: 40px;
+    gap: 6px;
+    padding: 4px 12px;
+    height: 50px;
     max-width: calc(100% - 20px);
     box-sizing: border-box;
     overflow-x: auto;
@@ -85,10 +92,10 @@ main
     background: #ffffff20;
     border: none;
     flex-shrink: 0;
-    padding: 6px 8px;
-    border-radius: 12px;
+    padding: 8px 10px;
+    border-radius: 14px;
     color: white;
-    font-size: 16px;
+    font-size: 20px;
     line-height: 1;
     cursor: pointer;
     transition: background 0.2s, transform 0.2s;
@@ -104,4 +111,22 @@ main
 {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* fall back to the compact toolbar when the larger one would not fit into the panel */
+@media (max-width: 520px)
+{
+    #toolbar
+    {
+        gap: 4px;
+        padding: 4px 10px;
+        height: 40px;
+    }
+
+    .toolButton
+    {
+        padding: 6px 8px;
+        border-radius: 12px;
+        font-size: 16px;
+    }
 }

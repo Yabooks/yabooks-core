@@ -9,11 +9,13 @@ const app = Vue.createApp(
         return {
             _id: null,
             file_name: "",
+            mime_type: "",
             has_binary: false,
             annotations_supported: false,
             annotations: [],
             pages: null,
             zoom: 0.5,
+            isZoomedByUser: false,
             scale: 2.0,
             isSecondScreen: false,
             isPreparingSecondScreen: false,
@@ -50,6 +52,7 @@ const app = Vue.createApp(
 
             this._id = doc_id;
             this.file_name = doc.data.name ?? doc.data.mime_type ?? "";
+            this.mime_type = doc.data.mime_type ?? "";
             this.has_binary = doc.data.has_binary !== false;
             this.annotations_supported = doc.data.annotations_supported;
             this.annotations = doc.data.annotations ?? [];
@@ -102,7 +105,44 @@ const app = Vue.createApp(
 
         adaptZoomLevel(change)
         {
+            const el = document.scrollingElement;
+
+            // x offset measured from the left edge (scrollLeft is 0 at the right edge and negative towards the left in rtl)
+            const left = () => el.scrollWidth - el.clientWidth + el.scrollLeft;
+
+            // remember which point of the document is in the center of the viewport
+            const fx = (left() + el.clientWidth / 2) / el.scrollWidth;
+            const fy = (el.scrollTop + el.clientHeight / 2) / el.scrollHeight;
+
+            this.isZoomedByUser = true;
             this.zoom *= (1 + change);
+
+            // keep that point centered after zooming
+            this.$nextTick(() =>
+            {
+                el.scrollLeft = fx * el.scrollWidth - el.clientWidth / 2 - (el.scrollWidth - el.clientWidth);
+                el.scrollTop = fy * el.scrollHeight - el.clientHeight / 2;
+            });
+        },
+
+        // zoom out automatically so that large pages fit into the viewport (never zooms in beyond the default)
+        fitZoom({ width, height })
+        {
+            if(this.isZoomedByUser || !width || !height)
+                return;
+
+            // measure the viewport, not #preview, as #preview grows with pages wider than the screen
+            const availableWidth = document.scrollingElement.clientWidth - 40 - 40; // main padding, breathing room
+            const availableHeight = self.innerHeight - 20 - 40 - 70; // #preview margin, .page margins, toolbar
+
+            let fit = availableWidth / width;
+
+            // single images should be fully visible, so fit their height too
+            if(this.mime_type.indexOf("image/") === 0)
+                fit = Math.min(fit, availableHeight / height);
+
+            if(fit > 0 && fit < this.zoom)
+                this.zoom = fit;
         },
 
         async useSecondScreen()

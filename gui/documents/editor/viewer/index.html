@@ -22,7 +22,7 @@
                             :scale="scale" :zoom="zoom"
                             :annotations="annotations[page-1]"
                             :annotations-supported="annotations_supported"
-                            :tool="tool" @change="saveAnnotations"></Page>
+                            :tool="tool" @change="saveAnnotations" @loaded="fitZoom"></Page>
                     </template>
                 </template>
                 <!-- show thumbnail for every other file type -->
