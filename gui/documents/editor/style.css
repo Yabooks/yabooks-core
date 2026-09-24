@@ -460,6 +460,17 @@ main #tabs
     text-align: right;
 }
 
+.tab .item p.note
+{
+    margin: 0 0 12px 0;
+    padding: 8px 12px;
+    border-left: 3px solid var(--border-color);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 .tab .item table.records td.empty
 {
     color: var(--text-secondary);
@@ -467,7 +478,7 @@ main #tabs
     padding: 16px;
 }
 
-.tab .item input.invalid
+.tab .item input.invalid, .tab .item select.invalid
 {
     border-color: var(--danger-color);
 }
@@ -478,6 +489,13 @@ main #tabs
     align-items: flex-start;
     gap: 16px;
     padding: 8px 6px 0 6px;
+}
+
+.tab .item .records-footer .add-hint
+{
+    align-self: center;
+    font-size: 12px;
+    color: var(--danger-hover);
 }
 
 .tab .item .records-footer .imbalances

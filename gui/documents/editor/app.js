@@ -23,7 +23,8 @@ let app = Vue.createApp(
                 tax_codes: [],
                 cost_centers: [],
                 assets: [],
-                identities: []
+                identities: [],
+                alternate_ledgers: []
             }
         };
     },
@@ -79,7 +80,8 @@ let app = Vue.createApp(
                 tax_codes: tax_codes?.data ?? [],
                 cost_centers: (cost_centers?.data ?? []).map(center => ({ ...center, description: [ center.display_number, center.display_name ].filter(Boolean).join(" ") })),
                 assets: assets?.data ?? [],
-                identities: identities?.data ?? []
+                identities: identities?.data ?? [],
+                alternate_ledgers: [ ...new Set((businessData?.alternate_ledgers ?? []).map(name => String(name).trim()).filter(Boolean)) ]
             };
         },
 
@@ -95,8 +97,8 @@ let app = Vue.createApp(
 
         async save()
         {
-            // records in an alternate ledger need the ledger's name, otherwise they would be indistinguishable
-            if(this.doc.ledger_transactions.some(tx => typeof tx.alternate_ledger === "string" && !tx.alternate_ledger.trim()))
+            // records in an alternate ledger have to be assigned to one registered for the business
+            if(this.doc.ledger_transactions.some(tx => typeof tx.alternate_ledger === "string" && !this.options.alternate_ledgers.includes(tx.alternate_ledger.trim())))
             {
                 this.tab = "alternate";
                 alert(this.$filters.translate("documents.editor.missing-alternate-ledger"));

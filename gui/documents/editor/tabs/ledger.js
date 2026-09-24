@@ -31,9 +31,15 @@ const LedgerTab = (
                 this.alternate ? typeof tx.alternate_ledger === "string" : tx.alternate_ledger == null);
         },
 
-        alternateLedgerNames()
+        // alternate ledgers registered for the business; records can only be assigned to (and added for) these
+        registeredLedgers()
         {
-            return [ ...new Set((this.doc?.ledger_transactions ?? []).map(tx => tx.alternate_ledger).filter(Boolean)) ];
+            return this.options.alternate_ledgers ?? [];
+        },
+
+        canAdd()
+        {
+            return !this.alternate || this.registeredLedgers.length > 0;
         },
 
         // debit and credit have to be balanced per booking date and ledger (see document model validation)
@@ -54,13 +60,23 @@ const LedgerTab = (
 
     methods:
     {
+        isRegistered(ledger)
+        {
+            return this.registeredLedgers.includes(ledger);
+        },
+
         addLedgerTransaction()
         {
+            if(!this.canAdd)
+                return;
+
             const previous = this.records[this.records.length - 1];
+            const ledger = this.isRegistered(previous?.alternate_ledger) ? previous.alternate_ledger
+                : this.registeredLedgers.length === 1 ? this.registeredLedgers[0] : "";
 
             this.doc.ledger_transactions.push({
                 posting_date: previous?.posting_date || this.doc.date?.substring(0, 10) || new Date().toISOString().substring(0, 10),
-                alternate_ledger: this.alternate ? (previous?.alternate_ledger ?? "") : null,
+                alternate_ledger: this.alternate ? ledger : null,
                 account: null,
                 override_default_cost_center: null,
                 amount: this.imbalances.length === 1 ? String(-this.imbalances[0].balance.toFixed(2)) : 0,
@@ -112,9 +128,7 @@ const LedgerTab = (
     template: `
         <div class="item">
             <h3>{{ $filters.translate(alternate ? "documents.editor.alternate-ledger-transactions" : "documents.editor.gl-transactions") }}</h3>
-            <datalist id="alternate-ledger-names">
-                <option v-for="name in alternateLedgerNames" :value="name" />
-            </datalist>
+            <p v-if="alternate" class="note">{{ $filters.translate("documents.editor.alternate-ledger-note") }}</p>
             <table class="records">
                 <tr>
                     <th class="date">{{ $filters.translate("documents.editor.booking-date") }}</th>
@@ -130,9 +144,13 @@ const LedgerTab = (
                         <input type="date" v-model="tx.posting_date" required />
                     </td>
                     <td v-if="alternate">
-                        <input type="text" v-model="tx.alternate_ledger" list="alternate-ledger-names" required
-                            :class="{ invalid: !tx.alternate_ledger.trim() }"
-                            :placeholder="$filters.translate('documents.editor.alternate-ledger-placeholder')" />
+                        <select v-model="tx.alternate_ledger" required :class="{ invalid: !isRegistered(tx.alternate_ledger) }">
+                            <option value="" disabled>{{ $filters.translate("documents.editor.select-alternate-ledger") }}</option>
+                            <option v-if="tx.alternate_ledger && !isRegistered(tx.alternate_ledger)" :value="tx.alternate_ledger" disabled>
+                                {{ tx.alternate_ledger }} ({{ $filters.translate("documents.editor.unregistered-alternate-ledger") }})
+                            </option>
+                            <option v-for="name in registeredLedgers" :value="name">{{ name }}</option>
+                        </select>
                     </td>
                     <td>
                         <searchable-dropdown v-model:selected="tx.account" @emptied="tx.account = null"
@@ -165,7 +183,9 @@ const LedgerTab = (
                 </tr>
             </table>
             <div class="records-footer">
-                <button class="add" @click="addLedgerTransaction()" :title="$filters.translate('documents.editor.add')">+</button>
+                <button class="add" @click="addLedgerTransaction()" :disabled="!canAdd"
+                    :title="$filters.translate(canAdd ? 'documents.editor.add' : 'documents.editor.no-alternate-ledgers')">+</button>
+                <span v-if="!canAdd" class="add-hint">{{ $filters.translate("documents.editor.no-alternate-ledgers") }}</span>
                 <div class="imbalances">
                     <span v-for="imbalance in imbalances">
                         &#x26A0;&#xFE0F; {{ $filters.translate("documents.editor.missing") }} {{ describeImbalance(imbalance) }}
