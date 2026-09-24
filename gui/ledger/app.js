@@ -60,7 +60,14 @@ let app = Vue.createApp(
                 if(settled[relation.type])
                     tags.add(relation.allocated_by_this ? relation.type : settled[relation.type]);
 
-            const order = [ "open", "partly-open", "canceled", "transferred", "cancelation", "transfer", "discount", "payment", "paid", "discounted" ];
+            // the ledger transaction holding accrual_of is an accrual of the (accrued) ledger transaction referenced there
+            if(record.accrual_of)
+                tags.add("accrual");
+
+            if(record.accrued_by?.length)
+                tags.add("accrued");
+
+            const order = [ "open", "partly-open", "canceled", "transferred", "cancelation", "transfer", "discount", "payment", "paid", "discounted", "accrual", "accrued" ];
             return order.filter(tag => tags.has(tag));
         },
 

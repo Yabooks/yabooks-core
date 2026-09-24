@@ -52,6 +52,20 @@ const openItemStatusStages = (business, alternateLedgerFilter) => (
     ] }, null ] } } }
 ]);
 
+// enriches ledger transactions with accrued_by: the ledger transactions that are accruals of this one, i.e. reference it by accrual_of
+// (the holder of accrual_of is the accrual, the referenced ledger transaction is the accrued one); collected for the whole business at once
+const accrualStages = (business, alternateLedgerFilter) => (
+[
+    { $lookup: { from: Document.collection.collectionName, as: "all_accruals", pipeline: [
+        { $match: { business, posted: true, ledger_transactions: { $elemMatch: { accrual_of: { $ne: null } } } } },
+        { $unwind: "$ledger_transactions" },
+        { $match: { $and: [ alternateLedgerFilter, { "ledger_transactions.accrual_of": { $ne: null } } ] } },
+        { $replaceRoot: { newRoot: { _id: "$ledger_transactions._id", accrual_of: "$ledger_transactions.accrual_of" } } }
+    ] } },
+    { $set: { accrued_by: { $map: { input: { $filter: { input: "$all_accruals", cond: { $eq: [ "$$this.accrual_of", "$_id" ] } } }, in: "$$this._id" } } } },
+    { $unset: "all_accruals" }
+]);
+
 module.exports = function(api)
 {
     /**
@@ -59,7 +73,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger:
      *   get:
      *     summary: Get general ledger entries of a business
-     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items.
+     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -111,6 +125,7 @@ module.exports = function(api)
                 { $lookup: { from: Asset.collection.collectionName, localField: "asset", foreignField: "_id", as: "asset" } },
                 { $unwind: { path: "$asset", preserveNullAndEmptyArrays: true } },
                 ...openItemStatusStages(new mongoose.Types.ObjectId(req.params.id), { "ledger_transactions.alternate_ledger": null }),
+                ...accrualStages(new mongoose.Types.ObjectId(req.params.id), { "ledger_transactions.alternate_ledger": null }),
                 { $sort: { "posting_date": 1 } }
             ]));
         }
@@ -122,7 +137,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger/{alternate_ledger}:
      *   get:
      *     summary: Get general ledger entries of a business for an alternate ledger
-     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items.
+     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -180,6 +195,7 @@ module.exports = function(api)
                 { $lookup: { from: Asset.collection.collectionName, localField: "asset", foreignField: "_id", as: "asset" } },
                 { $unwind: { path: "$asset", preserveNullAndEmptyArrays: true } },
                 ...openItemStatusStages(new mongoose.Types.ObjectId(req.params.id), { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger } ] }),
+                ...accrualStages(new mongoose.Types.ObjectId(req.params.id), { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger } ] }),
                 { $sort: { "posting_date": 1 } }
             ]));
         }

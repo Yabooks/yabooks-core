@@ -44,7 +44,7 @@ const LedgerTransaction = (function()
         text: { type: String },
         asset: { type: mongoose.Schema.Types.ObjectId, ref: "Asset", required: false },
         asset_alteration: { type: String, enum: [ "acquisition", "depreciation", "disposal", null ], required: false }, // required if asset is referenced
-        accrual_of: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerTransaction", required: false },
+        accrual_of: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerTransaction", required: false }, // this ledger transaction is an accrual of the referenced (accrued) one
         data: mongoose.Schema.Types.Mixed,
         deduplication_key: { type: String, index: true, unique: true, default: _ => `${os.hostname()}_${uuid()}` },
 

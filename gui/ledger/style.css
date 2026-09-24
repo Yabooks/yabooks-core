@@ -114,6 +114,7 @@ td[align="right"] {
 .tag-transferred, .tag-transfer { background: #e6effd; color: #1d4ed8; }
 .tag-discount, .tag-discounted { background: #fdf6e3; color: #a16207; }
 .tag-payment, .tag-paid { background: #e6f6ec; color: #15803d; }
+.tag-accrual, .tag-accrued { background: #f3e8fd; color: #7e22ce; }
 
 @media print {
     .tag {
