@@ -353,7 +353,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/open-items:
      *   get:
      *     summary: Get open items of a business
-     *     description: Returns ledger transactions on accounts that track open items, enriched with their allocation status and remaining open amount. By convention, the ledger transaction holding an open item allocation (open_item_allocations) is the payment, discount, transfer or cancelation of the ledger transaction the allocation references; open_items_allocated lists the allocations other ledger transactions hold against this one.
+     *     description: Returns ledger transactions on accounts that track open items, enriched with their allocation status and remaining open amount. By convention, the ledger transaction holding an open item allocation (open_item_allocations) is the payment, discount, transfer or cancelation of the ledger transaction the allocation references; open_items_allocated lists the allocations other ledger transactions hold against this one. document_accounts lists the accounts of all ledger transactions of the entry's document (e.g. to recognize payments by an account tagged as bank account).
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -385,6 +385,9 @@ module.exports = function(api)
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
+
+                // accounts of all ledger transactions of the document, e.g. to tell payments (booked against a bank account) apart
+                { $set: { document_accounts: "$ledger_transactions.account" } },
                 { $unwind: "$ledger_transactions" },
                 { $match: { "ledger_transactions.alternate_ledger": null } },
                 { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
