@@ -1,16 +1,31 @@
 const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
 const { randomUUID: uuid } = require("crypto"), os = require("os");
+const { toDay, assertChangeAllowed, classifyPath, PeriodLockError } = require("../services/period-lock.js");
 
-const omitTimezone = (date) =>
+// document dates and posting dates are calendar days without time zone, stored as midnight UTC: strings are taken by the
+// calendar day written at their start (any time and time zone designator are ignored), Date objects and timestamps (e.g.
+// Date.now) by their calendar day in the server's time zone, unless they already are midnight UTC
+const toCalendarDay = (date) =>
 {
-    if(date instanceof Date)
-        date = date.toISOString();
+    if(date === null || date === undefined || date === "")
+        return date;
 
     if(typeof date === "string")
-        return date.split("Z")[0];
+    {
+        const day = /^\s*(\d{4}-\d{2}-\d{2})/.exec(date)?.[1];
+        date = day ? new Date(`${day}T00:00:00Z`) : new Date(date);
+    }
+    else if(typeof date === "number")
+        date = new Date(date);
 
-    return null;
+    if(!(date instanceof Date) || isNaN(date) || date.getTime() % 86400000 === 0)
+        return date;
+
+    return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
+
+// calendar day as "YYYY-MM-DD"
+const formatCalendarDay = (date) => date instanceof Date && !isNaN(date) ? date.toISOString().slice(0, 10) : date ?? null;
 
 // open item allocation, held by the ledger transaction that settles another one: the holder is the payment, discount, transfer
 // or cancelation (depending on type) of the ledger transaction referenced by ledger_transaction; amount carries the holder's sign,
@@ -34,7 +49,7 @@ const LedgerTransaction = (function()
 {
     const schemaDefinition = (
     {
-        posting_date: { type: Date, required: true, default: Date.now, get: omitTimezone, set: omitTimezone },
+        posting_date: { type: Date, required: true, default: Date.now, get: formatCalendarDay, set: toCalendarDay },
         alternate_ledger: { type: String },
 
         account: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerAccount" }, // required, but not enforced on model level to allow drafts
@@ -66,7 +81,7 @@ const LedgerTransaction = (function()
         open_item_allocations: [ OpenItemAllocation ]
     });
 
-    let schema = new mongoose.Schema(schemaDefinition, { id: false });
+    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { getters: true } });
     schema.path("alternate_ledger").index(true);
     schema.path("amount").index(true);
     schema.path("account").index(true);
@@ -135,12 +150,141 @@ const noTaxOnAlternateLedgerValidation = function(transactions)
     return true;
 };
 
+// enforces the period lock of businesses (see services/period-lock.js) on every way a document can be written through this model
+const registerPeriodLock = (schema) =>
+{
+    const { Business } = require("./business.js");
+
+    // locked_until days of businesses, looked up once per write operation
+    const lockLookup = () =>
+    {
+        const cache = new Map();
+        return (business) =>
+        {
+            if(!cache.has(String(business)))
+                cache.set(String(business), Business.findOne({ _id: business }, "locked_until").lean().then(b => toDay(b?.locked_until)));
+            return cache.get(String(business));
+        };
+    };
+
+    const stateOf = (doc) => doc && { business: doc.business, posted: doc.posted === true, ledger_transactions: doc.ledger_transactions ?? [] };
+
+    // state of not yet cast input (update payloads, documents to insert) as it would be stored, i.e. after setters and casting
+    const castState = (model, input) =>
+    {
+        const fields = {};
+        for(let field of [ "business", "posted", "ledger_transactions" ])
+            if(input?.[field] !== undefined)
+                fields[field] = input[field];
+
+        const doc = new model(fields);
+        const error = doc.validateSync([ "business", "posted", "ledger_transactions" ]);
+        if(error && Object.values(error.errors ?? {}).some(e => e.name === "CastError"))
+            throw error;
+
+        return stateOf(doc.toObject({ getters: false }));
+    };
+
+    // inserting or updating a single document
+    schema.pre("save", async function()
+    {
+        const before = this.isNew ? null : await this.constructor.findOne({ _id: this._id }, "business posted ledger_transactions").lean();
+        await assertChangeAllowed(stateOf(before), stateOf(this.toObject({ getters: false })), lockLookup());
+    });
+
+    schema.pre("insertMany", function(next, docs)
+    {
+        const getLockedUntil = lockLookup();
+        (async () =>
+        {
+            for(let doc of [].concat(docs ?? []))
+                await assertChangeAllowed(null, castState(this, doc), getLockedUntil);
+        })().then(() => next(), next);
+    });
+
+    // updates by query: the resulting state is derived from posted, business and ledger_transactions being replaced as a whole;
+    // partial changes of GL signature relevant fields are only accepted for documents that are neither posted before nor after
+    schema.pre([ "updateOne", "updateMany", "findOneAndUpdate", "replaceOne", "findOneAndReplace" ], { document: false, query: true }, async function()
+    {
+        const update = this.getUpdate() ?? {};
+        const isReplacement = [ "replaceOne", "findOneAndReplace" ].includes(this.op);
+
+        const whole = {}; // replaced top level fields: posted, business, ledger_transactions
+        let partial = false;
+
+        for(let [ key, value ] of Object.entries(update))
+        {
+            const operator = key.startsWith("$") ? key : null;
+            const fields = operator ? Object.entries(value ?? {}) : [ [ key, value ] ];
+
+            for(let [ path, fieldValue ] of fields)
+            {
+                const kind = classifyPath(path);
+                if(kind === "whole" && (!operator || operator === "$set" || operator === "$setOnInsert"))
+                    whole[path] = fieldValue;
+                else if(kind)
+                    partial = true;
+            }
+        }
+
+        if(!isReplacement && !partial && !Object.keys(whole).length)
+            return; // nothing relevant to the ledger is changed
+
+        const getLockedUntil = lockLookup();
+        const matches = await this.model.find(this.getFilter(), "business posted ledger_transactions").lean();
+        const affected = [ "updateOne", "findOneAndUpdate", "replaceOne", "findOneAndReplace" ].includes(this.op) ? matches.slice(0, 1) : matches;
+
+        // unchanged fields are taken over as stored, replaced ones as they would be stored
+        const resultingState = (before) =>
+        {
+            const replaced = castState(this.model, isReplacement ? { business: before?.business, ...update } : whole);
+            const has = (field) => isReplacement || whole[field] !== undefined;
+
+            return {
+                business: has("business") ? replaced.business : before?.business,
+                posted: has("posted") ? replaced.posted : before?.posted === true,
+                ledger_transactions: has("ledger_transactions") ? replaced.ledger_transactions : before?.ledger_transactions ?? []
+            };
+        };
+
+        if(!affected.length && this.getOptions().upsert)
+            return await assertChangeAllowed(null, castState(this.model, { ...this.getFilter(), ...whole }), getLockedUntil);
+
+        for(let before of affected)
+        {
+            const after = resultingState(before);
+
+            if(partial && (before.posted || after.posted))
+                throw new PeriodLockError("posted documents only accept posted, business and ledger_transactions as a whole (e.g. via $set) when changing their ledger transactions");
+
+            await assertChangeAllowed(stateOf(before), after, getLockedUntil);
+        }
+    });
+
+    // deleting documents
+    schema.pre([ "deleteOne", "deleteMany", "findOneAndDelete", "findOneAndRemove", "remove" ], { document: false, query: true }, async function()
+    {
+        const getLockedUntil = lockLookup();
+        const matches = await this.model.find(this.getFilter(), "business posted ledger_transactions").lean();
+        const affected = [ "deleteMany", "remove" ].includes(this.op) ? matches : matches.slice(0, 1);
+
+        for(let before of affected)
+            await assertChangeAllowed(stateOf(before), null, getLockedUntil);
+    });
+
+    schema.pre([ "deleteOne", "remove" ], { document: true, query: false }, async function()
+    {
+        const before = await this.constructor.findOne({ _id: this._id }, "business posted ledger_transactions").lean();
+        await assertChangeAllowed(stateOf(before), null, lockLookup());
+    });
+};
+
 // cost transaction schema
 const CostTransaction = (function()
 {
     const schemaDefinition = (
     {
-        posting_date: { type: Date, required: true, default: Date.now, get: omitTimezone, set: omitTimezone },
+        posting_date: { type: Date, required: true, default: Date.now, get: formatCalendarDay, set: toCalendarDay },
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: true },
         corresponding_ledger_transaction: mongoose.Schema.Types.ObjectId,
         is_budget: { type: Boolean, required: true, default: false },
@@ -148,7 +292,7 @@ const CostTransaction = (function()
         text: String
     });
 
-    let schema = new mongoose.Schema(schemaDefinition, { id: false });
+    let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { getters: true } });
     schema.path("cost_center").index(true);
     schema.path("corresponding_ledger_transaction").index(true);
     schema.path("is_budget").index(true);
@@ -164,7 +308,7 @@ const Document = mongoose.model("Document", (function()
         posted: { type: Boolean, required: true, default: false },
 
         type: String,
-        date: { type: Date, get: omitTimezone, set: omitTimezone },
+        date: { type: Date, get: formatCalendarDay, set: toCalendarDay },
         internal_reference: String,
 
         external_reference: String,
@@ -201,6 +345,7 @@ const Document = mongoose.model("Document", (function()
     schema.path("search_text").index(true);
     schema.path("tags").index(true);
     schema.path("posted").index(true);
+    registerPeriodLock(schema);
     return schema;
 })());
 
@@ -277,6 +422,12 @@ Document.overwriteCurrentVersion = async function(id, data)
 Document.deleteFromDisk = async function(id)
 {
     await fs.unlink(Document.getStorageLocation(id));
+};
+
+// bulk writes bypass all middleware, and thus the period lock
+Document.bulkWrite = async function()
+{
+    throw new PeriodLockError("bulk writes of documents are not supported, as they would bypass the period lock");
 };
 
 module.exports = { Document, DocumentVersion, DocumentLink, LedgerTransaction };

@@ -1,4 +1,4 @@
-const { Document, DocumentLink } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
+const { Document, DocumentVersion, DocumentLink } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
 const fs = require("node:fs").promises, sqlite = require("sqlite"), sqlite3 = require("sqlite3");
 const pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs"), { createCanvas, loadImage } = require("@napi-rs/canvas"), { PDFDocument, PDFArray, PDFName } = require("pdf-lib");
 const standardFontDataUrl = require("path").dirname(require.resolve("pdfjs-dist/standard_fonts/FoxitFixed.pfb")) + "/";
@@ -157,8 +157,15 @@ module.exports = function(api)
     {
         try
         {
+            // stages writing to collections would bypass all validation (e.g. the period lock), at any nesting depth
+            const writesData = (value) => Array.isArray(value) ? value.some(writesData) :
+                !!value && typeof value === "object" && Object.entries(value).some(([ key, nested ]) => [ "$out", "$merge" ].includes(key) || writesData(nested));
+
             if(!req.body || !Array.isArray(req.body))
                 res.status(400).json({ error: "expecting Mongo pipeline as array in request body" });
+
+            else if(writesData(req.body))
+                res.status(403).json({ error: "pipelines may not write data ($out, $merge)" });
 
             else res.json(await Document.aggregate([ // FIXME might allow security breach by joining other collections
                 { $match: { business: new req.ObjectId(req.params.id) } },
@@ -175,6 +182,7 @@ module.exports = function(api)
      *     summary: Create a document for a business
      *     description: >-
      *       Creates the document's metadata and ledger records; upload its binary content via PUT /api/v1/documents/{id}/binary. Triggers the document.created webhook.
+     *       A document holding ledger transactions of a locked period (posting date on or before the business' locked_until) cannot be created as posted.
      *     tags:
      *       - documents
      *     parameters:
@@ -199,6 +207,9 @@ module.exports = function(api)
      *           application/json:
      *             schema:
      *               $ref: '#/components/schemas/Document'
+     *       403:
+     *         description: >-
+     *           Refused by the period lock
      */
     api.post("/api/v1/businesses/:id/documents", async (req, res, next) =>
     {
@@ -269,6 +280,9 @@ module.exports = function(api)
      *     summary: Update a document
      *     description: >-
      *       Sets the given fields (validated, e.g. debit and credit have to be balanced per posting date once posted). Triggers the document.updated webhook.
+     *       Period lock: the GL signature of a posted document (sum of amounts per posting date, account and ledger) cannot be changed for the locked period
+     *       (posting dates on or before the business' locked_until), and a posted document holding ledger transactions of the locked period cannot be
+     *       marked as unposted (nor an unposted one as posted). Posted documents only accept posted, business and ledger_transactions as a whole.
      *     tags:
      *       - documents
      *     parameters:
@@ -308,6 +322,9 @@ module.exports = function(api)
      *                 error:
      *                   type: string
      *                   example: not found
+     *       403:
+     *         description: >-
+     *           Refused by the period lock
      */
     api.patch("/api/v1/documents/:id", async (req, res, next) =>
     {
@@ -843,6 +860,7 @@ module.exports = function(api)
      *     summary: Delete a document
      *     description: >-
      *       Archives the current version of the binary content, then deletes the document. Triggers the document.deleted webhook.
+     *       A posted document holding ledger transactions of a locked period (posting date on or before the business' locked_until) cannot be deleted.
      *     tags:
      *       - documents
      *     parameters:
@@ -876,6 +894,9 @@ module.exports = function(api)
      *                 error:
      *                   type: string
      *                   example: not found
+     *       403:
+     *         description: >-
+     *           Refused by the period lock
      */
     api.delete("/api/v1/documents/:id", async (req, res, next) =>
     {
@@ -885,14 +906,22 @@ module.exports = function(api)
             if(!doc)
                 return res.status(404).send({ error: "not found" });
 
-            try
-            {
-                await Document.archiveCurrentVersion(req.params.id);
-                await Document.deleteFromDisk(req.params.id);
-            }
+            // delete the record first, as it may be refused (e.g. period lock), before the binary is removed from disk
+            let versionId = null;
+            try { versionId = await Document.archiveCurrentVersion(req.params.id); }
             catch(x) {}
 
-            await Document.deleteOne({ _id: req.params.id });
+            try { await Document.deleteOne({ _id: req.params.id }); }
+            catch(x)
+            {
+                if(versionId)
+                    await DocumentVersion.deleteOne({ _id: versionId }).catch(() => {});
+                throw x;
+            }
+
+            try { await Document.deleteFromDisk(req.params.id); }
+            catch(x) {}
+
             res.send({ success: true });
 
             //await Logger.logRecordDeleted("document", , );
