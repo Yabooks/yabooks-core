@@ -77,7 +77,7 @@ module.exports = function(api)
             res.send(doc);
 
             await Logger.logRecordCreated("document", doc);
-            App.callWebhooks("document.created", { document_id: doc._id });
+            App.callWebhooks("document.created", { document_id: doc._id }, doc.owned_by);
         }
         catch(x) { next(x) }
     });
@@ -98,12 +98,15 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id });
+            let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
+            if(!doc)
+                return res.status(404).send({ error: "not found" });
+
             await Document.updateOne({ _id: req.params.id }, { $set: req.body }, { runValidators: true });
             res.send({ success: true });
 
             //await Logger.logRecordUpdated("document", , );
-            App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+            App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owned_by);
         }
         catch(x) { next(x) }
     });
@@ -152,7 +155,7 @@ module.exports = function(api)
             res.send({ success: true });
 
             //await Logger.logRecordUpdated("document", , );
-            //App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owner);
+            App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owned_by);
         }
         catch(x) { next(x) }
     });
@@ -379,7 +382,7 @@ module.exports = function(api)
             res.send({ success: true });
 
             //await Logger.logRecordDeleted("document", , );
-            //App.callWebhooks("document.deleted", { document_id: req.params.id }, doc.owner);
+            App.callWebhooks("document.deleted", { document_id: req.params.id }, doc.owned_by);
         }
         catch(x) { next(x) }
     });

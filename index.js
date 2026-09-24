@@ -177,3 +177,9 @@ require("./models/app.js").App.startLocalApps().catch(err =>
 {
     console.error(`[${ new Date().toLocaleString() }]`, "could not start apps", err);
 });
+
+// dispatch queued jobs to apps listening to "queue.<queue name>" events
+require("./models/queue.js").QueueJob.startDispatcher().catch(err =>
+{
+    console.error(`[${ new Date().toLocaleString() }]`, "could not start queue dispatcher", err);
+});

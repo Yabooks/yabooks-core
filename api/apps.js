@@ -1,5 +1,5 @@
 const { App } = require("../models/app.js"), jwt = require("jsonwebtoken");
-const appToAppTokenSecret = process.env.secret || require("crypto").randomBytes(32);
+const appToAppTokenSecret = App.appToAppTokenSecret;
 
 module.exports = function(api)
 {

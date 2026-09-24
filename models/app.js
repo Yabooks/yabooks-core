@@ -1,4 +1,4 @@
-const mongoose = require("../services/connector.js"), cmd = require("node:child_process");
+const mongoose = require("../services/connector.js"), cmd = require("node:child_process"), jwt = require("jsonwebtoken");
 
 // app schema
 const App = mongoose.model("App", (function()
@@ -54,28 +54,59 @@ const OAuthCode = mongoose.model("OAuthCode", (function()
     return schema;
 })());
 
-// calls all webhooks for the specified event (optionally restriced to a specific app)
-App.callWebhooks = async function(event, payload, app_id = null)
+// secret used to sign tokens that authenticate core and apps towards other apps (verifiable via /api/v1/apps/:id/verify-token/:token)
+App.appToAppTokenSecret = process.env.secret || require("crypto").randomBytes(32);
+
+// returns all apps with a webhook registered for the specified event as [ { app_id, url } ], ordered by app id
+App.findWebhooks = async function(event)
+{
+    return await App.aggregate(
+    [
+        { $unwind: "$webhooks" },
+        { $match: { "webhooks.event": event } },
+        { $sort: { _id: 1 } },
+        { $project: { _id: false, app_id: "$_id", event: "$webhooks.event", url: "$webhooks.url" } }
+    ]);
+};
+
+// sends a json payload to an app's webhook url, authenticated by a core-issued token (sub "yabooks-core", aud app id)
+App.sendWebhook = async function(webhook, body, timeout = 10000)
+{
+    const token = jwt.sign({ iss: "yabooks-core", sub: "yabooks-core", aud: String(webhook.app_id) }, App.appToAppTokenSecret, { expiresIn: "5m" });
+
+    return await fetch(webhook.url,
+    {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeout)
+    });
+};
+
+// calls all webhooks for the specified event; webhooks registered as "<event>.own" are only called if the event concerns
+// a record owned by the webhook's app (owner_app_id)
+App.callWebhooks = async function(event, payload, owner_app_id = null)
 {
     try
     {
-        let pipeline = [];
+        let webhooks = [
+            ...await App.findWebhooks(event),
+            ...(owner_app_id ? (await App.findWebhooks(event + ".own")).filter(webhook => String(webhook.app_id) === String(owner_app_id)) : [])
+        ];
 
-        if(app_id)
-            pipeline.push({ $match: { _id: new mongoose.Types.ObjectId(app_id) } });
-
-        pipeline = (
-        [
-            ...pipeline,
-            { $unwind: "$webhooks" },
-            { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$webhooks", { document_id: "$$ROOT._id" } ] } }  },
-            { $match: { $or: [ { event }, { event: event + ".own" } ] } }
-        ]);
-
-        for(let webhook of await App.aggregate(pipeline))
-            if(app_id && webhook.event.indexOf(".own") > -1 && webhook._id !== app_id)
-                continue;
-            else ;// TODO await axios.get(webhook.url + payload);
+        await Promise.all(webhooks.map(async webhook =>
+        {
+            try
+            {
+                let response = await App.sendWebhook(webhook, { event, payload });
+                if(!response.ok)
+                    console.error(`${ new Date().toLocaleString() } webhook ${webhook.event} of app ${webhook.app_id} responded with http status ${response.status}`);
+            }
+            catch(x)
+            {
+                console.error(`${ new Date().toLocaleString() } webhook ${webhook.event} of app ${webhook.app_id} could not be called`, x?.message || x);
+            }
+        }));
     }
     catch(x)
     {
