@@ -21,17 +21,14 @@
                         <span class="label status" :title="$filters.translate(doc.posted ? 'documents.list.posted' : 'documents.list.draft')">
                             {{ doc.posted ? "\uD83D\uDD12" : "\uD83D\uDCDD" }}
                         </span>
-                        <span class="label external_reference" v-if="doc.external_reference">
-                            <a class="link" @click="filterForDocType(doc.type)" v-if="doc.type">
-                                {{ doc.type }}
-                            </a>
-                            {{ doc.external_reference }}
-                        </span>
-                        <span class="label internal_reference" v-if="!doc.external_reference && (doc.type || doc.internal_reference)" :title="[doc.type, doc.internal_reference].filter(Boolean).join(' ')">
+                        <span class="label internal_reference" v-if="doc.type || doc.internal_reference" :title="[doc.type, doc.internal_reference].filter(Boolean).join(' ')">
                             <a class="link" @click="filterForDocType(doc.type)" v-if="doc.type">
                                 {{ doc.type }}
                             </a>
                             {{ doc.internal_reference ?? "" }}
+                        </span>
+                        <span class="label external_reference" v-if="doc.external_reference">
+                            {{ doc.external_reference }}
                         </span>
                         <span class="label name" v-if="doc.name" :title="doc.name">
                             {{ doc.name }}
