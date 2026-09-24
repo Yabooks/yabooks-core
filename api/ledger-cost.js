@@ -4,6 +4,47 @@ const { Document } = require("../models/document.js"), { Business } = require(".
 
 module.exports = function(api)
 {
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/cost-ledger:
+     *   get:
+     *     summary: Get cost ledger entries of a business
+     *     description: >-
+     *       Returns the cost and time transactions of all posted documents, each merged with its document's fields (document_id) and populated cost_center. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *     tags:
+     *       - cost-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Paginated list of cost ledger entries
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                         properties:
+     *                           document_id: { type: string }
+     *                           posting_date: { type: string, format: date-time }
+     *                           cost_center:
+     *                             $ref: '#/components/schemas/CostCenter'
+     *                           value: { type: number }
+     *                           is_budget: { type: boolean }
+     *                           text: { type: string }
+     */
     api.get("/api/v1/businesses/:id/cost-ledger", async (req, res, next) =>
     {
         try
@@ -28,6 +69,44 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/cost-ledger-balances:
+     *   get:
+     *     summary: Get cost center balances of a business
+     *     description: >-
+     *       Sums up the value and minutes of all posted cost and time transactions per cost center. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *     tags:
+     *       - cost-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Paginated list of cost centers with their balances
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         allOf:
+     *                           - $ref: '#/components/schemas/CostCenter'
+     *                           - type: object
+     *                             properties:
+     *                               balance: { type: number }
+     *                               minutes: { type: number }
+     */
     api.get("/api/v1/businesses/:id/cost-ledger-balances", async (req, res, next) =>
     {
         try

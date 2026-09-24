@@ -6,6 +6,39 @@ const { Identity } = require("../models/identity.js");
 
 module.exports = function(api)
 {
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/assets:
+     *   get:
+     *     summary: List assets of a business
+     *     description: >-
+     *       Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Paginated list of assets
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/Asset'
+     */
     api.get("/api/v1/businesses/:id/assets", async (req, res, next) =>
     {
         try
@@ -17,6 +50,36 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/assets:
+     *   post:
+     *     summary: Create an asset for a business
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Asset'
+     *     responses:
+     *       200:
+     *         description: >-
+     *           The created asset
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Asset'
+     */
     api.post("/api/v1/businesses/:id/assets", async (req, res, next) =>
     {
         try
@@ -28,6 +91,41 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/assets/{id}:
+     *   get:
+     *     summary: Get details of an asset
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the asset
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Asset'
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     api.get("/api/v1/assets/:id", async (req, res, next) =>
     {
         try
@@ -41,6 +139,39 @@ module.exports = function(api)
     });
 
     /** provide all asset-related general ledger transactions */
+    /**
+     * @openapi
+     * /api/v1/assets/{id}/general-ledger:
+     *   get:
+     *     summary: Get general ledger entries of an asset
+     *     description: >-
+     *       Returns all posted general ledger transactions referencing the asset, sorted by posting date. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the asset
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Paginated list of general ledger entries
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/GeneralLedgerEntry'
+     */
     api.get("/api/v1/assets/:id/general-ledger", async (req, res, next) =>
     {
         try
@@ -75,6 +206,46 @@ module.exports = function(api)
     });
 
     /** provide all asset-related general ledger transactions on an alternate ledger (including general ledger) */
+    /**
+     * @openapi
+     * /api/v1/assets/{id}/general-ledger/{alternate_ledger}:
+     *   get:
+     *     summary: Get ledger entries of an asset for an alternate ledger
+     *     description: >-
+     *       Returns all posted ledger transactions referencing the asset from the general ledger and the given alternate ledger, sorted by posting date. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the asset
+     *       - in: path
+     *         name: alternate_ledger
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           Identifier of the alternate ledger
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Paginated list of ledger entries
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/GeneralLedgerEntry'
+     */
     api.get("/api/v1/assets/:id/general-ledger/:alternate_ledger", async (req, res, next) =>
     {
         try
@@ -112,6 +283,37 @@ module.exports = function(api)
     });
 
     /** sum up all asset-related general ledger transactions */
+    /**
+     * @openapi
+     * /api/v1/assets/{id}/book-value:
+     *   get:
+     *     summary: Get the book value of an asset
+     *     description: >-
+     *       Sums up all posted general ledger transactions referencing the asset.
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the asset
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Book value
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 book_value:
+     *                   type: number
+     *                   description: >-
+     *                     sum of all amounts posted on the asset
+     */
     api.get("/api/v1/assets/:id/book-value", async (req, res, next) =>
     {
         try
@@ -131,6 +333,44 @@ module.exports = function(api)
     });
 
     /** sum up all asset-related alternate ledger transactions (including general ledger) */
+    /**
+     * @openapi
+     * /api/v1/assets/{id}/book-value/{alternate_ledger}:
+     *   get:
+     *     summary: Get the book value of an asset in an alternate ledger
+     *     description: >-
+     *       Sums up all posted ledger transactions referencing the asset in the general ledger and the given alternate ledger.
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the asset
+     *       - in: path
+     *         name: alternate_ledger
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           Identifier of the alternate ledger
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Book value
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 book_value:
+     *                   type: number
+     *                   description: >-
+     *                     sum of all amounts posted on the asset
+     */
     api.get("/api/v1/assets/:id/book-value/:alternate_ledger", async (req, res, next) =>
     {
         try
@@ -152,12 +392,74 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/assets/{id}:
+     *   patch:
+     *     summary: Update an asset
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the asset
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Asset'
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
     api.patch("/api/v1/assets/:id", async (req, res) =>
     {
         await Asset.updateOne({ _id: req.params.id }, req.body);
         res.send({ success: true });
     });
 
+    /**
+     * @openapi
+     * /api/v1/assets/{id}:
+     *   delete:
+     *     summary: Delete an asset
+     *     tags:
+     *       - assets
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the asset
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
     api.delete("/api/v1/assets/:id", async (req, res) =>
     {
         await Asset.deleteOne({ _id: req.params.id });

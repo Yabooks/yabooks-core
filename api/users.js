@@ -49,6 +49,43 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/users/{id}:
+     *   get:
+     *     summary: Get details of a user
+     *     description: >-
+     *       The password hash is omitted.
+     *     tags:
+     *       - users
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the user, or `me` for the user of the current session
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/User'
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     // get details of a user profile
     api.get("/api/v1/users/:id", async (req, res, next) =>
     {
@@ -75,6 +112,46 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/users/{id}/profile-picture:
+     *   get:
+     *     summary: Get the profile picture of a user
+     *     tags:
+     *       - users
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the user
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Profile picture
+     *         content:
+     *           image/jpeg:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *           image/svg+xml:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     // get profile picture of a user
     api.get("/api/v1/users/:id/profile-picture", async (req, res, next) =>
     {
@@ -92,6 +169,40 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/users/{id}:
+     *   patch:
+     *     summary: Update a user
+     *     tags:
+     *       - users
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the user, or `me` for the user of the current session
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/User'
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
     // update user profile
     api.patch("/api/v1/users/:id", async (req, res, next) =>
     {
@@ -116,6 +227,44 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/users/{id}/mfa:
+     *   post:
+     *     summary: Configure an authenticator app as second factor
+     *     description: >-
+     *       Without token, starts the configuration and returns the QR code to scan with the authenticator app; with token (a code from the app), finalizes it.
+     *     tags:
+     *       - users
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the user, or `me` for the user of the current session
+     *       - in: query
+     *         name: token
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           Current code of the authenticator app, to finalize the configuration
+     *     responses:
+     *       200:
+     *         description: >-
+     *           QR code (start) or result (finalization)
+     *         content:
+     *           application/json:
+     *             schema:
+     *               oneOf:
+     *                 - type: object
+     *                   properties:
+     *                     qr_code_url: { type: string, description: data URL of the QR code }
+     *                 - type: object
+     *                   properties:
+     *                     success: { type: boolean }
+     */
     // configure use of authenticator app as mfa
     api.post("/api/v1/users/:id/mfa", async (req, res, next) =>
     {

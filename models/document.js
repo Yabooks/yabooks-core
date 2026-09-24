@@ -279,4 +279,4 @@ Document.deleteFromDisk = async function(id)
     await fs.unlink(Document.getStorageLocation(id));
 };
 
-module.exports = { Document, DocumentVersion, DocumentLink };
+module.exports = { Document, DocumentVersion, DocumentLink, LedgerTransaction };

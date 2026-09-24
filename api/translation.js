@@ -92,6 +92,38 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/translations:
+     *   post:
+     *     summary: Register translations
+     *     description: >-
+     *       Registers a single translation, or several at once if an array is posted.
+     *     tags:
+     *       - translations
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             oneOf:
+     *               - $ref: '#/components/schemas/FieldTranslation'
+     *               - type: array
+     *                 items:
+     *                   $ref: '#/components/schemas/FieldTranslation'
+     *     responses:
+     *       200:
+     *         description: >-
+     *           The created translation, or success if an array was posted
+     *         content:
+     *           application/json:
+     *             schema:
+     *               oneOf:
+     *                 - $ref: '#/components/schemas/FieldTranslation'
+     *                 - type: object
+     *                   properties:
+     *                     success: { type: boolean }
+     */
     api.post("/api/v1/translations", async (req, res, next) =>
     {
         try
@@ -116,6 +148,41 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/translations/{id}:
+     *   get:
+     *     summary: Get a translation
+     *     tags:
+     *       - translations
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the translation
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/FieldTranslation'
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     api.get("/api/v1/translations/:id", async (req, res, next) =>
     {
         try
@@ -128,12 +195,74 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/translations/{id}:
+     *   patch:
+     *     summary: Update a translation
+     *     tags:
+     *       - translations
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the translation
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/FieldTranslation'
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
     api.patch("/api/v1/translations/:id", async (req, res) =>
     {
         await FieldTranslation.updateOne({ _id: req.params.id }, req.body);
         res.send({ success: true });
     });
 
+    /**
+     * @openapi
+     * /api/v1/translations/{id}:
+     *   delete:
+     *     summary: Delete a translation
+     *     tags:
+     *       - translations
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the translation
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
     api.delete("/api/v1/translations/:id", async (req, res) =>
     {
         await FieldTranslation.deleteOne({ _id: req.params.id });

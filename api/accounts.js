@@ -162,36 +162,6 @@ module.exports = function(api)
 
     /**
      * @openapi
-     * /api/v1/ledger-accounts/{id}:
-     *   delete:
-     *     summary: Delete a ledger account
-     *     tags:
-     *       - ledger-accounts
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *         description: ID of the ledger account to be deleted
-     *     responses:
-     *       200:
-     *         description: Successful response
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 success:
-     *                   type: boolean
-     *                   default: true
-     *                 warning:
-     *                   type: string
-     *                   nullable: true
-     *                   example: could not delete account, deactivated it instead
-     */
-    /**
-     * @openapi
      * /api/v1/ledger-accounts/{id}/tags:
      *   post:
      *     summary: Add a tag to a ledger account
@@ -287,6 +257,34 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/ledger-accounts/{id}:
+     *   delete:
+     *     summary: Delete a ledger account
+     *     tags:
+     *       - ledger-accounts
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the ledger account to be deleted
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
     api.delete("/api/v1/ledger-accounts/:id", async (req, res) =>
     {
         // TODO do not allow deleting an account which has ever been booked on

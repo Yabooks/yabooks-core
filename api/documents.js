@@ -38,8 +38,66 @@ const generateThumbnail = async (mime_type, bytes) =>
     return null; // no thumbnail for other file types
 };
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     InkAnnotation:
+ *       description: >-
+ *         An ink stroke on a PDF page, in PDF user space coordinates
+ *       type: object
+ *       properties:
+ *         color:
+ *           type: array
+ *           description: >-
+ *             RGB color, components from 0 to 255
+ *           items: { type: number }
+ *         points:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               x: { type: number }
+ *               y: { type: number }
+ *         opacity: { type: number, minimum: 0, maximum: 1 }
+ *         lineWidth: { type: number }
+ */
+
 module.exports = function(api)
 {
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/documents:
+     *   get:
+     *     summary: List documents of a business
+     *     description: >-
+     *       Returns document metadata without thumbnails. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Paginated list of documents
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/Document'
+     */
     api.get("/api/v1/businesses/:id/documents", async (req, res, next) =>
     {
         try
@@ -52,6 +110,49 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/documents/query:
+     *   post:
+     *     summary: Query documents of a business with an aggregation pipeline
+     *     description: >-
+     *       Runs the given MongoDB aggregation pipeline on the documents of the business (a $match on the business is prepended).
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     requestBody:
+     *       required: true
+     *       description: >-
+     *         MongoDB aggregation pipeline
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: array
+     *             items:
+     *               type: object
+     *               description: >-
+     *                 aggregation pipeline stage
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Aggregation result
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *       400:
+     *         description: >-
+     *           Body is not an array
+     */
     api.post("/api/v1/businesses/:id/documents/query", async (req, res, next) =>
     {
         try
@@ -67,6 +168,38 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/documents:
+     *   post:
+     *     summary: Create a document for a business
+     *     description: >-
+     *       Creates the document's metadata and ledger records; upload its binary content via PUT /api/v1/documents/{id}/binary. Triggers the document.created webhook.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Document'
+     *     responses:
+     *       200:
+     *         description: >-
+     *           The created document
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Document'
+     */
     api.post("/api/v1/businesses/:id/documents", async (req, res, next) =>
     {
         try
@@ -82,6 +215,41 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}:
+     *   get:
+     *     summary: Get details of a document
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Document metadata without binary content and thumbnail
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/Document'
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     api.get("/api/v1/documents/:id", async (req, res, next) =>
     {
         try
@@ -94,6 +262,53 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}:
+     *   patch:
+     *     summary: Update a document
+     *     description: >-
+     *       Sets the given fields (validated, e.g. debit and credit have to be balanced per posting date once posted). Triggers the document.updated webhook.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             $ref: '#/components/schemas/Document'
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     api.patch("/api/v1/documents/:id", async (req, res, next) =>
     {
         try
@@ -111,6 +326,34 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/binary:
+     *   get:
+     *     summary: Download the binary content of a document
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     responses:
+     *       200:
+     *         description: >-
+     *           The current version of the document, with its mime type as content type
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       404:
+     *         description: >-
+     *           Document or current version not found
+     */
     api.get("/api/v1/documents/:id/binary", async (req, res, next) =>
     {
         try
@@ -130,6 +373,49 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/binary:
+     *   put:
+     *     summary: Replace the binary content of a document
+     *     description: >-
+     *       Stores the raw request body as current version, with the request's content type as mime type, and regenerates the thumbnail. The previous version is archived if the document is posted or versioning is requested. Triggers the document.updated webhook.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *       - in: query
+     *         name: versioning
+     *         schema:
+     *           type: boolean
+     *         description: >-
+     *           Archive the previous version even if the document is not posted
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/octet-stream:
+     *           schema:
+     *             type: string
+     *             format: binary
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
     api.put("/api/v1/documents/:id/binary", async (req, res, next) =>
     {
         try
@@ -160,6 +446,37 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/thumbnail:
+     *   get:
+     *     summary: Get the thumbnail of a document
+     *     description: >-
+     *       Returns the stored PNG thumbnail, an SVG with the document's emoji icon, or a generic SVG file icon showing the file extension.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Thumbnail image
+     *         content:
+     *           image/png:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *           image/svg+xml:
+     *             schema:
+     *               type: string
+     *               format: binary
+     */
     api.get("/api/v1/documents/:id/thumbnail", async (req, res, next) =>
     {
         try
@@ -194,6 +511,57 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/preview:
+     *   get:
+     *     summary: Get preview information of a document
+     *     description: >-
+     *       Returns the number of previewable pages and, for PDF documents, the ink annotations of each page.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Preview information
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 name: { type: string }
+     *                 mime_type: { type: string }
+     *                 has_binary: { type: boolean }
+     *                 annotations_supported: { type: boolean }
+     *                 pages: { type: integer }
+     *                 annotations:
+     *                   type: array
+     *                   description: >-
+     *                     per page, the ink annotations (PDF only)
+     *                   items:
+     *                     type: array
+     *                     items:
+     *                       $ref: '#/components/schemas/InkAnnotation'
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     api.get("/api/v1/documents/:id/preview", async (req, res, next) =>
     {
         try
@@ -256,6 +624,59 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/preview/pages/{page}:
+     *   get:
+     *     summary: Get a preview image of a document page
+     *     description: >-
+     *       Renders a page of a PDF document as PNG; for images, page 1 is the image itself.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *       - in: path
+     *         name: page
+     *         required: true
+     *         schema:
+     *           type: integer
+     *         description: >-
+     *           Page number, starting with 1
+     *       - in: query
+     *         name: scale
+     *         schema:
+     *           type: number
+     *         description: >-
+     *           Rendering scale for PDF pages (default 2)
+     *       - in: query
+     *         name: annotations
+     *         schema:
+     *           type: boolean
+     *         description: >-
+     *           Set to false to render PDF pages without annotations
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Page image
+     *         content:
+     *           image/png:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *           image/*:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       404:
+     *         description: >-
+     *           Document or page not found
+     */
     api.get("/api/v1/documents/:id/preview/pages/:page", async (req, res, next) =>
     {
         try
@@ -306,6 +727,54 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/annotations:
+     *   put:
+     *     summary: Replace the ink annotations of a PDF document
+     *     description: >-
+     *       Overwrites the annotations of each page with the given ink strokes, in the format returned by GET /api/v1/documents/{id}/preview.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: array
+     *             description: >-
+     *               per page, the ink annotations
+     *             items:
+     *               type: array
+     *               items:
+     *                 $ref: '#/components/schemas/InkAnnotation'
+     *     responses:
+     *       204:
+     *         description: >-
+     *           Annotations saved
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     *       406:
+     *         description: >-
+     *           Document is not a PDF
+     */
     api.put("/api/v1/documents/:id/annotations", async (req, res, next) =>
     {
         try
@@ -367,10 +836,55 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}:
+     *   delete:
+     *     summary: Delete a document
+     *     description: >-
+     *       Archives the current version of the binary content, then deletes the document. Triggers the document.deleted webhook.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     *       404:
+     *         description: >-
+     *           Not found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 error:
+     *                   type: string
+     *                   example: not found
+     */
     api.delete("/api/v1/documents/:id", async (req, res, next) =>
     {
         try
         {
+            let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
+            if(!doc)
+                return res.status(404).send({ error: "not found" });
+
             try
             {
                 await Document.archiveCurrentVersion(req.params.id);
@@ -387,6 +901,46 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/editor:
+     *   get:
+     *     summary: Get the editor URL of a document
+     *     description: >-
+     *       Returns the URL of the editor registered by the app owning the document (document.editor webhook), or redirects there.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *       - in: query
+     *         name: redirect
+     *         schema:
+     *           type: boolean
+     *         description: >-
+     *           Redirect to the editor instead of returning its URL
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Editor URL
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 url: { type: string }
+     *       302:
+     *         description: >-
+     *           Redirect to the editor (if redirect is set)
+     *       404:
+     *         description: >-
+     *           Document or its editor not found
+     */
     api.get("/api/v1/documents/:id/editor", async (req, res) =>
     {
         try
@@ -408,6 +962,61 @@ module.exports = function(api)
         }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/sqlite:
+     *   post:
+     *     summary: Execute an SQL statement on a SQLite document
+     *     description: >-
+     *       Executes the SQL statement in the request body on a document of type SQLite database. Accepts any HTTP method. Apps may use the ID `app-config` for their own configuration database, which is created on first use.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the SQLite document, or `app-config` for the calling app's configuration database
+     *       - in: query
+     *         name: results
+     *         schema:
+     *           type: boolean
+     *         description: >-
+     *           true to return the result rows (e.g. for SELECT), otherwise the statement's run result
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/sql:
+     *           schema:
+     *             type: string
+     *             example: SELECT * FROM clients
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Result rows (results=true) or run result with lastID and changes
+     *         content:
+     *           application/json:
+     *             schema:
+     *               oneOf:
+     *                 - type: array
+     *                   items:
+     *                     type: object
+     *                 - type: object
+     *                   properties:
+     *                     lastID: { type: integer }
+     *                     changes: { type: integer }
+     *       400:
+     *         description: >-
+     *           Wrong content type, missing or failing SQL statement
+     *       404:
+     *         description: >-
+     *           Document not found
+     *       406:
+     *         description: >-
+     *           Document is not a SQLite database
+     */
     api.all("/api/v1/documents/:id/sqlite", async (req, res, next) =>
     {
         try
@@ -453,6 +1062,39 @@ module.exports = function(api)
         }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/links:
+     *   post:
+     *     summary: Link a document to another one
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document (document_a of the link)
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             allOf:
+     *               - $ref: '#/components/schemas/DocumentLink'
+     *               - description: >-
+     *                   document_a is set from the path
+     *     responses:
+     *       200:
+     *         description: >-
+     *           The created link
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/DocumentLink'
+     */
     api.post("/api/v1/documents/:id/links", async (req, res, next) =>
     {
         try
@@ -467,6 +1109,39 @@ module.exports = function(api)
         catch(x) { next(x) }
     });
 
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/links:
+     *   get:
+     *     summary: List links of a document
+     *     description: >-
+     *       Returns the links in both directions (the document as document_a or document_b). Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Paginated list of links
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/DocumentLink'
+     */
     api.get("/api/v1/documents/:id/links", async (req, res, next) =>
     {
         try

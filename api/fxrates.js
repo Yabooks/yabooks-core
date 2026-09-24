@@ -38,9 +38,9 @@ module.exports = function(api)
      *         description: OK
      *         content:
      *           application/json:
-     *             name: Exchange rate
      *             schema:
-     *               type: integer
+     *               type: number
+     *               description: Exchange rate
      *             example: 1.1087
      *       '500':
      *         description: Internal server error

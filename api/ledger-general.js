@@ -3,6 +3,122 @@ const { LedgerAccount } = require("../models/account.js"), { CostCenter, Article
 const { Document } = require("../models/document.js"), { Asset } = require("../models/asset.js");
 const { Business } = require("../models/business.js"), { Identity } = require("../models/identity.js"), { App } = require("../models/app.js");
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     GeneralLedgerEntry:
+ *       description: >-
+ *         A ledger transaction merged with the fields of its document (document_id, document_date, document_type,
+ *         document_internal_reference, document_external_reference, business_partner), with populated account,
+ *         business partner and asset. The general ledger endpoints of a business additionally provide open_item_relations,
+ *         open_amount, accrued_by and offset_accounts; the ledger endpoints of an asset do not.
+ *       allOf:
+ *         - $ref: '#/components/schemas/LedgerTransaction'
+ *         - type: object
+ *           properties:
+ *             document_id: { type: string }
+ *             document_date: { type: string, format: date-time }
+ *             document_type: { type: string }
+ *             document_internal_reference: { type: string }
+ *             document_external_reference: { type: string }
+ *             account:
+ *               $ref: '#/components/schemas/LedgerAccount'
+ *             business_partner:
+ *               $ref: '#/components/schemas/Identity'
+ *             asset:
+ *               $ref: '#/components/schemas/Asset'
+ *             open_item_relations:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ledger_transaction: { type: string }
+ *                   type: { type: string, enum: [ cancelation, transfer, discount, payment ] }
+ *                   amount: { type: number }
+ *                   allocated_by_this:
+ *                     type: boolean
+ *                     description: >-
+ *                       true if this entry settles the other one, false if it is settled by the other one
+ *                   posting_date: { type: string, format: date-time, description: posting date of the other ledger transaction }
+ *             open_amount:
+ *               type: number
+ *               nullable: true
+ *               description: >-
+ *                 remaining open amount; null if the account does not track open items
+ *             accrued_by:
+ *               type: array
+ *               description: >-
+ *                 IDs of the ledger transactions that are accruals of this entry
+ *               items: { type: string }
+ *             offset_accounts:
+ *               type: array
+ *               description: >-
+ *                 accounts of the same document's ledger transactions with the opposite amount sign, largest summed amount first
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id: { type: string }
+ *                   display_number: { type: string }
+ *                   display_name: { type: string }
+ *                   amount: { type: number, description: summed absolute amount }
+ *     LedgerAccountBalance:
+ *       description: >-
+ *         A ledger account with its balance, i.e. the sum of the amounts posted on it
+ *       allOf:
+ *         - $ref: '#/components/schemas/LedgerAccount'
+ *         - type: object
+ *           properties:
+ *             balance:
+ *               type: number
+ *               description: >-
+ *                 sum of the amounts posted (from the from date, if given)
+ *             balance_before:
+ *               type: number
+ *               description: >-
+ *                 sum of the amounts posted before the from date (only if from is given)
+ *     OpenItem:
+ *       description: >-
+ *         A ledger transaction on an account tracking open items, merged with the fields of its document
+ *       allOf:
+ *         - $ref: '#/components/schemas/LedgerTransaction'
+ *         - type: object
+ *           properties:
+ *             document_id: { type: string }
+ *             document_type: { type: string }
+ *             document_internal_reference: { type: string }
+ *             document_external_reference: { type: string }
+ *             document_accounts:
+ *               type: array
+ *               description: >-
+ *                 accounts of all ledger transactions of the document
+ *               items: { type: string }
+ *             account:
+ *               $ref: '#/components/schemas/LedgerAccount'
+ *             business_partner:
+ *               $ref: '#/components/schemas/Identity'
+ *             open_items_allocated:
+ *               type: array
+ *               description: >-
+ *                 open item allocations other ledger transactions hold against this one, with their document's fields
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id: { type: string, description: ID of this (the referenced) ledger transaction }
+ *                   type: { type: string, enum: [ cancelation, transfer, discount, payment ] }
+ *                   amount: { type: number }
+ *                   document_id: { type: string }
+ *                   document_type: { type: string }
+ *                   document_internal_reference: { type: string }
+ *                   document_external_reference: { type: string }
+ *                   business_partner:
+ *                     $ref: '#/components/schemas/Identity'
+ *             open_amount:
+ *               type: number
+ *               description: >-
+ *                 remaining open amount
+ */
+
 // enriches ledger transactions with their open item relations and, on accounts that track open items, with the remaining open amount;
 // by convention, the ledger transaction holding an open item allocation is the payment, discount, transfer or cancelation of the
 // ledger transaction the allocation references; allocations are collected for the whole business at once (uncorrelated lookup,
@@ -127,7 +243,8 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger:
      *   get:
      *     summary: Get general ledger entries of a business
-     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
+     *     description: >-
+     *       Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -193,7 +310,8 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger/{alternate_ledger}:
      *   get:
      *     summary: Get general ledger entries of a business for an alternate ledger
-     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
+     *     description: >-
+     *       Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
      *     tags:
      *       - general-ledger
      *     parameters:
