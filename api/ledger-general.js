@@ -66,6 +66,28 @@ const accrualStages = (business, alternateLedgerFilter) => (
     { $unset: "all_accruals" }
 ]);
 
+// enriches ledger transactions with offset_accounts: the accounts of the same document's ledger transactions with the opposite amount
+// sign, ordered by their summed absolute amount, largest first; requires the document's ledger transactions in document_ledger_transactions
+// (set before unwinding), which is removed afterwards; inLedger decides per ledger transaction ($$this) whether it belongs to the ledger
+const offsetAccountStages = (inLedger) => (
+[
+    { $set: { offset_ledger_transactions: { $filter: { input: "$document_ledger_transactions", cond: { $and: [
+        inLedger, { $lt: [ { $multiply: [ "$$this.amount", "$amount" ] }, 0 ] }
+    ] } } } } },
+    { $set: { offset_accounts: { $map: { input: { $setUnion: [ "$offset_ledger_transactions.account" ] }, as: "offset_account", in: {
+        account: "$$offset_account",
+        amount: { $abs: { $sum: { $map: { input: { $filter: { input: "$offset_ledger_transactions", cond: { $eq: [ "$$this.account", "$$offset_account" ] } } }, in: "$$this.amount" } } } }
+    } } } } },
+    { $set: { offset_accounts: { $sortArray: { input: "$offset_accounts", sortBy: { amount: -1 } } } } },
+    { $lookup: { from: LedgerAccount.collection.collectionName, localField: "offset_accounts.account", foreignField: "_id", as: "offset_account_details",
+        pipeline: [ { $project: { display_number: 1, display_name: 1 } } ] } },
+    { $set: { offset_accounts: { $map: { input: "$offset_accounts", as: "offset_account", in: { $mergeObjects: [
+        { $first: { $filter: { input: "$offset_account_details", cond: { $eq: [ "$$this._id", "$$offset_account.account" ] } } } },
+        { amount: "$$offset_account.amount" }
+    ] } } } } },
+    { $unset: [ "document_ledger_transactions", "offset_ledger_transactions", "offset_account_details" ] }
+]);
+
 module.exports = function(api)
 {
     /**
@@ -73,7 +95,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger:
      *   get:
      *     summary: Get general ledger entries of a business
-     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there.
+     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -105,6 +127,7 @@ module.exports = function(api)
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
+                { $set: { document_ledger_transactions: "$ledger_transactions" } },
                 { $unwind: "$ledger_transactions" },
                 { $match: { "ledger_transactions.alternate_ledger": null } },
                 { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
@@ -118,6 +141,7 @@ module.exports = function(api)
                 } ] } } },
                 { $unset: [ "override_business_partner", "thumbnail", "type" ] },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, date: 0 } },
+                ...offsetAccountStages({ $eq: [ { $ifNull: [ "$$this.alternate_ledger", null ] }, null ] }),
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
                 { $lookup: { from: Identity.collection.collectionName, localField: "business_partner", foreignField: "_id", as: "business_partner" } },
@@ -137,7 +161,7 @@ module.exports = function(api)
      * /api/v1/businesses/{id}/general-ledger/{alternate_ledger}:
      *   get:
      *     summary: Get general ledger entries of a business for an alternate ledger
-     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there.
+     *     description: Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -175,6 +199,7 @@ module.exports = function(api)
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
+                { $set: { document_ledger_transactions: "$ledger_transactions" } },
                 { $unwind: "$ledger_transactions" },
                 { $match: { $or: [ { "ledger_transactions.alternate_ledger": null }, { "ledger_transactions.alternate_ledger": req.params.alternate_ledger} ] } },
                 { $set: { "business_partner": { $ifNull: [ "$ledger_transactions.override_business_partner", "$business_partner", null ] } } },
@@ -188,6 +213,7 @@ module.exports = function(api)
                 } ] } }  },
                 { $unset: [ "override_business_partner", "thumbnail", "type" ] },
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, date: 0 } },
+                ...offsetAccountStages({ $in: [ { $ifNull: [ "$$this.alternate_ledger", null ] }, [ null, { $literal: req.params.alternate_ledger } ] ] }),
                 { $lookup: { from: LedgerAccount.collection.collectionName, localField: "account", foreignField: "_id", as: "account" } },
                 { $unwind: "$account" },
                 { $lookup: { from: Identity.collection.collectionName, localField: "business_partner", foreignField: "_id", as: "business_partner" } },

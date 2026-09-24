@@ -125,6 +125,8 @@
     { "code": "general-ledger.document.unnamed", "language": "en", "text": "unnamed document" },
     { "code": "general-ledger.account", "language": "de", "text": "Konto" },
     { "code": "general-ledger.account", "language": "en", "text": "Account" },
+    { "code": "general-ledger.offset-account", "language": "de", "text": "Gegenkonto" },
+    { "code": "general-ledger.offset-account", "language": "en", "text": "Offset Account" },
     { "code": "general-ledger.text", "language": "de", "text": "Text" },
     { "code": "general-ledger.text", "language": "en", "text": "Text" },
     { "code": "general-ledger.debit", "language": "de", "text": "Soll" },
