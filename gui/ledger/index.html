@@ -43,8 +43,8 @@
                             &#x270F;&#xFE0F;
                         </a>
                     </td>
-                    <td :title="record.account.display_name">
-                        <a class="link" @click="goToAccount(record.account._id)">
+                    <td>
+                        <a class="link" @click="goToAccount(record.account._id)" :title="record.account.display_name">
                             {{ record.account.display_number }}
                         </a>
                         <span v-if="record.account.track_open_items && record.business_partner">
@@ -68,7 +68,8 @@
                     </td>
                     <td>
                         <span :class="{ struck: isStruck(record) }">{{ record.text }}</span>
-                        <span v-for="tag in getTags(record)" :key="tag" :class="[ 'tag', 'tag-' + tag ]">
+                        <span v-for="tag in getTags(record)" :key="tag" :class="[ 'tag', 'tag-' + tag, { 'tag-link': getTagQuery(record, tag) } ]"
+                            @click="goToTag(record, tag)">
                             {{ $filters.translate("general-ledger.tag." + tag) }}
                         </span>
                     </td>
@@ -120,14 +121,16 @@
                 <button :disabled="!canAccrue(menu.record)" @click="openAccrue(menu.record)">
                     {{ $filters.translate("general-ledger.actions.accrue") }}
                 </button>
+                <button :disabled="!canTransfer(menu.record)" @click="openTransfer(menu.record)">
+                    {{ $filters.translate("general-ledger.actions.transfer") }}
+                </button>
             </div>
             <div v-if="dialog" class="modalShadow" @click.self="dialog = null">
                 <form class="modal" @submit.prevent="submitDialog()">
-                    <h3 v-if="dialog.type == 'cancel'">{{ $filters.translate("general-ledger.actions.cancel") }}</h3>
-                    <h3 v-else>{{ $filters.translate("general-ledger.actions.accrue") }}</h3>
+                    <h3>{{ $filters.translate("general-ledger.actions." + dialog.type) }}</h3>
                     <p class="modalRecord">
-                        <span :class="[ 'tag', dialog.type == 'cancel' ? 'tag-cancelation' : 'tag-accrual' ]">
-                            <b>{{ $filters.translate("general-ledger.reference." + (dialog.type == "cancel" ? "cancelation" : "accrual")) }}</b>
+                        <span :class="[ 'tag', 'tag-' + { cancel: 'cancelation', accrue: 'accrual', transfer: 'transfer' }[dialog.type] ]">
+                            <b>{{ $filters.translate("general-ledger.reference." + { cancel: "cancelation", accrue: "accrual", transfer: "transfer" }[dialog.type]) }}</b>
                             {{ $filters.formatDate(dialog.record.posting_date) }} &middot;
                             {{ dialog.record.account.display_number }} &middot;
                             {{ dialog.record.text }} &middot;
@@ -141,6 +144,20 @@
                         <p class="modalHint">{{ $filters.translate("general-ledger.cancel.hint") }}</p>
                         <label>
                             {{ $filters.translate("general-ledger.cancel.posting-date") }}
+                            <input type="date" v-model="dialog.posting_date" :min="dialog.min_date" required />
+                        </label>
+                    </template>
+                    <template v-else-if="dialog.type == 'transfer'">
+                        <label>
+                            {{ $filters.translate("general-ledger.transfer.account") }}
+                            <select v-model="dialog.account" required>
+                                <option v-for="account in transfer_accounts" :key="account._id" :value="account._id">
+                                    {{ account.display_number }} {{ account.display_name }}
+                                </option>
+                            </select>
+                        </label>
+                        <label>
+                            {{ $filters.translate("general-ledger.transfer.posting-date") }}
                             <input type="date" v-model="dialog.posting_date" :min="dialog.min_date" required />
                         </label>
                     </template>

@@ -11,6 +11,7 @@ let app = Vue.createApp(
             session: null,
             business: null,
             accrual_accounts: [],
+            transfer_accounts: [],
             menu: null, // open kebab menu: { record, top, right }
             dialog: null // open cancel or accrue dialog
         };
@@ -70,6 +71,12 @@ let app = Vue.createApp(
             return ![ "canceled", "cancelation", "accrual", "accrued" ].some(tag => tags.includes(tag));
         },
 
+        // only records without open item allocations and accruals can be transferred
+        canTransfer(record)
+        {
+            return !record.open_item_relations?.length && !record.accrual_of && !record.accrued_by?.length;
+        },
+
         // "YYYY-MM-DD" of a posting date, which is stored without time zone
         toDay(date)
         {
@@ -125,6 +132,21 @@ let app = Vue.createApp(
                 min_month: this.firstUnlockedDay()?.slice(0, 7), account: this.accrual_accounts[0]?._id };
         },
 
+        async openTransfer(record)
+        {
+            this.menu = null;
+            await this.loadBusinessSettings();
+
+            const business = await getSelectedBusinessId();
+            const accounts = (await axios.get(`/api/v1/businesses/${business}/ledger-accounts?limit=10000`)).data.data;
+            this.transfer_accounts = accounts.filter(account => account._id !== record.account._id);
+
+            // suggest today, but not a locked day
+            const min_date = this.firstUnlockedDay(), today = new Date().toLocaleDateString("sv"); // local "YYYY-MM-DD"
+            this.dialog = { type: "transfer", record, min_date, posting_date: min_date && min_date > today ? min_date : today,
+                account: null };
+        },
+
         // "YYYY-MM" plus the given number of months
         addMonths(month, count)
         {
@@ -151,6 +173,7 @@ let app = Vue.createApp(
                 return this.dialog.error = this.$filters.translate("general-ledger.accrue.period-too-short");
 
             const body = type == "cancel" ? { posting_date: this.dialog.posting_date } :
+                type == "transfer" ? { account: this.dialog.account, posting_date: this.dialog.posting_date } :
                 { account: this.dialog.account, from: this.dialog.from, to: this.dialog.to };
 
             try
@@ -222,6 +245,36 @@ let app = Vue.createApp(
         async goToDocument(id)
         {
             self.location = `/ledger/?business=${await getSelectedBusinessId()}&document_id=${id}`;
+        },
+
+        // general ledger query for the ledger transactions connected to a record by a tag, or null if the tag is no link:
+        // accrual tags show the accrued ledger transaction and all of its accruals, open item tags show the record
+        // together with the ledger transactions of the relations the tag stems from (e.g. all payments of a paid one)
+        getTagQuery(record, tag)
+        {
+            if(tag == "accrual" || tag == "accrued")
+            {
+                const accrued = { $oid: record.accrual_of ?? record._id };
+                return { $or: [ { _id: accrued }, { accrual_of: accrued } ] };
+            }
+
+            const settled = { canceled: "cancelation", transferred: "transfer", paid: "payment" };
+            const allocated_by_this = !settled[tag], type = settled[tag] ?? tag;
+            if(![ "cancelation", "transfer", "payment" ].includes(type))
+                return null;
+
+            const ids = (record.open_item_relations ?? [])
+                .filter(relation => relation.type == type && relation.allocated_by_this == allocated_by_this)
+                .map(relation => relation.ledger_transaction);
+
+            return { _id: { $in: [ record._id, ...ids ].map(id => ({ $oid: id })) } };
+        },
+
+        async goToTag(record, tag)
+        {
+            const q = this.getTagQuery(record, tag);
+            if(q)
+                self.location = `/ledger/?business=${await getSelectedBusinessId()}&q=${encodeURIComponent(JSON.stringify(q))}`;
         },
 
         async goToAsset(id)
