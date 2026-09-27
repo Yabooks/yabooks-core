@@ -986,4 +986,99 @@ module.exports = function(api)
         }
         catch(x) { next(x) }
     });
+
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/ledger-transactions/{ledger_transaction}/transfer:
+     *   post:
+     *     summary: Transfer an amount of a ledger transaction to another account
+     *     description: Adds a pair of ledger transactions to the document on the given posting date, moving the given amount (by default the ledger transaction's amount) from its account to the given account. The ledger transaction on the original account holds an open item allocation of type transfer referencing the transferred ledger transaction; the one on the target account keeps its business partner, tax number and due date as a new open item. Fails if the posting date is not after the business' locked_until date.
+     *     tags:
+     *       - general-ledger
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the document
+     *       - in: path
+     *         name: ledger_transaction
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: ID of the ledger transaction to transfer
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [ account, posting_date ]
+     *             properties:
+     *               account:
+     *                 type: string
+     *                 description: ID of the ledger account to transfer the amount to
+     *               posting_date:
+     *                 type: string
+     *                 format: date
+     *                 description: posting date of the transfer records
+     *               amount:
+     *                 type: number
+     *                 description: amount to transfer, with the sign of the ledger transaction's amount; defaults to the ledger transaction's amount
+     *     responses:
+     *       200:
+     *         description: The added transfer ledger transactions
+     *       400:
+     *         description: The ledger transaction cannot be transferred
+     */
+    api.post("/api/v1/documents/:id/ledger-transactions/:ledger_transaction/transfer", async (req, res, next) =>
+    {
+        try
+        {
+            const doc = await Document.findOne({ _id: req.params.id }, "-thumbnail");
+            const tx = doc?.ledger_transactions.id(req.params.ledger_transaction);
+            if(!doc || !tx)
+                return res.status(404).send({ error: "not found" });
+
+            const { account, posting_date, amount = tx.amount } = req.body ?? {};
+            if(!doc.posted)
+                return res.status(400).send({ error: "document is not posted" });
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(posting_date ?? "") || isNaN(new Date(posting_date)))
+                return res.status(400).send({ error: "posting_date must be a date (YYYY-MM-DD)" });
+            if(!mongoose.isValidObjectId(account))
+                return res.status(400).send({ error: "account is required" });
+
+            const targetAccount = await LedgerAccount.findOne({ _id: account, business: doc.business });
+            if(!targetAccount)
+                return res.status(400).send({ error: "account must be a ledger account of the business" });
+            if(targetAccount._id.equals(tx.account))
+                return res.status(400).send({ error: "ledger transaction is already posted on this account" });
+
+            const lockedUntil = await getLockedUntil(doc.business);
+            if(lockedUntil && posting_date <= lockedUntil)
+                return res.status(400).send({ error: `posting date must be after ${lockedUntil} (business is locked until then)` });
+
+            const cents = toCents(amount);
+            if(!cents)
+                return res.status(400).send({ error: "amount must be a number other than zero" });
+
+            // the record on the original account settles the transferred one, the record on the target account continues it
+            const common = { posting_date, alternate_ledger: tx.alternate_ledger, text: tx.text,
+                override_business_partner: tx.override_business_partner, business_partner_tax_number: tx.business_partner_tax_number };
+            const transfers = (
+            [
+                { ...common, account: tx.account, override_default_cost_center: tx.override_default_cost_center, amount: fromCents(-cents),
+                    open_item_allocations: [ { ledger_transaction: tx._id, type: "transfer", amount: fromCents(-cents) } ] },
+                { ...common, account: targetAccount._id, amount: fromCents(cents), due_date: tx.due_date }
+            ]);
+
+            doc.ledger_transactions.push(...transfers);
+            await doc.save();
+            res.send(doc.ledger_transactions.slice(-transfers.length));
+
+            App.callWebhooks("document.updated", { document_id: doc._id }, doc.owned_by);
+        }
+        catch(x) { next(x) }
+    });
 };
