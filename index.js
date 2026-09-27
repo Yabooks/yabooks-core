@@ -102,6 +102,19 @@ const swaggerDoc = swaggerjsdoc({
 app.get("/api/doc/openapi.json", (req, res) => res.json(swaggerDoc));
 app.use("/api/doc", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
+// log every request under /api from the moment it arrives, for fair use pricing and as an audit trail; this runs first
+// so that every request is captured, including ones that are rejected below for being unauthenticated
+app.use("/api/*", async (req, res, next) =>
+{
+    const { Logger } = require("./services/logger.js");
+    res.on("finish", () => Logger.finalizeApiCall(req).catch(x => Logger.log("error", "could not finalize api request log", x?.message || x)));
+
+    try { await Logger.logApiCall(req); }
+    catch(x) { Logger.log("error", "could not log api request", x?.message || x); }
+
+    next();
+});
+
 // all other routes require to be authenticated
 app.jwt_secret = process.env.secret || require("crypto").randomBytes(32);
 app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err, req, res, next) =>
@@ -133,12 +146,8 @@ app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err
     next();
 });
 
-// log api calls for fair use pricing per 100k requests
-app.use("/api/*", async (req, _, next) =>
-{
-    require("./services/logger.js").Logger.logApiCall(req);
-    next();
-});
+// establish the acting app/user for the remainder of the request, so e.g. audit log entries can attribute data changes
+app.use("/api/*", require("./services/audit-context.js").middleware);
 
 // inject permission handler
 app.use(async (req, _, next) =>
@@ -167,7 +176,7 @@ app.use(async (err, req, res, _) =>
         statusCode = 400; // Bad Request
 
     if(statusCode === 500)
-        console.error(`[${ new Date().toLocaleString() }]`, req.url, err);
+        require("./services/logger.js").Logger.log("error", req.url, err?.message || err);
 
     res.status(statusCode).json({ error: err?.message ?? err ?? "unknown error" });
 });
@@ -175,11 +184,11 @@ app.use(async (err, req, res, _) =>
 // start up all locally installed apps with a start command set
 require("./models/app.js").App.startLocalApps().catch(err =>
 {
-    console.error(`[${ new Date().toLocaleString() }]`, "could not start apps", err);
+    require("./services/logger.js").Logger.log("error", "could not start apps", err?.message || err);
 });
 
 // dispatch queued jobs to apps listening to "queue.<queue name>" events
 require("./models/queue.js").QueueJob.startDispatcher().catch(err =>
 {
-    console.error(`[${ new Date().toLocaleString() }]`, "could not start queue dispatcher", err);
+    require("./services/logger.js").Logger.log("error", "could not start queue dispatcher", err?.message || err);
 });

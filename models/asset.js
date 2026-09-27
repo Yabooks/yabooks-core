@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // asset schema
 const Asset = mongoose.model("Asset", (function()
@@ -18,7 +19,9 @@ const Asset = mongoose.model("Asset", (function()
         owned_by: { type: mongoose.Schema.Types.ObjectId, ref: "App" }
     });
 
-    return new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    registerAuditLog(schema, "Asset");
+    return schema;
 })());
 
 module.exports = { Asset };

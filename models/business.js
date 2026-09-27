@@ -1,5 +1,6 @@
 const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
 const { Identity } = require("./identity.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // business schema
 const Business = mongoose.model("Business", (function()
@@ -52,7 +53,9 @@ const Business = mongoose.model("Business", (function()
         }
     });
 
-    return new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false, methods });
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false, methods });
+    registerAuditLog(schema, "Business");
+    return schema;
 })());
 
 module.exports = { Business };

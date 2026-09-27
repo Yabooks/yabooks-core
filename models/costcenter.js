@@ -1,5 +1,6 @@
 const mongoose = require("../services/connector.js");
 const { Address, Email, Phone } = require("./contact.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // cost center schema, which is also used by articles and stores
 const CostCenter = mongoose.model("CostCenter", (function()
@@ -11,7 +12,9 @@ const CostCenter = mongoose.model("CostCenter", (function()
         data: mongoose.Schema.Types.Mixed
     });
 
-    return new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false });
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false });
+    registerAuditLog(schema, "CostCenter");
+    return schema;
 })());
 
 // article schema

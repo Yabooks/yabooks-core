@@ -1,6 +1,7 @@
 const mongoose = require("../services/connector.js"), path = require("node:path"), fs = require("node:fs").promises;
 const { randomUUID: uuid } = require("crypto"), os = require("os");
 const { toDay, assertChangeAllowed, classifyPath, PeriodLockError } = require("../services/period-lock.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // document dates and posting dates are calendar days without time zone, stored as midnight UTC: strings are taken by the
 // calendar day written at their start (any time and time zone designator are ignored), Date objects and timestamps (e.g.
@@ -346,6 +347,7 @@ const Document = mongoose.model("Document", (function()
     schema.path("tags").index(true);
     schema.path("posted").index(true);
     registerPeriodLock(schema);
+    registerAuditLog(schema, "Document", { redact: [ "thumbnail" ] }); // thumbnail is a binary blob, not meaningful in an audit trail
     return schema;
 })());
 
@@ -360,6 +362,7 @@ const DocumentVersion = mongoose.model("DocumentVersion", (function()
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, autoIndex: false });
     schema.path("document").index(true);
+    registerAuditLog(schema, "DocumentVersion", { redact: [ "bytes" ] }); // bytes is the archived binary content, not meaningful in an audit trail
     return schema;
 })());
 
@@ -379,6 +382,7 @@ const DocumentLink = mongoose.model("DocumentLink", (function()
     schema.path("document_b").index(true);
     schema.path("name_ab").index(true);
     schema.path("name_ba").index(true);
+    registerAuditLog(schema, "DocumentLink");
     return schema;
 })());
 

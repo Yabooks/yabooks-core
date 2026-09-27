@@ -123,8 +123,7 @@ async function getOpenApiTools(api)
         try { jsonSchema(def.inputSchema?.jsonSchema ?? def.inputSchema); }
         catch(e)
         {
-            console.error(`[yacob/openapi] schema error in "${def.name}":`);
-            console.error(JSON.stringify(def.inputSchema, null, 2));
+            require("./logger.js").Logger.log("error", `[yacob/openapi] schema error in "${def.name}":`, JSON.stringify(def.inputSchema, null, 2));
             throw e;
         }
 
@@ -140,7 +139,7 @@ async function getOpenApiTools(api)
         });
     }
 
-    console.log(`[yacob/openapi] loaded "${api.name}" (${defs.length} tools)`);
+    require("./logger.js").Logger.log("info", `[yacob/openapi] loaded "${api.name}" (${defs.length} tools)`);
     return tools;
 }
 
