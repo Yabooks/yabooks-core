@@ -224,6 +224,36 @@ let app = Vue.createApp(
             self.location = `/ledger/?business=${await getSelectedBusinessId()}&document_id=${id}`;
         },
 
+        // general ledger query for the ledger transactions connected to a record by a tag, or null if the tag is no link:
+        // accrual tags show the accrued ledger transaction and all of its accruals, open item tags show the record
+        // together with the ledger transactions of the relations the tag stems from (e.g. all payments of a paid one)
+        getTagQuery(record, tag)
+        {
+            if(tag == "accrual" || tag == "accrued")
+            {
+                const accrued = { $oid: record.accrual_of ?? record._id };
+                return { $or: [ { _id: accrued }, { accrual_of: accrued } ] };
+            }
+
+            const settled = { canceled: "cancelation", transferred: "transfer", paid: "payment" };
+            const allocated_by_this = !settled[tag], type = settled[tag] ?? tag;
+            if(![ "cancelation", "transfer", "payment" ].includes(type))
+                return null;
+
+            const ids = (record.open_item_relations ?? [])
+                .filter(relation => relation.type == type && relation.allocated_by_this == allocated_by_this)
+                .map(relation => relation.ledger_transaction);
+
+            return { _id: { $in: [ record._id, ...ids ].map(id => ({ $oid: id })) } };
+        },
+
+        async goToTag(record, tag)
+        {
+            const q = this.getTagQuery(record, tag);
+            if(q)
+                self.location = `/ledger/?business=${await getSelectedBusinessId()}&q=${encodeURIComponent(JSON.stringify(q))}`;
+        },
+
         async goToAsset(id)
         {
             // TODO #11
