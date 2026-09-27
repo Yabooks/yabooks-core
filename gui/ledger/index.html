@@ -68,7 +68,8 @@
                     </td>
                     <td>
                         <span :class="{ struck: isStruck(record) }">{{ record.text }}</span>
-                        <span v-for="tag in getTags(record)" :key="tag" :class="[ 'tag', 'tag-' + tag ]">
+                        <span v-for="tag in getTags(record)" :key="tag" :class="[ 'tag', 'tag-' + tag, { 'tag-link': getTagQuery(record, tag) } ]"
+                            @click="goToTag(record, tag)">
                             {{ $filters.translate("general-ledger.tag." + tag) }}
                         </span>
                     </td>

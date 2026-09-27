@@ -115,6 +115,8 @@ td[align="right"] {
 .tag-discount, .tag-discounted { background: #fdf6e3; color: #a16207; }
 .tag-payment, .tag-paid { background: #e6f6ec; color: #15803d; }
 .tag-accrual, .tag-accrued { background: #f3e8fd; color: #7e22ce; }
+.tag-link { cursor: pointer; }
+.tag-link:hover { text-decoration: underline; }
 
 @media print {
     .tag {
