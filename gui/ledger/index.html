@@ -43,8 +43,8 @@
                             &#x270F;&#xFE0F;
                         </a>
                     </td>
-                    <td :title="record.account.display_name">
-                        <a class="link" @click="goToAccount(record.account._id)">
+                    <td>
+                        <a class="link" @click="goToAccount(record.account._id)" :title="record.account.display_name">
                             {{ record.account.display_number }}
                         </a>
                         <span v-if="record.account.track_open_items && record.business_partner">
