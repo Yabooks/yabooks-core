@@ -29,17 +29,6 @@ html, body
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes skeleton-pulse
-{
-    0%, 100% { opacity: 1; }
-    50% { opacity: .4; }
-}
-
-.skeleton
-{
-    animation: skeleton-pulse 1.2s ease-in-out infinite;
-}
-
 .app .icon
 {
     width: 125px;

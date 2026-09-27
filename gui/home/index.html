@@ -11,25 +11,25 @@
         <div id="app_screen">
             <div class="app" @click="navigate({ link: '/people/' })">
                 <img class="icon" src="/people/icon.svg" />
-                <span :class="{ skeleton: !loaded }">{{ loaded ? $filters.translate("home.apps.people") : "░░░░░" }}</span>
+                <span>{{ $filters.translate("home.apps.people") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/accounts/' })">
                 <img class="icon" src="/accounts/icon.svg" />
-                <span :class="{ skeleton: !loaded }">{{ loaded ? $filters.translate("home.apps.accounts") : "░░░░░" }}</span>
+                <span>{{ $filters.translate("home.apps.accounts") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/documents/' })">
                 <img class="icon" src="/documents/icon.svg" />
-                <span :class="{ skeleton: !loaded }">{{ loaded ? $filters.translate("home.apps.documents") : "░░░░░" }}</span>
+                <span>{{ $filters.translate("home.apps.documents") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/balances/' })">
                 <img class="icon" src="/balances/icon.svg" />
-                <span :class="{ skeleton: !loaded }">{{ loaded ? $filters.translate("home.apps.balances") : "░░░░░" }}</span>
+                <span>{{ $filters.translate("home.apps.balances") }}</span>
             </div>
             <template v-for="app in apps">
                 <div class="app" v-if="app.link" @click="navigate(app)">
                     <img class="icon" :src="app.icon" />
-                    <span :class="{ skeleton: !loaded }" :alt="$filters.translate(app.translated_names, null, app.name)">
-                        {{ loaded ? $filters.translate(app.translated_names, null, app.name) : "░░░░░" }}
+                    <span :alt="$filters.translate(app.translated_names, null, app.name)">
+                        {{ $filters.translate(app.translated_names, null, app.name) }}
                     </span>
                 </div>
             </template>
@@ -39,7 +39,7 @@
             </div>
             <div class="app" @click="navigate({ link: '/apps/' })">
                 <img class="icon" src="/apps/icon.png" />
-                <span :class="{ skeleton: !loaded }">{{ loaded ? $filters.translate("home.apps.market") : "░░░░░" }}</span>
+                <span>{{ $filters.translate("home.apps.market") }}</span>
             </div>
             <!--<div class="app" @click="navigate({ link: '/settings/' })">
                 <img class="icon" src="/settings/icon.svg" />
@@ -52,15 +52,13 @@
                 data()
                 {
                     return {
-                        apps: [],
-                        loaded: false
+                        apps: []
                     };
                 },
 
                 async mounted()
                 {
                     await loadTranslations({ "code*": "home." });
-                    this.loaded = true;
 
                     let res = await axios.get("/api/v1/apps")
                     this.apps = res.data.data;
