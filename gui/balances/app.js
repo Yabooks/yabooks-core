@@ -38,7 +38,9 @@ let app = Vue.createApp(
             loading: false,
             loadCounter: 0,
             translationsVersion: 0,
-            error: null
+            error: null,
+            reconciliationStatus: {}, // account._id -> latest balance-reconciliation entry as of "until", or null
+            dialog: null // open reconciliation dialog: { account, entries, newEntry, busy, error }
         };
     },
 
@@ -76,6 +78,13 @@ let app = Vue.createApp(
                 loadTranslations({ "code*": "accounts." }),
                 loadTranslations({ "code*": "balances." })
             ]).then(() => this.translationsVersion++);
+
+            // close the reconciliation dialog on escape
+            addEventListener("keydown", (event) =>
+            {
+                if(event.key === "Escape")
+                    this.dialog = null;
+            });
 
             // going back/forward in history restores the date range that was shown
             addEventListener("popstate", (event) =>
@@ -172,6 +181,7 @@ let app = Vue.createApp(
             this.loading = false;
             this.accounts = res.data.data;
             this.error = null;
+            this.loadReconciliationStatuses(loadId);
 
             // calculate profit
             this.profit = 0;
@@ -331,6 +341,146 @@ let app = Vue.createApp(
         openQuickRecorder()
         {
             parent.document.app.openModal('/quick-recorder');
+        },
+
+        // fetches, per account, the most recent balance-reconciliation entry as of "until" (the balance sheet date
+        // currently shown), so the reconciliation button of every row can indicate its status
+        async loadReconciliationStatuses(loadId)
+        {
+            const results = await Promise.all(this.accounts.map(account =>
+                axios.get(`/api/v1/ledger-accounts/${account._id}/balance-reconciliations`, {
+                    params: { reconciled_date: this.until, sort_desc: "created_at", limit: 1 }
+                })
+                .then(res => [ account._id, res.data.data[0] ?? null ])
+                .catch(() => [ account._id, null ])
+            ));
+
+            if(loadId !== this.loadCounter)
+                return; // a newer date range was selected meanwhile
+
+            this.reconciliationStatus = Object.fromEntries(results);
+        },
+
+        // "unknown": no reconciliation entry exists yet for the balance sheet date
+        // "positive": the latest entry approves the balance and its amount matches the actual account balance
+        // "negative": the latest entry rejects the balance
+        // "questionable": the latest entry is neither a clear approval matching the balance, nor a rejection
+        reconciliationStatusOf(account)
+        {
+            const latest = this.reconciliationStatus[account._id];
+            if(!latest)
+                return "unknown";
+
+            if(latest.approved === false)
+                return "negative";
+
+            if(latest.approved === true && Math.abs(val(latest.reconciled_amount) - this.getAccountBalance(account)) < .01)
+                return "positive";
+
+            return "questionable";
+        },
+
+        reconciliationIcon(account)
+        {
+            return { unknown: "🤔", positive: "✅", negative: "❌", questionable: "⁉️" }[this.reconciliationStatusOf(account)];
+        },
+
+        // "YYYY-MM-DD" of the day before "from"
+        reconciliationRangeFrom()
+        {
+            const day = new Date(this.from + "T00:00:00Z");
+            day.setUTCDate(day.getUTCDate() - 1);
+            return isoDate(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate());
+        },
+
+        async openReconciliation(account)
+        {
+            this.dialog = {
+                account,
+                entries: [],
+                newEntry: { reconciled_amount: this.getAccountBalance(account).toFixed(2), comment: "", file: null },
+                busy: false,
+                error: null
+            };
+
+            await this.loadReconciliationEntries();
+        },
+
+        // lists the reconciliation entries of the account within the selected period and the day before it
+        async loadReconciliationEntries()
+        {
+            const res = await axios.get(`/api/v1/ledger-accounts/${this.dialog.account._id}/balance-reconciliations`, {
+                params: {
+                    reconciled_date__gte: this.reconciliationRangeFrom(),
+                    reconciled_date__lte: this.until,
+                    sort_desc: "reconciled_date",
+                    limit: 1000
+                }
+            });
+            this.dialog.entries = res.data.data;
+        },
+
+        // creates a new entry approving or rejecting the account balance as of "until", optionally with a proof document
+        async submitReconciliationEntry(approved)
+        {
+            try
+            {
+                this.dialog.busy = true;
+                this.dialog.error = null;
+
+                let proof_document_id = null;
+                const file = this.dialog.newEntry.file;
+                if(file)
+                {
+                    const doc = await axios.post(`/api/v1/businesses/${this.business_id}/documents`, {
+                        name: file.name,
+                        mime_type: file.type,
+                        type: "proof of balance"
+                    });
+
+                    await axios.put(`/api/v1/documents/${doc.data._id}/binary`, new Uint8Array(await file.arrayBuffer()),
+                        { headers: { "Content-Type": file.type || "application/octet-stream" } });
+
+                    proof_document_id = doc.data._id;
+                }
+
+                await axios.post(`/api/v1/ledger-accounts/${this.dialog.account._id}/balance-reconciliations`, {
+                    reconciled_date: this.until,
+                    reconciled_amount: this.dialog.newEntry.reconciled_amount,
+                    approved,
+                    proof_document_id,
+                    comment: this.dialog.newEntry.comment || null
+                });
+
+                this.dialog.newEntry = { reconciled_amount: this.getAccountBalance(this.dialog.account).toFixed(2), comment: "", file: null };
+                await this.loadReconciliationEntries();
+                await this.loadReconciliationStatuses(this.loadCounter);
+            }
+            catch(x)
+            {
+                this.dialog.error = x.response?.data?.error ?? x.message;
+            }
+            finally
+            {
+                this.dialog.busy = false;
+            }
+        },
+
+        async deleteReconciliationEntry(entry)
+        {
+            if(!confirm(this.$filters.translate("balances.reconciliation.confirm-delete")))
+                return;
+
+            try
+            {
+                await axios.delete(`/api/v1/balance-reconciliations/${entry._id}`);
+                await this.loadReconciliationEntries();
+                await this.loadReconciliationStatuses(this.loadCounter);
+            }
+            catch(x)
+            {
+                this.dialog.error = x.response?.data?.error ?? x.message;
+            }
         }
     }
 });
