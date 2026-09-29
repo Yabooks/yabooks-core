@@ -73,6 +73,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "general-ledger", req.params.id, res);
+
             let req_currency = null;
             if(req.query.currency) {
                 req_currency = req.query.currency;
@@ -289,6 +291,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "general-ledger", req.params.id, res);
+
             let req_currency = null;
             if(req.query.currency) {
                 req_currency = req.query.currency;
@@ -557,6 +561,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "general-ledger", req.params.id, res);
+
             const tax_code = req.query.tax_code;
             delete req.query.tax_code;
             if(!tax_code)

@@ -43,6 +43,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "assets", req.params.id, res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Asset, [
                 { $match: { business: new req.ObjectId(req.params.id) } }
             ]));
@@ -84,6 +86,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "assets", req.params.id, res);
+
             let asset = new Asset({ business: req.params.id, ...req.body });
             await asset.save();
             res.send(asset);
@@ -130,6 +134,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
             let asset = await Asset.findOne({ _id: req.params.id });
             if(!asset)
                 res.status(404).send({ error: "not found" });
@@ -176,6 +182,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { posted: true } },
@@ -250,6 +258,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
                 { $match: { posted: true } },
@@ -318,6 +328,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
             let [ result ] = await Document.aggregate([
                 { $match: { posted: true } },
                 { $unwind: "$ledger_transactions" },
@@ -375,6 +387,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
             let [ result ] = await Document.aggregate([
                 { $match: { posted: true } },
                 { $unwind: "$ledger_transactions" },
@@ -426,10 +440,16 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.patch("/api/v1/assets/:id", async (req, res) =>
+    api.patch("/api/v1/assets/:id", async (req, res, next) =>
     {
-        await Asset.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
+            await Asset.updateOne({ _id: req.params.id }, req.body);
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
@@ -460,9 +480,15 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.delete("/api/v1/assets/:id", async (req, res) =>
+    api.delete("/api/v1/assets/:id", async (req, res, next) =>
     {
-        await Asset.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
+            await Asset.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 };

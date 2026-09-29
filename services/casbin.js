@@ -11,7 +11,7 @@ const SYSTEM = "system";
 const subjectOfUser = (user_id) => `user::${user_id}`;
 const subjectOfApp = (app_id) => `app::${app_id}`;
 const subjectOfRole = (role_id) => `role::${role_id}`;
-const scopeOf = (business_id) => business_id ? `business::${business_id}` : SYSTEM;
+const scopeOf = (business_id) => business_id ? `business::${business_id}` : SYSTEM; // "*" for all businesses
 
 let enforcerPromise = null;
 
@@ -52,7 +52,7 @@ async function createEnforcer()
         setInterval(() => enforcer.loadPolicy().catch(x =>
             require("./logger.js").Logger.log("error", "could not reload permissions", x?.message || x)), 60000).unref();
 
-    for(let [ key, func ] of Object.entries({ requirePermission, isAllowed, subjectsOf, isAdministrator }))
+    for(let [ key, func ] of Object.entries({ requirePermission, isAllowed, subjectsOf, isAdministrator, businessOf }))
         enforcer[key] = func.bind(enforcer);
 
     return enforcer;
@@ -115,6 +115,16 @@ async function requirePermission(req, action, object, business, res)
 
     res.status(403).send({ error: "permission denied", details: `${action} ${object}` });
     throw "handled";
+}
+
+/**
+ * returns the id of the business a record belongs to, to check permissions for records addressed by their own id;
+ * returns "*" for records that belong to no business (or do not exist), so that permission for all businesses is required
+ */
+async function businessOf(model, id)
+{
+    const record = await model.findOne({ _id: id }, "business").lean().catch(() => null);
+    return record?.business ?? "*";
 }
 
 /** whether a subject holds full permissions everywhere, i.e. the administrator role */
