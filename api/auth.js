@@ -165,6 +165,9 @@ module.exports = function(api)
      *       401:
      *         description: >-
      *           Invalid or missing credentials
+     *       403:
+     *         description: >-
+     *           User is deactivated
      *       412:
      *         description: >-
      *           Authenticator token is missing
@@ -200,6 +203,9 @@ module.exports = function(api)
                 else if(!user.verifyAuthenticatorToken(authenticator_token))
                     return res.status(401).send(msg_unauthorized);
             
+            if(user.active === false)
+                return res.status(403).send({ error: "forbidden", error_description: "user is deactivated" });
+
             if(![ "authenticator", "password", "password-authenticator", ].includes(user.auth_type)) // TODO oauth, saml
                 return res.status(501).send({ error: "not implemented", error_description: `type ${user.auth_type}` });
 
