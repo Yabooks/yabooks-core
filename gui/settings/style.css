@@ -251,6 +251,7 @@ button.chip.selected { background: var(--primary-soft); border-color: var(--prim
 .drawer .rows { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; }
 .drawer .add { display: flex; gap: 6px; flex-wrap: wrap; }
 .drawer .add select { max-width: 100%; }
+.drawer .add input { flex: 1; min-width: 0; }
 .drawer .fields { display: grid; grid-template-columns: 120px 1fr; gap: 8px 10px; align-items: center; }
 .drawer .footer { display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid var(--border-color); padding: 12px 20px; }
 

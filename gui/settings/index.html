@@ -25,6 +25,7 @@
                 <section class="pane">
                     <p v-if="!selectedTab" class="empty">{{ $filters.translate("settings.no-access") }}</p>
                     <general-tab v-if="selectedTab === 'general'"></general-tab>
+                    <tax-codes-tab v-if="selectedTab === 'tax-codes'"></tax-codes-tab>
                     <logs-tab v-if="selectedTab === 'logs'"></logs-tab>
                     <jobs-tab v-if="selectedTab === 'jobs'"></jobs-tab>
                     <users-tab v-if="selectedTab === 'users'"></users-tab>
@@ -35,6 +36,7 @@
         </main>
         <script type="text/javascript" src="components/access-drawer.js"></script>
         <script type="text/javascript" src="tabs/general.js"></script>
+        <script type="text/javascript" src="tabs/taxcodes.js"></script>
         <script type="text/javascript" src="tabs/logs.js"></script>
         <script type="text/javascript" src="tabs/jobs.js"></script>
         <script type="text/javascript" src="tabs/users.js"></script>
