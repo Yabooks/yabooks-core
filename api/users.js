@@ -135,6 +135,9 @@ module.exports = function(api)
 
             const { email, password, preferred_language, individual } = req.body ?? {};
 
+            if(typeof email !== "string" || !email.trim())
+                return res.status(400).send({ error: "bad request", details: "email is required" });
+
             if(typeof password !== "string" || password.length < minPasswordLength)
                 return res.status(400).send({ error: "bad request", details: `password must have at least ${minPasswordLength} characters` });
 
