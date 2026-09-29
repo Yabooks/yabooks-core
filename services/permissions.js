@@ -12,7 +12,7 @@ const coreCatalog = [
     { scope: "system", object: "tax-codes", actions: [ "read", "write", "delete" ] },
     { scope: "system", object: "translations", actions: [ "write", "delete" ] },
     { scope: "system", object: "yacob", actions: [ "use" ] },
-    { scope: "system", object: "apps", actions: [ "read", "write", "delete" ] },
+    { scope: "system", object: "apps", actions: [ "write", "delete" ] }, // listing apps stays open, as the home screen launches them
     { scope: "system", object: "users", actions: [ "read", "write" ] },
     { scope: "system", object: "permissions", actions: [ "read", "write" ] },
     { scope: "system", object: "settings", actions: [ "read", "write" ] },
