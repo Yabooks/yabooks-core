@@ -1,4 +1,5 @@
 const { Role } = require("../models/role.js"), { User, Session } = require("../models/user.js"), { App } = require("../models/app.js");
+const { Business } = require("../models/business.js");
 const { ADMIN_ROLE, subjectOfUser, subjectOfApp, subjectOfRole } = require("../services/casbin.js");
 const { getCatalog, validatePolicy, evaluate, hasOtherActiveAdministrator } = require("../services/permissions.js");
 
@@ -11,14 +12,23 @@ const kinds = {
     apps: { model: App, subject: subjectOfApp }
 };
 
-// reads the role assignments and exceptions (direct policies) of a subject
-const readAccess = async (enforcer, subject) => (
+// reads the role assignments and exceptions (direct policies) of a subject; role and business names are included for
+// display, e.g. in a user's own profile, where roles and businesses cannot necessarily be listed
+const readAccess = async (enforcer, subject) =>
 {
-    roles: (await enforcer.getFilteredGroupingPolicy(0, subject))
-        .map(([ , role, scope ]) => ({ role: role.replace(/^role::/, ""), scope })),
-    exceptions: (await enforcer.getFilteredPolicy(0, subject))
-        .map(([ , scope, object, action, effect ]) => ({ scope, object, action, effect }))
-});
+    const roles = (await enforcer.getFilteredGroupingPolicy(0, subject)).map(([ , role, scope ]) => ({ role: role.replace(/^role::/, ""), scope }));
+    const exceptions = (await enforcer.getFilteredPolicy(0, subject)).map(([ , scope, object, action, effect ]) => ({ scope, object, action, effect }));
+
+    const idsOf = (prefix, values) => values.filter(value => value.startsWith(prefix)).map(value => value.substring(prefix.length)).filter(id => /^[0-9a-f]{24}$/.test(id));
+    const roleNames = new Map((await Role.find({ _id: { $in: idsOf("", roles.map(r => r.role)) } }, "name").lean()).map(role => [ String(role._id), role.name ]));
+    const businessNames = new Map((await Business.find({ _id: { $in: idsOf("business::", [ ...roles, ...exceptions ].map(e => e.scope)) } }, "name").lean())
+        .map(business => [ `business::${business._id}`, business.name ]));
+
+    return {
+        roles: roles.map(r => ({ ...r, name: r.role === "admin" ? "Administrator" : roleNames.get(r.role), scope_name: businessNames.get(r.scope) })),
+        exceptions: exceptions.map(e => ({ ...e, scope_name: businessNames.get(e.scope) }))
+    };
+};
 
 // reads the policies of a role
 const readRolePermissions = async (enforcer, role_id) =>
@@ -82,6 +92,42 @@ module.exports = function(api)
         try
         {
             res.send({ data: await getCatalog() });
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/permissions/businesses:
+     *   get:
+     *     summary: List the businesses permissions can be scoped to
+     *     description: >-
+     *       Returns id and name of all businesses, e.g. to pick the scope of a role assignment. Requires the permission
+     *       to read permissions.
+     *     tags:
+     *       - permissions
+     *     responses:
+     *       200:
+     *         description: Businesses
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 data:
+     *                   type: array
+     *                   items:
+     *                     type: object
+     *                     properties:
+     *                       _id: { type: string }
+     *                       name: { type: string }
+     */
+    api.get("/api/v1/permissions/businesses", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "read", "permissions", null, res);
+            res.send({ data: await Business.find({}, "name").sort({ name: 1 }).lean() });
         }
         catch(x) { next(x) }
     });
