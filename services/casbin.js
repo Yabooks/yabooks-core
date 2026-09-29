@@ -1,7 +1,31 @@
-const { newEnforcer } = require("casbin"), { MongoAdapter } = require("casbin-mongodb-adapter");
+const { newEnforcer, Util } = require("casbin"), { MongoAdapter } = require("casbin-mongodb-adapter");
 const { Session } = require("../models/user.js");
 
-module.exports = async function()
+// subjects, scopes and the built-in administrator role as used in the policies (see casbin-allow-deny.conf):
+// - subjects are "user::<id>", "app::<id>" and "role::<id>"
+// - scopes are "business::<id>" for data belonging to a business, "system" for everything else; role assignments and
+//   policies may use the patterns "business::*" (all businesses, including ones created later) and "*" (everything)
+const ADMIN_ROLE = "role::admin";
+const SYSTEM = "system";
+
+const subjectOfUser = (user_id) => `user::${user_id}`;
+const subjectOfApp = (app_id) => `app::${app_id}`;
+const subjectOfRole = (role_id) => `role::${role_id}`;
+const scopeOf = (business_id) => business_id ? `business::${business_id}` : SYSTEM;
+
+let enforcerPromise = null;
+
+/** returns the enforcer, which is created once and shared by all requests */
+function getEnforcer()
+{
+    return enforcerPromise ??= createEnforcer().catch(x =>
+    {
+        enforcerPromise = null; // retry on next call
+        throw x;
+    });
+}
+
+async function createEnforcer()
 {
     const adapter = await MongoAdapter.newAdapter(
     {
@@ -14,118 +38,89 @@ module.exports = async function()
     });
 
     const confFile = require("path").resolve(__dirname, "..", "casbin-allow-deny.conf");
-
     const enforcer = await newEnforcer(confFile, adapter);
-    await enforcer.loadPolicy();
 
-    // install handler functions on enforcer object
-    for(let [ key, func ] of Object.entries({ requirePermission, requireAllPermissions, requireAnyPermission, allow, deny }))
+    // let role assignments in "business::*" or "*" apply to concrete businesses
+    await enforcer.addNamedDomainMatchingFunc("g", Util.keyMatchFunc);
+
+    // the built-in administrator role may do everything everywhere
+    if(!await enforcer.hasPolicy(ADMIN_ROLE, "*", "*", "*", "allow"))
+        await enforcer.addPolicy(ADMIN_ROLE, "*", "*", "*", "allow");
+
+    // policy changes are made through the primary instance, so secondary instances need to pick them up
+    if(process.env.is_secondary_instance)
+        setInterval(() => enforcer.loadPolicy().catch(x =>
+            require("./logger.js").Logger.log("error", "could not reload permissions", x?.message || x)), 60000).unref();
+
+    for(let [ key, func ] of Object.entries({ requirePermission, isAllowed, subjectsOf, isAdministrator }))
         enforcer[key] = func.bind(enforcer);
 
     return enforcer;
-};
-
-/** 
- * @param {string} subject
- * @param {string} action
- * @param {string} object
-*/
-async function requirePermission(subject, action, object, res)
-{
-    // an express request object with a session_id and an app_id was provided as subject
-    if(subject?.auth?.session_id && subject?.auth?.app_id)
-    {
-        let session = await Session.findOne({ _id: subject.auth.session_id });
-
-        if(!session || !session.user)
-            return _respond(false, res, "not logged in");
-
-        return this.requireAnyPermission([
-            [ `user::${session.user}`, action, object ],
-            [ `app::${subject.auth.app_id}`, action, object ]
-        ], res);
-    }
-
-    // an express request object with a session_id was provided as subject
-    else if(subject?.auth?.session_id)
-    {
-        let session = await Session.findOne({ _id: subject.auth.session_id });
-
-        if(!session || !session.user)
-            return _respond(false, res, "not logged in");
-
-        subject = `user::${session.user}`;
-    }
-
-    // an express request object with an app_id was provided as subject
-    else if(subject?.auth?.app_id)
-        subject = `app::${subject.auth.app_id}`;
-
-    // check if permission is given using casbin enforcer
-    let allowed = await this.enforce(subject, object, action);
-    return _respond(allowed, res);
 }
 
 /**
- * @param {[ subject: string, action: string, object: string]} array
+ * returns the subjects acting in a request: the user of the session and/or the app
+ * @param {Express.Request} req
+ * @returns {Promise<string[]>}
  */
-async function requireAllPermissions(array = [], res)
+async function subjectsOf(req)
 {
-    const permissionMapper = async ([ subject, action, object ]) =>
-        await this.requirePermission(subject, action, object);
+    let subjects = [];
 
-    array = await Promise.all(array.map(permissionMapper));
+    if(req?.auth?.session_id)
+    {
+        let session = await Session.findOne({ _id: req.auth.session_id }, "user").lean();
+        if(session?.user)
+            subjects.push(subjectOfUser(session.user));
+    }
 
-    const allowed = array.every(allowed => true);
-    return _respond(allowed, res);
-}
+    if(req?.auth?.app_id)
+        subjects.push(subjectOfApp(req.auth.app_id));
 
-/** 
- * @param {[ subject: string, action: string, object: string]} array
- */
-async function requireAnyPermission(array = [], res)
-{
-    const permissionMapper = async ([ subject, action, object ]) =>
-        await this.requirePermission(subject, action, object);
-
-    array = await Promise.all(array.map(permissionMapper));
-
-    const allowed = array.some(allowed => true);
-    return _respond(allowed, res);
-}
-
-/** adds an "allow" policy */
-async function allow(subject, action, object)
-{
-    await this.addPolicy(subject, object, action, "allow");
-}
-
-/** adds a "deny" policy */
-async function deny(subject, action, object)
-{
-    await this.addPolicy(subject, object, action, "deny");
+    return subjects;
 }
 
 /**
- * @param {Express.Response} res if an API error should be sent in case of permission denial
- * @returns {boolean} `true` or `false` if `res` is not set
- * @throws {string} "handled" if `res` is set and the permission is denied
+ * checks if the request may perform an action on an object
+ *
+ * An app may act on its own permissions. If it holds a token with a user session attached (oauth flow), it may also
+ * do whatever that user may do, even if the app itself is not authorized to. A request is therefore allowed if either
+ * its app or its user is allowed.
+ *
+ * @param {Express.Request} req
+ * @param {string} action e.g. "read", "write", "delete" or a named action such as "record"
+ * @param {string} object area from the permission catalog, e.g. "documents"
+ * @param {string|null} business id of the business the object belongs to, or null for system areas
+ * @returns {Promise<boolean>}
  */
-function _respond(allowed, res, msg)
+async function isAllowed(req, action, object, business = null)
 {
-    if(allowed)
+    const scope = scopeOf(business);
+
+    for(let subject of await this.subjectsOf(req))
+        if(await this.enforce(subject, scope, object, action))
+            return true;
+
+    return false;
+}
+
+/**
+ * like isAllowed(), but responds with 403 and throws "handled" if the request is not allowed
+ * @throws {string} "handled" if the permission is denied, which the api error handler ignores
+ */
+async function requirePermission(req, action, object, business, res)
+{
+    if(await this.isAllowed(req, action, object, business))
         return true;
 
-    else if(res)
-    {
-        res.status(403).send({
-            success: false,
-            message: `permission denied` + (msg ? `: ${msg}` : "")
-        });
-
-        // throw exception that will be ignored to cause api endpoint to terminate execution
-        throw "handled";
-    }
-
-    else false;
+    res.status(403).send({ error: "permission denied", details: `${action} ${object}` });
+    throw "handled";
 }
+
+/** whether a subject holds full permissions everywhere, i.e. the administrator role */
+async function isAdministrator(subject)
+{
+    return await this.enforce(subject, "*", "*", "*");
+}
+
+module.exports = { getEnforcer, ADMIN_ROLE, SYSTEM, subjectOfUser, subjectOfApp, subjectOfRole, scopeOf };

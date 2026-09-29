@@ -149,11 +149,13 @@ app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err
 // establish the acting app/user for the remainder of the request, so e.g. audit log entries can attribute data changes
 app.use("/api/*", require("./services/audit-context.js").middleware);
 
-// inject permission handler
+// inject permission handler, which is created once and shared by all requests
+const { getEnforcer } = require("./services/casbin.js");
+getEnforcer().catch(err => require("./services/logger.js").Logger.log("error", "could not load permissions", err?.message || err));
 app.use(async (req, _, next) =>
 {
-    const loadHandler = require("./services/casbin.js");
-    req.permissions = await loadHandler();
+    try { req.permissions = await getEnforcer(); }
+    catch(x) { return next(x); }
     next();
 });
 

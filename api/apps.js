@@ -115,7 +115,7 @@ module.exports = function(api)
      *   post:
      *     summary: Register an app
      *     description: >-
-     *       Registers an app and returns it including its API secret. Requires the permission to maintain apps.
+     *       Registers an app and returns it including its API secret. Requires the permission to write apps.
      *     tags:
      *       - apps
      *     requestBody:
@@ -134,14 +134,14 @@ module.exports = function(api)
      *               $ref: '#/components/schemas/App'
      *       403:
      *         description: >-
-     *           Permission to maintain apps is missing
+     *           Permission to write apps is missing
      */
     api.post("/api/v1/apps", async (req, res, next) => // registers an app and returns app information including the app's api secret
     {
         try
         {
-            // require "mainain apps" permission to register an app
-            await req.permissions.requirePermission(req, "maintain", "apps", res);
+            // require permission to write apps to register an app
+            await req.permissions.requirePermission(req, "write", "apps", null, res);
 
             // create app and return info to client
             let app = new App(req.body);
@@ -332,7 +332,7 @@ module.exports = function(api)
      *   delete:
      *     summary: Remove an app
      *     description: >-
-     *       Requires the permission to maintain apps.
+     *       Requires the permission to delete apps.
      *     tags:
      *       - apps
      *     parameters:
@@ -357,14 +357,14 @@ module.exports = function(api)
      *                   example: true
      *       403:
      *         description: >-
-     *           Permission to maintain apps is missing
+     *           Permission to delete apps is missing
      */
     api.delete("/api/v1/apps/:id", async (req, res, next) => // removes an app
     {
         try
         {
-            // require "maintain apps" permission to remove an app
-            await req.permissions.requirePermission(req, "maintain", "apps", res);
+            // require permission to delete apps to remove an app
+            await req.permissions.requirePermission(req, "delete", "apps", null, res);
 
             // shutdown app
             // TODO
