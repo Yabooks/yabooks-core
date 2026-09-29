@@ -1,4 +1,4 @@
-const { App } = require("../models/app.js"), jwt = require("jsonwebtoken");
+const { App } = require("../models/app.js"), jwt = require("jsonwebtoken"), { subjectOfApp } = require("../services/casbin.js");
 const appToAppTokenSecret = App.appToAppTokenSecret;
 
 module.exports = function(api)
@@ -369,8 +369,10 @@ module.exports = function(api)
             // shutdown app
             // TODO
 
-            // delete app
+            // delete app and its permissions
             await App.deleteOne({ _id: req.params.id });
+            await req.permissions.removeFilteredGroupingPolicy(0, subjectOfApp(req.params.id));
+            await req.permissions.removeFilteredPolicy(0, subjectOfApp(req.params.id));
             res.send({ success: true });
         }
         catch(x) { next(x) }

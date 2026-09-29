@@ -16,6 +16,16 @@ const App = mongoose.model("App", (function()
         text: { type: String, required: true }
     });
 
+    // an area the app declares for the permission catalog; stored with the app's namespace (see services/permissions.js)
+    const permissionSchema = new mongoose.Schema(
+    {
+        object: { type: String, required: true, match: /^[\w.-]+(\/[\w.-]+)*$/ },
+        scope: { type: String, enum: [ "business", "system" ], required: true },
+        actions: { type: [ String ], required: true },
+        name: { type: String, required: true },
+        translated_names: [ translationSchema ]
+    }, { _id: false });
+
     const schemaDefinition = (
     {
         bundle_id: { type: String, unique: true },
@@ -31,7 +41,8 @@ const App = mongoose.model("App", (function()
         auto_start_command: String,
         license_key: String,
         pid: String,
-        webhooks: [ webhookSchema ]
+        webhooks: [ webhookSchema ],
+        permissions: [ permissionSchema ]
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
