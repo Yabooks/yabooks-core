@@ -1,4 +1,4 @@
-/* global loadTranslations, filters, GeneralTab, LogsTab, JobsTab, UsersTab, RolesTab, AppsTab, AccessDrawer */
+/* global loadTranslations, filters, GeneralTab, TaxCodesTab, LogsTab, JobsTab, UsersTab, RolesTab, AppsTab, AccessDrawer */
 
 // data shared by all tabs: what the session may do, and the vocabulary to describe permissions
 const settings = Vue.reactive(
@@ -93,6 +93,7 @@ const app = Vue.createApp(
             return [
                 { code: "system", tabs: [
                     { code: "general", visible: settings.may("settings", "read") },
+                    { code: "tax-codes", visible: settings.may("tax-codes", "read") },
                     { code: "logs", visible: settings.may("logs", "read") },
                     { code: "jobs", visible: settings.may("jobs", "read") }
                 ] },
@@ -141,6 +142,7 @@ app.config.globalProperties.$filters = { ...filters };
 app.config.globalProperties.$settings = settings;
 app.component("access-drawer", AccessDrawer);
 app.component("general-tab", GeneralTab);
+app.component("tax-codes-tab", TaxCodesTab);
 app.component("logs-tab", LogsTab);
 app.component("jobs-tab", JobsTab);
 app.component("users-tab", UsersTab);
