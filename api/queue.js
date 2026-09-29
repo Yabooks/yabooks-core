@@ -89,13 +89,142 @@ module.exports = function(api)
 
     /**
      * @openapi
+     * /api/v1/jobs:
+     *   get:
+     *     summary: List jobs of all queues, newest first
+     *     description: >
+     *       Includes the number of jobs per status (for the given queue, if any) as `counts`. Requires the permission
+     *       to read jobs.
+     *     tags:
+     *       - queue
+     *     parameters:
+     *       - { in: query, name: queue, schema: { type: string } }
+     *       - { in: query, name: status, schema: { type: string, enum: [ queued, dispatching, accepted, succeeded, failed, cancelled ] } }
+     *       - { in: query, name: skip, schema: { type: integer } }
+     *       - { in: query, name: limit, schema: { type: integer } }
+     *     responses:
+     *       200:
+     *         description: Paginated jobs
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               allOf:
+     *                 - $ref: '#/components/schemas/PaginatedResponse'
+     *                 - properties:
+     *                     data:
+     *                       type: array
+     *                       items:
+     *                         $ref: '#/components/schemas/QueueJob'
+     *                     counts:
+     *                       type: object
+     *                       additionalProperties: { type: integer }
+     *                       example: { queued: 12, failed: 2 }
+     *                     queues:
+     *                       type: array
+     *                       items: { type: string }
+     */
+    api.get("/api/v1/jobs", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "read", "jobs", null, res);
+
+            const { skip, limit } = req.pagination, queueFilter = req.query.queue ? { queue: String(req.query.queue) } : {};
+            const filter = { ...queueFilter, ...(req.query.status ? { status: String(req.query.status) } : {}) };
+
+            const counts = {};
+            for(let { _id, count } of await QueueJob.aggregate([ { $match: queueFilter }, { $group: { _id: "$status", count: { $sum: 1 } } } ]))
+                counts[_id] = count;
+
+            res.json({
+                skip, limit,
+                total: await QueueJob.countDocuments(filter),
+                data: await QueueJob.find(filter).sort({ _id: -1 }).skip(skip).limit(limit).lean(),
+                counts,
+                queues: (await QueueJob.distinct("queue")).sort()
+            });
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/jobs/{id}/retry:
+     *   post:
+     *     summary: Retry a failed or cancelled job
+     *     description: >
+     *       Puts the job back at the end of its queue with its retries reset. Requires the permission to write jobs.
+     *     tags:
+     *       - queue
+     *     parameters:
+     *       - { in: path, name: id, required: true, schema: { type: string } }
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *       409:
+     *         description: The job is neither failed nor cancelled
+     */
+    api.post("/api/v1/jobs/:id/retry", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "jobs", null, res);
+
+            let job = await QueueJob.findOneAndUpdate({ _id: req.params.id, status: { $in: [ "failed", "cancelled" ] } },
+                { $set: { status: "queued", retries: 0, queued_at: new Date() }, $unset: { finished_at: true } }, { new: true });
+
+            if(!job)
+                return res.status(409).json({ error: "only failed or cancelled jobs can be retried" });
+
+            res.json({ success: true });
+            QueueJob.processQueue(job.queue);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/jobs/{id}/cancel:
+     *   post:
+     *     summary: Cancel a queued job
+     *     description: Requires the permission to write jobs.
+     *     tags:
+     *       - queue
+     *     parameters:
+     *       - { in: path, name: id, required: true, schema: { type: string } }
+     *     responses:
+     *       200:
+     *         description: Successful response
+     *       409:
+     *         description: The job is not queued (anymore)
+     */
+    api.post("/api/v1/jobs/:id/cancel", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "jobs", null, res);
+
+            const { matchedCount } = await QueueJob.updateOne({ _id: req.params.id, status: "queued" },
+                { $set: { status: "cancelled", finished_at: new Date() } });
+
+            if(!matchedCount)
+                return res.status(409).json({ error: "only queued jobs can be cancelled" });
+
+            res.json({ success: true });
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
      * /api/v1/jobs/{id}:
      *   get:
      *     summary: Get a queued job
      *     description: >
      *       Returns a job including its dispatch history (which app was called when and whether it accepted the job)
-     *       and the outcomes reported by apps. Only accessible to the enqueueing user or app and to apps the job was
-     *       dispatched to.
+     *       and the outcomes reported by apps. Only accessible to the enqueueing user or app, to apps the job was
+     *       dispatched to, and with the permission to read jobs.
      *     tags:
      *       - queue
      *     parameters:
@@ -124,7 +253,8 @@ module.exports = function(api)
             const accessible = job && (
                 (app_id && String(job.enqueued_by?.app) === app_id) ||
                 (app_id && job.calls.some(call => String(call.app) === app_id)) ||
-                (user && String(job.enqueued_by?.user) === String(user)));
+                (user && String(job.enqueued_by?.user) === String(user)) ||
+                await req.permissions.isAllowed(req, "read", "jobs"));
 
             if(!accessible)
                 res.status(404).json({ error: "not found" });

@@ -157,6 +157,10 @@ app.use("/api/*", (req, res, next) =>
     next();
 });
 
+// load system settings stored in the database
+require("./services/settings.js").Settings.load().catch(err =>
+    require("./services/logger.js").Logger.log("error", "could not load system settings", err?.message || err));
+
 // inject permission handler, which is created once and shared by all requests
 const { getEnforcer } = require("./services/casbin.js");
 getEnforcer().catch(err => require("./services/logger.js").Logger.log("error", "could not load permissions", err?.message || err));

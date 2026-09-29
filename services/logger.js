@@ -1,13 +1,26 @@
-const { ApiRequestLog } = require("../models/log.js");
+const { ApiRequestLog, SystemLogEntry } = require("../models/log.js"), { Settings } = require("./settings.js");
 
 const Logger = (
 {
-    // writes a single log line to stdout; this is the one place all log output (from this core, and from apps logging
-    // through POST /api/v1/logs) funnels through, so that its format and destination only ever need to change here
-    log: (level, ...args) =>
+    // writes a single log line of the core to stdout and the system log
+    log: (level, ...args) => Logger.logFrom("core", level, ...args),
+
+    // writes a single log line to stdout and the system log; this is the one place all log output (from this core, from
+    // apps logging through POST /api/v1/logs, and from the output of locally started apps) funnels through, so that its
+    // format and destination only ever need to change here; source is "core" or the id of an app
+    logFrom: (source, level, ...args) =>
     {
+        level = Settings.logLevels.includes(level) ? level : "info";
+        if(Settings.logLevels.indexOf(level) < Settings.logLevels.indexOf(Settings.get("log_level")))
+            return;
+
         const message = args.map(arg => typeof arg === "string" ? arg : JSON.stringify(arg)).join(" ");
-        process.stdout.write(`[${new Date().toISOString()}] [${String(level || "info").toUpperCase()}] ${message}\n`);
+        const now = new Date(), prefix = source === "core" ? "" : `[app:${source}] `;
+        process.stdout.write(`[${now.toISOString()}] [${level.toUpperCase()}] ${prefix}${message}\n`);
+
+        // persisting is best effort; failures are not logged, as that would log again
+        const expires_at = new Date(now.getTime() + Settings.get("log_retention_days") * 24 * 60 * 60 * 1000);
+        SystemLogEntry.create({ level, source: String(source), message, expires_at }).catch(() => {});
     },
 
     // starts an api request log entry; its computingEnd, session_id and app_id are filled in by finalizeApiCall() once
