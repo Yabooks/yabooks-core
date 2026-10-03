@@ -1016,6 +1016,9 @@ module.exports = function(api)
         }
         catch(x)
         {
+            if(x === "handled")
+                return;
+
             res.status(404).send({
                 error: "not found",
                 error_description: "document or its editor could not be found"
@@ -1082,10 +1085,9 @@ module.exports = function(api)
     {
         try
         {
-            await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
-
             let doc = null;
 
+            // an app's own config database needs no permission, it is scoped to the app via owned_by
             if(req.params.id == "app-config" && req.auth?.app_id)
             {
                 let criteria = {
@@ -1099,7 +1101,11 @@ module.exports = function(api)
                 req.params.id = doc._id;
             }
 
-            else doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+            else
+            {
+                await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+                doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+            }
 
             if(req.get("content-type") !== "application/sql")
                 throw new Error(`request content type must be of type "application/sql" to execute the statement`);
@@ -1121,6 +1127,9 @@ module.exports = function(api)
         }
         catch(x)
         {
+            if(x === "handled")
+                return;
+
             res.status(400).json({ success: false, error: x?.response?.data || x?.message || x });
         }
     });

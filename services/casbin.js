@@ -37,6 +37,12 @@ async function createEnforcer()
         collection: "casbin",
     });
 
+    // the adapter (1.3.0) deletes by a filter that includes fresh createdAt/updatedAt timestamps, so removals never
+    // match a stored rule; fixed upstream (juicycleff/casbin-mongodb-adapter#26) but not released, so delete by fields only
+    const ruleFilter = (ptype, rule) => Object.fromEntries([ [ "ptype", ptype ], ...rule.map((value, i) => [ `v${i}`, value ]) ]);
+    adapter.removePolicy = async (_sec, ptype, rule) => void await adapter.getCollection().deleteOne(ruleFilter(ptype, rule));
+    adapter.removePolicies = async (_sec, ptype, rules) => void await Promise.all(rules.map(rule => adapter.getCollection().deleteOne(ruleFilter(ptype, rule))));
+
     const confFile = require("path").resolve(__dirname, "..", "casbin-allow-deny.conf");
     const enforcer = await newEnforcer(confFile, adapter);
 
