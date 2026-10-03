@@ -17,9 +17,22 @@ html, body
 
 .app
 {
+    opacity: 0;
     cursor: pointer;
     padding-bottom: 20px;
     display: inline-block;
+}
+
+/* only animate in once its icon has actually loaded, so API-loaded apps don't pop in after their fade already finished */
+.app.loaded
+{
+    animation: app-appear .3s ease-out forwards;
+}
+
+@keyframes app-appear
+{
+    from { opacity: 0; transform: translateY(10px) scale(.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .app .icon
