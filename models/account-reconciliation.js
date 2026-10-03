@@ -7,6 +7,7 @@ const AccountReconciliation = mongoose.model("AccountReconciliation", (function(
 {
     const schemaDefinition = (
     {
+        business: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: true },
         account: { type: mongoose.Schema.Types.ObjectId, ref: "LedgerAccount", required: true },
         reconciled_date: { type: Date, required: true },
         reconciled_amount: { type: mongoose.Schema.Types.Decimal128, required: true },
@@ -19,6 +20,7 @@ const AccountReconciliation = mongoose.model("AccountReconciliation", (function(
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { createdAt: "created_at", updatedAt: false }, autoIndex: false });
+    schema.path("business").index(true);
     schema.path("account").index(true);
     schema.path("reconciled_date").index(true);
     registerAuditLog(schema, "AccountReconciliation");

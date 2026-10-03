@@ -1,4 +1,5 @@
 const { AccountReconciliation } = require("../models/account-reconciliation.js");
+const { LedgerAccount } = require("../models/account.js");
 const { getActor } = require("../services/audit-context.js");
 
 module.exports = function(api)
@@ -40,6 +41,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(AccountReconciliation, [
                 { $match: { account: new req.ObjectId(req.params.id) } },
                 { $sort: { reconciled_date: -1 } }
@@ -82,9 +85,16 @@ module.exports = function(api)
     {
         try
         {
+            const account = await LedgerAccount.findOne({ _id: req.params.id }, "business");
+            if(!account)
+                return res.status(404).send({ error: "not found" });
+
+            await req.permissions.requirePermission(req, "write", "accounts", account.business, res);
+
             const actor = getActor();
             let entry = new AccountReconciliation({
                 ...req.body,
+                business: account.business,
                 account: req.params.id,
                 user: actor.user_id,
                 app: actor.app_id
@@ -123,9 +133,15 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.delete("/api/v1/balance-reconciliations/:id", async (req, res) =>
+    api.delete("/api/v1/balance-reconciliations/:id", async (req, res, next) =>
     {
-        await AccountReconciliation.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "accounts", await req.permissions.businessOf(AccountReconciliation, req.params.id), res);
+
+            await AccountReconciliation.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 };
