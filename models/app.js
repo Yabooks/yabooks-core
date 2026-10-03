@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js"), cmd = require("node:child_process"), jwt = require("jsonwebtoken");
+const registerAuditLog = require("../services/audit-log.js");
 
 // app schema
 const App = mongoose.model("App", (function()
@@ -36,6 +37,7 @@ const App = mongoose.model("App", (function()
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
     schema.path("bundle_id").index(true);
     schema.path("pid").index(true);
+    registerAuditLog(schema, "App", { redact: [ "secret", "license_key" ] });
     return schema;
 })());
 
@@ -51,6 +53,7 @@ const OAuthCode = mongoose.model("OAuthCode", (function()
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
     schema.path("expires_at").index(true);
+    registerAuditLog(schema, "OAuthCode");
     return schema;
 })());
 
@@ -100,17 +103,17 @@ App.callWebhooks = async function(event, payload, owner_app_id = null)
             {
                 let response = await App.sendWebhook(webhook, { event, payload });
                 if(!response.ok)
-                    console.error(`${ new Date().toLocaleString() } webhook ${webhook.event} of app ${webhook.app_id} responded with http status ${response.status}`);
+                    require("../services/logger.js").Logger.log("error", `webhook ${webhook.event} of app ${webhook.app_id} responded with http status ${response.status}`);
             }
             catch(x)
             {
-                console.error(`${ new Date().toLocaleString() } webhook ${webhook.event} of app ${webhook.app_id} could not be called`, x?.message || x);
+                require("../services/logger.js").Logger.log("error", `webhook ${webhook.event} of app ${webhook.app_id} could not be called`, x?.message || x);
             }
         }));
     }
     catch(x)
     {
-        console.error(x);
+        require("../services/logger.js").Logger.log("error", x?.message || x);
     }
 };
 
@@ -163,18 +166,18 @@ App.startLocalApps = async function()
             });
 
             child.on("exit", (code, signal) =>
-                console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} exited with signal ${signal}`));
-            
+                require("../services/logger.js").Logger.log("error", `app ${app.name} exited with signal ${signal}`));
+
             child.on("close", (code) =>
-                console.error(`[${ new Date().toLocaleString() }]`, `app ${app.name} closed with code ${code}`));
+                require("../services/logger.js").Logger.log("error", `app ${app.name} closed with code ${code}`));
 
             // store process id in the database
             await App.updateOne({ _id: app._id }, { pid: child.pid });
-            console.log(`[${ new Date().toLocaleString() }]`, "successfully started app", app.name);
+            require("../services/logger.js").Logger.log("info", "successfully started app", app.name);
         }
         catch(err)
         {
-            console.error(`[${ new Date().toLocaleString() }]`, "could not start app", app.name, err);
+            require("../services/logger.js").Logger.log("error", "could not start app", app.name, err?.message || err);
         }
 };
 

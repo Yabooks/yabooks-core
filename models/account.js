@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 const translationSchema = new mongoose.Schema(
 {
@@ -39,6 +40,7 @@ const LedgerAccount = mongoose.model("LedgerAccount", (function()
     schema.path("type").index(true);
     schema.path("valid_from").index(true);
     schema.path("valid_to").index(true);
+    registerAuditLog(schema, "LedgerAccount");
     return schema;
 })());
 

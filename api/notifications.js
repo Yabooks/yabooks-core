@@ -1,5 +1,5 @@
 const { Notification } = require("../models/notification.js");
-const { Session } = require("../models/user.js"), { Logger } = require("../services/logger.js");
+const { Session } = require("../models/user.js");
 const QRCode = require("qrcode");
 
 const listeners = {};
@@ -102,8 +102,6 @@ module.exports = function(api)
                     if(ws.readyState == 1) // connected and open
                         ws.send(JSON.stringify(msg));
                     else ;// TODO remove listener
-
-            await Logger.logRecordCreated("notification", msg);
         }
         catch(x) { next(x) }
     });

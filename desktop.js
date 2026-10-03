@@ -108,7 +108,7 @@ app.on("window-all-closed", () =>
     }
     catch(x)
     {
-        console.error(x);
+        require("./services/logger.js").Logger.log("error", x?.message || x);
         dialog.showMessageBoxSync(mainWindow, { type: "error", message: x?.message || x });
         process.exit(-1);
     }

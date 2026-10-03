@@ -220,7 +220,6 @@ module.exports = function(api)
             await doc.save();
             res.send(doc);
 
-            await Logger.logRecordCreated("document", doc);
             App.callWebhooks("document.created", { document_id: doc._id }, doc.owned_by);
         }
         catch(x) { next(x) }
@@ -337,7 +336,6 @@ module.exports = function(api)
             await Document.updateOne({ _id: req.params.id }, { $set: req.body }, { runValidators: true });
             res.send({ success: true });
 
-            //await Logger.logRecordUpdated("document", , );
             App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owned_by);
         }
         catch(x) { next(x) }
@@ -453,11 +451,10 @@ module.exports = function(api)
                 if(thumbnail)
                     await Document.updateOne({ _id: req.params.id }, { thumbnail });
             }
-            catch(x) { console.error(`thumbnail generation failed for document ${req.params.id}:`, x); }
+            catch(x) { Logger.log("error", `thumbnail generation failed for document ${req.params.id}:`, x?.message || x); }
 
             res.send({ success: true });
 
-            //await Logger.logRecordUpdated("document", , );
             App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owned_by);
         }
         catch(x) { next(x) }
@@ -924,7 +921,6 @@ module.exports = function(api)
 
             res.send({ success: true });
 
-            //await Logger.logRecordDeleted("document", , );
             App.callWebhooks("document.deleted", { document_id: req.params.id }, doc.owned_by);
         }
         catch(x) { next(x) }
@@ -1132,8 +1128,6 @@ module.exports = function(api)
             await link.validate();
             await link.save();
             res.send(link);
-
-            await Logger.logRecordCreated("link", link);
         }
         catch(x) { next(x) }
     });

@@ -1,6 +1,7 @@
 const mongoose = require("../services/connector.js");
 const authenticator = require("authenticator"), qrcode = require("qrcode"), bcrypt = require("bcrypt");
 const path = require("node:path"), fs = require("node:fs").promises;
+const registerAuditLog = require("../services/audit-log.js");
 
 // user schema
 const User = mongoose.model("User", (function()
@@ -74,6 +75,7 @@ const User = mongoose.model("User", (function()
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false, methods });
     schema.path("email").index(true);
     schema.path("individual").index(true);
+    registerAuditLog(schema, "User", { redact: [ "password_hash", "authenticator_key", "external_auth_info" ] });
     return schema;
 })());
 
@@ -88,6 +90,7 @@ const Session = mongoose.model("Session", (function()
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
     schema.path("user").index(true);
+    registerAuditLog(schema, "Session");
     return schema;
 })());
 

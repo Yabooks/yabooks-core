@@ -1,5 +1,6 @@
 const mongoose = require("../services/connector.js"), fs = require("node:fs").promises, path = require("node:path");
 const { Address, Email, Phone, BankAccount } = require("./contact.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // identity schema, which is shared by individuals and organizations
 const Identity = mongoose.model("Identity", (function()
@@ -48,7 +49,9 @@ const Identity = mongoose.model("Identity", (function()
         }
     });
 
-    return new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false, methods });
+    const schema = new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false, methods });
+    registerAuditLog(schema, "Identity");
+    return schema;
 })());
 
 // individual schema
@@ -69,21 +72,27 @@ const Organization = Identity.discriminator("Organization",
 });
 
 // relationship schema connecting two indentities with one another
-const Relationship = mongoose.model("Relationship",
+const Relationship = mongoose.model("Relationship", (function()
 {
-    from: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
-    to: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
-    type: { type: String, required: true },
-    icon: String, // unicode emoji
+    const schema = new mongoose.Schema(
+    {
+        from: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
+        to: { type: mongoose.Schema.Types.ObjectId, ref: "Identity", required: true },
+        type: { type: String, required: true },
+        icon: String, // unicode emoji
 
-    email: Email,
-    address: Address,
-    phone: Phone,
+        email: Email,
+        address: Address,
+        phone: Phone,
 
-    valid_from: Date,
-    valid_to: Date,
+        valid_from: Date,
+        valid_to: Date,
 
-    data: mongoose.Schema.Types.Mixed
-});
+        data: mongoose.Schema.Types.Mixed
+    });
+
+    registerAuditLog(schema, "Relationship");
+    return schema;
+})());
 
 module.exports = { Identity, Individual, Organization, Relationship };

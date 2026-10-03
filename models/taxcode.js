@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // sub tax code schema
 const SubTaxCode = (function()
@@ -36,6 +37,7 @@ const TaxCode = mongoose.model("TaxCode", (function()
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
     schema.index("code");
     schema.index("sub_codes", { sparse: true });
+    registerAuditLog(schema, "TaxCode");
     return schema;
 })());
 

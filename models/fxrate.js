@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js"), fetch = require("node-fetch");
+const registerAuditLog = require("../services/audit-log.js");
 
 // currency exchange rate model
 const FxRate = mongoose.model("FxRate", (function()
@@ -13,6 +14,7 @@ const FxRate = mongoose.model("FxRate", (function()
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
     schema.index("currency");
     schema.index("date");
+    registerAuditLog(schema, "FxRate");
     return schema;
 })());
 

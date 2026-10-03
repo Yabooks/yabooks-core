@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js"), { App } = require("./app.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // queue job schema
 const QueueJob = mongoose.model("QueueJob", (function()
@@ -47,6 +48,7 @@ const QueueJob = mongoose.model("QueueJob", (function()
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false });
     schema.index({ queue: 1, status: 1, priority: -1, queued_at: 1 });
+    registerAuditLog(schema, "QueueJob");
     return schema;
 })());
 
@@ -126,7 +128,7 @@ QueueJob.processQueue = async function(queue)
     }
     catch(x)
     {
-        console.error(`${ new Date().toLocaleString() } could not process queue ${queue}`, x);
+        require("../services/logger.js").Logger.log("error", `could not process queue ${queue}`, x?.message || x);
     }
     finally
     {
@@ -179,7 +181,7 @@ QueueJob.startDispatcher = async function(interval = 30000)
         }
         catch(x)
         {
-            console.error(`${ new Date().toLocaleString() } could not sweep queues`, x);
+            require("../services/logger.js").Logger.log("error", "could not sweep queues", x?.message || x);
         }
     };
 

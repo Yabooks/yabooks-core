@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { App, OAuthCode } = require("../models/app.js"), { User, Session } = require("../models/user.js");
+const { Logger } = require("../services/logger.js");
 
 module.exports = function(api)
 {
@@ -265,7 +266,7 @@ module.exports = function(api)
         }
         catch(x)
         {
-            console.error(`[${ new Date().toLocaleString() }] could not finalize oauth flow`, x);
+            Logger.log("error", "could not finalize oauth flow", x?.message || x);
             res.status(400).send({ error: "bad request", details: x?.message || x });
         }
     });

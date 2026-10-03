@@ -1,4 +1,5 @@
 const mongoose = require("../services/connector.js");
+const registerAuditLog = require("../services/audit-log.js");
 
 // field translation model
 const FieldTranslation = mongoose.model("FieldTranslation", (function()
@@ -18,6 +19,7 @@ const FieldTranslation = mongoose.model("FieldTranslation", (function()
     schema.index("language");
     schema.index({ code: 1, language: 1 }, { unique: true });
     schema.index("owned_by");
+    registerAuditLog(schema, "FieldTranslation");
     return schema;
 })());
 
@@ -26,7 +28,7 @@ for(let knownTranslation of require("../assets/translations.json"))
     new FieldTranslation(knownTranslation).save().catch(x =>
     {
         if(!x?.message || !x.message.includes("duplicate key error"))
-            console.error(`[${new Date().toLocaleString()}]`, "could not import translation from file", x?.message || x);
+            require("../services/logger.js").Logger.log("error", "could not import translation from file", x?.message || x);
 
         else FieldTranslation.findOne({ code: knownTranslation.code, language: knownTranslation.language }).then(existingTranslation => // replace if changes have occurred
         {
@@ -35,10 +37,10 @@ for(let knownTranslation of require("../assets/translations.json"))
                     code: knownTranslation.code,
                     language: knownTranslation.language
                 }, knownTranslation).catch(x =>
-                    console.error(`[${new Date().toLocaleString()}]`, "could not update translation", x?.message || x)
+                    require("../services/logger.js").Logger.log("error", "could not update translation", x?.message || x)
                 );
         }).catch(x =>
-            console.error(`[${new Date().toLocaleString()}]`, "could not replace translation", x?.message || x)
+            require("../services/logger.js").Logger.log("error", "could not replace translation", x?.message || x)
         );
     });
 
