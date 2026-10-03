@@ -167,10 +167,14 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.patch("/api/v1/businesses/:id", async (req, res) =>
+    api.patch("/api/v1/businesses/:id", async (req, res, next) =>
     {
-        await Business.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            await Business.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
