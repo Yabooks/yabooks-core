@@ -35,6 +35,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "accounts", req.params.id, res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(LedgerAccount, [
                 { $match: { business: new req.ObjectId(req.params.id) } },
                 { $sort: { display_number: 1 } }
@@ -75,6 +77,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "accounts", req.params.id, res);
+
             if(Array.isArray(req.body))
                 res.send(await LedgerAccount.insertMany(req.body.map(acc => ({ business: req.params.id, ...acc }))));
             else
@@ -115,6 +119,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
+
             let acc = await LedgerAccount.findOne({ _id: req.params.id });
             if(!acc)
                 res.status(404).send({ error: "not found" });
@@ -154,10 +160,16 @@ module.exports = function(api)
      *                 success:
      *                   type: boolean
      */
-    api.patch("/api/v1/ledger-accounts/:id", async (req, res) =>
+    api.patch("/api/v1/ledger-accounts/:id", async (req, res, next) =>
     {
-        await LedgerAccount.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
+
+            await LedgerAccount.updateOne({ _id: req.params.id }, req.body);
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
@@ -199,6 +211,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
+
             let acc = await LedgerAccount.findOneAndUpdate(
                 { _id: req.params.id },
                 { $addToSet: { tags: req.body.tag } },
@@ -245,6 +259,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
+
             let acc = await LedgerAccount.findOneAndUpdate(
                 { _id: req.params.id },
                 { $pull: { tags: req.params.tag } },
@@ -285,11 +301,17 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.delete("/api/v1/ledger-accounts/:id", async (req, res) =>
+    api.delete("/api/v1/ledger-accounts/:id", async (req, res, next) =>
     {
-        // TODO do not allow deleting an account which has ever been booked on
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
 
-        await LedgerAccount.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+            // TODO do not allow deleting an account which has ever been booked on
+
+            await LedgerAccount.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 };

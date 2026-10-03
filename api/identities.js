@@ -29,6 +29,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "identities", null, res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Identity, []));
         }
         catch(x) { next(x) }
@@ -72,6 +74,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "identities", null, res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Identity, [
                 { $project: { tax_numbers: { $objectToArray: "$tax_numbers" }, doc: '$$ROOT' } },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$doc", "$$ROOT" ] } } },
@@ -107,6 +111,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = new Individual(req.body);
             identity.full_name = `${identity.first_name ?? ""} ${identity.last_name ?? ""}`.trim();
             await identity.save();
@@ -140,6 +146,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = new Organization(req.body);
             await identity.save();
             res.send(identity);
@@ -176,6 +184,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "identities", null, res);
+
             let identity = await Identity.findOne({ _id: req.params.id });
             if(!identity)
                 res.status(404).send({ error: "not found" });
@@ -217,6 +227,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "identities", null, res);
+
             let identity = await Identity.findOne({ _id: req.params.id });
             if(!identity)
                 res.status(404).send({ error: "not found" });
@@ -270,6 +282,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = await Identity.findOne({ _id: req.params.id });
             if(!identity)
                 res.status(404).send({ error: "not found" });
@@ -325,6 +339,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = await Identity.findOne({ _id: req.params.id });
 
             if(!identity)
@@ -378,6 +394,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = await Organization.findOne({ _id: req.params.id });
 
             if(!identity)
@@ -422,6 +440,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "delete", "identities", null, res);
+
             await Identity.deleteOne({ _id: req.params.id });
             res.send({ success: true });
         }
@@ -467,6 +487,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = await Identity.findOneAndUpdate(
                 { _id: req.params.id },
                 { $addToSet: { dba: req.body.dba } },
@@ -513,6 +535,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = await Identity.findOneAndUpdate(
                 { _id: req.params.id },
                 { $pull: { dba: req.params.dba } },
@@ -569,6 +593,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = await Identity.findOneAndUpdate(
                 { _id: req.params.id },
                 { $set: { [`tax_numbers.${req.body.key}`]: req.body.value } },
@@ -615,6 +641,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let identity = await Identity.findOneAndUpdate(
                 { _id: req.params.id },
                 { $unset: { [`tax_numbers.${req.params.key}`]: "" } },
@@ -676,6 +704,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "identities", null, res);
+
             let relationships = await Relationship.find({ $or: [{ from: req.params.id }, { to: req.params.id }] })
                 .populate("from", "full_name kind") // from: { _id, full_name, kind }
                 .populate("to", "full_name kind"); // to: { _id, full_name, kind }
@@ -748,6 +778,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let relationship = new Relationship({ from: req.params.id, ...req.body });
             await relationship.save();
             res.send(relationship);
@@ -820,6 +852,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             let relationship = await Relationship.findOne({ _id: req.params.id });
 
             if(!relationship)
@@ -864,6 +898,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "identities", null, res);
+
             await Relationship.deleteOne({ _id: req.params.id });
             res.send({ success: true });
         }
