@@ -7,6 +7,7 @@
         <script type="text/javascript" src="/js/chart.js/chart.umd.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+        <script type="text/javascript" src="/js/yabooks/currency-input.js"></script>
         <script type="text/javascript" src="chart-component.js"></script>
     </head>
     <body>
@@ -68,6 +69,10 @@
                                 <button @click="showLedgerRecords(account)" :title="$filters.translate('balances.show-records')">
                                     &#x1F4CB;
                                 </button>
+                                <button @click="openReconciliation(account)"
+                                    :title="$filters.translate('balances.reconciliation.status.' + reconciliationStatusOf(account))">
+                                    {{ reconciliationIcon(account) }}
+                                </button>
                             </td>
                         </tr>
                     </template>
@@ -110,6 +115,70 @@
             <button class="newRecord" @click="openQuickRecorder()">
                 Quick Recorder
             </button>
+            <div v-if="dialog" class="modalShadow" @click.self="dialog = null">
+                <div class="modal">
+                    <h3>{{ $filters.translate("balances.reconciliation.title") }}</h3>
+                    <p class="modalRecord">
+                        {{ dialog.account.display_number }} {{ dialog.account.display_name }}
+                    </p>
+
+                    <table class="reconciliationEntries" v-if="dialog.entries.length">
+                        <tr>
+                            <th>{{ $filters.translate("balances.reconciliation.date") }}</th>
+                            <th>{{ $filters.translate("balances.reconciliation.amount") }}</th>
+                            <th>{{ $filters.translate("balances.reconciliation.status") }}</th>
+                            <th>{{ $filters.translate("balances.reconciliation.comment") }}</th>
+                            <th />
+                            <th />
+                        </tr>
+                        <tr v-for="entry in dialog.entries" :key="entry._id">
+                            <td>{{ $filters.formatDate(entry.reconciled_date) }}</td>
+                            <td align="right">{{ $filters.formatNumber(entry.reconciled_amount, currency) }}</td>
+                            <td align="center">{{ entry.approved === true ? "✅" : entry.approved === false ? "❌" : "⁉️" }}</td>
+                            <td>{{ entry.comment }}</td>
+                            <td>
+                                <a v-if="entry.proof_document_id" :href="`/api/v1/documents/${entry.proof_document_id}/binary`" target="_blank">
+                                    {{ $filters.translate("balances.reconciliation.proof") }}
+                                </a>
+                            </td>
+                            <td>
+                                <button type="button" @click="deleteReconciliationEntry(entry)">
+                                    {{ $filters.translate("balances.reconciliation.delete") }}
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                    <p v-else class="modalHint">{{ $filters.translate("balances.reconciliation.none") }}</p>
+
+                    <form class="reconciliationForm" @submit.prevent="submitReconciliationEntry(true)">
+                        <p class="modalHint">
+                            {{ $filters.translate("balances.reconciliation.new-hint").replace("{date}", $filters.formatDate(until + "T00:00")) }}
+                        </p>
+                        <label>
+                            {{ $filters.translate("balances.reconciliation.amount") }}
+                            <currency-input v-model="dialog.newEntry.reconciled_amount" :currency="currency" locale="de-AT"></currency-input>
+                        </label>
+                        <label>
+                            {{ $filters.translate("balances.reconciliation.comment") }}
+                            <textarea v-model="dialog.newEntry.comment" rows="2"></textarea>
+                        </label>
+                        <label>
+                            {{ $filters.translate("balances.reconciliation.proof") }}
+                            <input type="file" @change="dialog.newEntry.file = $event.target.files[0] ?? null" />
+                        </label>
+                        <p v-if="dialog.error" class="modalError">{{ dialog.error }}</p>
+                        <div class="modalButtons">
+                            <button type="button" @click="dialog = null">{{ $filters.translate("balances.reconciliation.abort") }}</button>
+                            <button type="button" class="reject" :disabled="dialog.busy" @click="submitReconciliationEntry(false)">
+                                &#x274C; {{ $filters.translate("balances.reconciliation.reject") }}
+                            </button>
+                            <button type="submit" class="primary" :disabled="dialog.busy">
+                                &#x2705; {{ $filters.translate("balances.reconciliation.approve") }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </main>
         <script type="text/javascript" src="app.js"></script>
     </body>
