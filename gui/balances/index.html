@@ -7,6 +7,7 @@
         <script type="text/javascript" src="/js/chart.js/chart.umd.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+        <script type="text/javascript" src="/js/yabooks/currency-input.js"></script>
         <script type="text/javascript" src="chart-component.js"></script>
     </head>
     <body>
@@ -155,7 +156,7 @@
                         </p>
                         <label>
                             {{ $filters.translate("balances.reconciliation.amount") }}
-                            <input type="number" step="0.01" v-model="dialog.newEntry.reconciled_amount" required />
+                            <currency-input v-model="dialog.newEntry.reconciled_amount" :currency="currency" locale="de-AT"></currency-input>
                         </label>
                         <label>
                             {{ $filters.translate("balances.reconciliation.comment") }}
@@ -169,10 +170,10 @@
                         <div class="modalButtons">
                             <button type="button" @click="dialog = null">{{ $filters.translate("balances.reconciliation.abort") }}</button>
                             <button type="button" class="reject" :disabled="dialog.busy" @click="submitReconciliationEntry(false)">
-                                {{ $filters.translate("balances.reconciliation.reject") }}
+                                &#x274C; {{ $filters.translate("balances.reconciliation.reject") }}
                             </button>
                             <button type="submit" class="primary" :disabled="dialog.busy">
-                                {{ $filters.translate("balances.reconciliation.approve") }}
+                                &#x2705; {{ $filters.translate("balances.reconciliation.approve") }}
                             </button>
                         </div>
                     </form>

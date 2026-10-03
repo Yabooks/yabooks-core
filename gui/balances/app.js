@@ -1,4 +1,4 @@
-/* global getSelectedBusinessId, filters, ChartComponent, loadTranslations */
+/* global getSelectedBusinessId, filters, ChartComponent, CurrencyInput, loadTranslations */
 
 const shade = (rgba1, rgba2, steps, step) =>
 {
@@ -22,7 +22,7 @@ const isValidIsoDate = (str) => /^\d{4}-\d{2}-\d{2}$/.test(str ?? "") && !isNaN(
 
 let app = Vue.createApp(
 {
-    components: { ChartComponent },
+    components: { ChartComponent, CurrencyInput },
 
     data()
     {
@@ -420,14 +420,15 @@ let app = Vue.createApp(
             this.dialog.entries = res.data.data;
         },
 
-        // creates a new entry approving or rejecting the account balance as of "until", optionally with a proof document
+        // creates a new entry approving or rejecting the account balance as of "until", optionally with a proof document,
+        // and closes the dialog once that succeeds
         async submitReconciliationEntry(approved)
         {
+            this.dialog.busy = true;
+            this.dialog.error = null;
+
             try
             {
-                this.dialog.busy = true;
-                this.dialog.error = null;
-
                 let proof_document_id = null;
                 const file = this.dialog.newEntry.file;
                 if(file)
@@ -452,17 +453,13 @@ let app = Vue.createApp(
                     comment: this.dialog.newEntry.comment || null
                 });
 
-                this.dialog.newEntry = { reconciled_amount: this.getAccountBalance(this.dialog.account).toFixed(2), comment: "", file: null };
-                await this.loadReconciliationEntries();
                 await this.loadReconciliationStatuses(this.loadCounter);
+                this.dialog = null;
             }
             catch(x)
             {
-                this.dialog.error = x.response?.data?.error ?? x.message;
-            }
-            finally
-            {
                 this.dialog.busy = false;
+                this.dialog.error = x.response?.data?.error ?? x.message;
             }
         },
 
