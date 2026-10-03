@@ -1,0 +1,225 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+        <link rel="stylesheet" type="text/css" href="profile.css" />
+    </head>
+    <body>
+        <main class="single-column">
+            <div class="widget">
+                <div class="profile-row">
+                    <div class="picture-wrap" @click="$refs.logoInput.click()" :title="$filters.translate('people.business.change-logo')">
+                        <img class="profile_picture" :src="logoUrl" />
+                        <span class="picture-overlay">&#x1F4F7;</span>
+                        <input type="file" accept="image/*" ref="logoInput" style="display: none" @change="selectLogo($event)" />
+                    </div>
+                    <span>
+                        {{ $filters.translate(business._id ? "people.business.edit" : "people.business.new") }}
+                        <small v-if="business._id">{{ business.name }}</small>
+                    </span>
+                </div>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.business.general") }}</span>
+                <div class="fields">
+                    <input type="text" v-model="business.name" :placeholder="$filters.translate('people.business.name')" />
+                    <div class="row">
+                        <input type="text" v-model="business.business_number" :placeholder="$filters.translate('people.business.number')" />
+                        <input type="text" v-model="business.default_currency" maxlength="3" style="max-width: 110px"
+                            :placeholder="$filters.translate('people.business.currency')" :title="$filters.translate('people.business.currency')" />
+                    </div>
+                    <label>
+                        <input type="checkbox" v-model="business.fictive" />
+                        {{ $filters.translate("people.business.fictive") }}
+                    </label>
+                </div>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.business.fiscal-year") }}</span>
+                <div class="fields">
+                    <div class="row">
+                        <select v-model="business.closing_month" style="flex: 1">
+                            <option :value="null">{{ $filters.translate("people.business.closing-month") }}</option>
+                            <option v-for="month in 12" :value="month">{{ monthName(month) }}</option>
+                        </select>
+                        <input type="number" min="1" max="31" v-model.number="business.closing_day_of_month"
+                            :placeholder="$filters.translate('people.business.closing-day')" />
+                    </div>
+                    <label>
+                        {{ $filters.translate("people.business.locked-until") }}
+                        <input type="date" v-model="business.locked_until" />
+                    </label>
+                    <label>
+                        {{ $filters.translate("people.business.canceled-at") }}
+                        <input type="date" v-model="business.canceled_at" />
+                    </label>
+                </div>
+            </div>
+            <div class="widget">
+                <span class="title">{{ $filters.translate("people.business.alternate-ledgers") }}</span>
+                <ul>
+                    <li v-for="(ledger, index) in business.alternate_ledgers">
+                        <input type="text" v-model="business.alternate_ledgers[index]" />
+                        <button class="remove" @click="business.alternate_ledgers.splice(index, 1)">&#x2715;</button>
+                    </li>
+                </ul>
+                <button class="add-mini" @click="business.alternate_ledgers.push('')">+ {{ $filters.translate("people.business.alternate-ledgers.add") }}</button>
+            </div>
+            <div class="widget">
+                <span class="error" v-if="error">{{ error }}</span>
+                <div class="actions">
+                    <button @click="save()" :disabled="saving">{{ $filters.translate("people.save") }}</button>
+                    <button @click="close()">{{ $filters.translate("people.cancel") }}</button>
+                </div>
+            </div>
+        </main>
+        <script type="text/javascript">
+            let app = Vue.createApp(
+            {
+                data()
+                {
+                    return {
+                        business: { default_currency: "EUR", fictive: false, closing_month: 12, closing_day_of_month: 31, alternate_ledgers: [] },
+                        owner: null,
+                        logo: null,
+                        logoPreview: null,
+                        saving: false,
+                        error: null
+                    };
+                },
+
+                computed:
+                {
+                    logoUrl()
+                    {
+                        if(this.logoPreview)
+                            return this.logoPreview;
+
+                        return this.business._id ? `/api/v1/businesses/${this.business._id}/logo` : "/people/organization.svg";
+                    }
+                },
+
+                async mounted()
+                {
+                    await loadTranslations({ "code*": "people." });
+
+                    // called either as business.html?id=<business id> to edit or business.html?owner=<identity id> to create
+                    let params = new URLSearchParams(self.location.search);
+                    this.owner = params.get("owner");
+
+                    if(params.get("id"))
+                    {
+                        try
+                        {
+                            let res = await axios.get(`/api/v1/businesses/${params.get("id")}`);
+                            this.business = {
+                                ...res.data,
+                                closing_month: res.data.closing_month ?? null,
+                                alternate_ledgers: res.data.alternate_ledgers || [],
+                                locked_until: res.data.locked_until?.substring(0, 10),
+                                canceled_at: res.data.canceled_at?.substring(0, 10)
+                            };
+                        }
+                        catch(x)
+                        {
+                            this.error = x?.response?.data?.error || x?.message || String(x);
+                        }
+                    }
+                },
+
+                methods:
+                {
+                    monthName(month)
+                    {
+                        return new Date(2000, month - 1, 1).toLocaleString(navigator.language, { month: "long" });
+                    },
+
+                    selectLogo(event)
+                    {
+                        let file = event.target.files[0];
+                        event.target.value = "";
+
+                        if(!file)
+                            return;
+
+                        if(this.logoPreview)
+                            URL.revokeObjectURL(this.logoPreview);
+
+                        this.logo = file;
+                        this.logoPreview = URL.createObjectURL(file);
+                    },
+
+                    async save()
+                    {
+                        this.error = null;
+
+                        if(!this.business.name?.trim())
+                            return this.error = this.$filters.translate("people.new.error.name-required");
+
+                        if(!/^[A-Za-z]{3}$/.test(this.business.default_currency?.trim() || ""))
+                            return this.error = this.$filters.translate("people.business.error.currency");
+
+                        let day = this.business.closing_day_of_month;
+                        if(day !== "" && day != null && !(Number.isInteger(day) && day >= 1 && day <= 31))
+                            return this.error = this.$filters.translate("people.business.error.closing-day");
+
+                        this.saving = true;
+
+                        try
+                        {
+                            // null clears a field on update, while undefined leaves the schema default on creation
+                            let empty = this.business._id ? null : undefined;
+                            let payload = {
+                                name: this.business.name.trim(),
+                                business_number: this.business.business_number?.trim() || empty,
+                                default_currency: this.business.default_currency.trim().toUpperCase(),
+                                fictive: !!this.business.fictive,
+                                closing_month: this.business.closing_month || empty,
+                                closing_day_of_month: (day === "" || day == null) ? empty : day,
+                                locked_until: this.business.locked_until || empty,
+                                canceled_at: this.business.canceled_at || empty,
+                                alternate_ledgers: this.business.alternate_ledgers.map(l => l?.trim()).filter(l => l)
+                            };
+
+                            let id = this.business._id;
+                            if(id)
+                                await axios.patch(`/api/v1/businesses/${id}`, payload);
+                            else id = (await axios.post(`/api/v1/identities/${this.owner}/businesses`, payload)).data._id;
+
+                            if(this.logo)
+                            {
+                                let binary = await this.logo.arrayBuffer();
+                                await axios.put(`/api/v1/businesses/${id}/logo`, binary,
+                                    { headers: { "Content-Type": this.logo.type || "application/octet-stream" } });
+                            }
+
+                            // refresh the identity page behind the modal and the selected business in the header
+                            parent.frames.main.location.reload();
+                            parent.document.app.updateSessionData();
+                            parent.document.app.openModal(false);
+                        }
+                        catch(x)
+                        {
+                            this.error = x?.response?.data?.error || x?.message || String(x);
+                        }
+                        finally
+                        {
+                            this.saving = false;
+                        }
+                    },
+
+                    close()
+                    {
+                        parent.document.app.openModal(false);
+                    }
+                }
+            });
+
+            app.config.globalProperties.$filters = { ...filters };
+            app.mount("main");
+        </script>
+    </body>
+</html>

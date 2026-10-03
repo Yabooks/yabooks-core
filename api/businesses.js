@@ -193,7 +193,7 @@ module.exports = function(api)
                     await req.permissions.requirePermission(req, !current || until > current ? "lock-period" : "unlock-period", "business", req.params.id, res);
             }
 
-            await Business.updateOne({ _id: req.params.id }, req.body);
+            await Business.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
             res.send({ success: true });
         }
         catch(x) { next(x) }
