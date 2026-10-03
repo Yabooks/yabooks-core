@@ -128,6 +128,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "translations", null, res);
+
             if(Array.isArray(req.body))
             {
                 for(let body of req.body)
@@ -229,10 +231,16 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.patch("/api/v1/translations/:id", async (req, res) =>
+    api.patch("/api/v1/translations/:id", async (req, res, next) =>
     {
-        await FieldTranslation.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "translations", null, res);
+
+            await FieldTranslation.updateOne({ _id: req.params.id }, req.body);
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
@@ -263,9 +271,15 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.delete("/api/v1/translations/:id", async (req, res) =>
+    api.delete("/api/v1/translations/:id", async (req, res, next) =>
     {
-        await FieldTranslation.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "translations", null, res);
+
+            await FieldTranslation.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 };

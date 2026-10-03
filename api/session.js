@@ -150,6 +150,42 @@ module.exports = function(api)
 
     /**
      * @openapi
+     * /api/v1/session/others:
+     *   delete:
+     *     summary: Sign out on all other devices
+     *     description: >-
+     *       Deletes all sessions of the current user except the current one.
+     *     tags:
+     *       - session
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Successful response
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                   example: true
+     */
+    api.delete("/api/v1/session/others", async (req, res, next) =>
+    {
+        try
+        {
+            let session = await Session.findOne({ _id: req.auth.session_id });
+            if(!session)
+                return res.status(401).send({ error: "unauthenticated" });
+
+            await Session.deleteMany({ user: session.user, _id: { $ne: session._id } });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
      * /api/v1/session/profile-picture:
      *   get:
      *     summary: Get the profile picture of the logged-in user

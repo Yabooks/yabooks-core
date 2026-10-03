@@ -102,6 +102,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", req.params.id, res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(Document, [
                 { $match: { business: new req.ObjectId(req.params.id) } },
                 { $project: { thumbnail: 0 } }
@@ -157,6 +159,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", req.params.id, res);
+
             // stages writing to collections would bypass all validation (e.g. the period lock), at any nesting depth
             const writesData = (value) => Array.isArray(value) ? value.some(writesData) :
                 !!value && typeof value === "object" && Object.entries(value).some(([ key, nested ]) => [ "$out", "$merge" ].includes(key) || writesData(nested));
@@ -215,6 +219,10 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "documents", req.params.id, res);
+            if(req.body?.posted)
+                await req.permissions.requirePermission(req, "record", "general-ledger", req.params.id, res);
+
             let doc = new Document({ business: req.params.id, ...req.body });
             await doc.validate();
             await doc.save();
@@ -264,6 +272,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             let doc = await Document.findOne({ _id: req.params.id }, [ "-thumbnail" ]);
             if(!doc)
                 res.status(404).send({ error: "not found" });
@@ -329,9 +339,15 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
+            await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
+            let doc = await Document.findOne({ _id: req.params.id }, "owned_by business posted");
             if(!doc)
                 return res.status(404).send({ error: "not found" });
+
+            // posting, unposting and changing the ledger of a posted document record in the general ledger
+            if((req.body?.posted !== undefined && req.body.posted !== doc.posted) || (doc.posted && req.body?.ledger_transactions !== undefined))
+                await req.permissions.requirePermission(req, "record", "general-ledger", doc.business ?? "*", res);
 
             await Document.updateOne({ _id: req.params.id }, { $set: req.body }, { runValidators: true });
             res.send({ success: true });
@@ -373,6 +389,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             let doc = await Document.findOne({ _id: req.params.id }, [ "name", "mime_type" ]);
 
             if(!doc)
@@ -435,6 +453,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             let doc = await Document.findOne({ _id: req.params.id });
 
             if(req.query.versioning || doc.posted)
@@ -495,6 +515,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             let doc = await Document.findOne({ _id: req.params.id }, [ "name", "thumbnail" ]);
 
             if(doc.thumbnail && doc.thumbnail.length < 67) // assume unicode emoji
@@ -580,6 +602,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             const doc = await Document.findOne({ _id: req.params.id }, [ "name", "mime_type" ]);
 
             if(!doc)
@@ -695,6 +719,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             const doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
 
             if(!doc)
@@ -793,6 +819,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             const doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
 
             if(!doc)
@@ -899,9 +927,15 @@ module.exports = function(api)
     {
         try
         {
-            let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
+            await req.permissions.requirePermission(req, "delete", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
+            let doc = await Document.findOne({ _id: req.params.id }, "owned_by business posted");
             if(!doc)
                 return res.status(404).send({ error: "not found" });
+
+            // deleting a posted document removes its records from the general ledger
+            if(doc.posted)
+                await req.permissions.requirePermission(req, "record", "general-ledger", doc.business ?? "*", res);
 
             // delete the record first, as it may be refused (e.g. period lock), before the binary is removed from disk
             let versionId = null;
@@ -970,6 +1004,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
             let editor_url = await App.getWebhook("document.editor", doc.owned_by);
 
@@ -980,6 +1016,9 @@ module.exports = function(api)
         }
         catch(x)
         {
+            if(x === "handled")
+                return;
+
             res.status(404).send({
                 error: "not found",
                 error_description: "document or its editor could not be found"
@@ -1048,6 +1087,7 @@ module.exports = function(api)
         {
             let doc = null;
 
+            // an app's own config database needs no permission, it is scoped to the app via owned_by
             if(req.params.id == "app-config" && req.auth?.app_id)
             {
                 let criteria = {
@@ -1061,7 +1101,11 @@ module.exports = function(api)
                 req.params.id = doc._id;
             }
 
-            else doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+            else
+            {
+                await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+                doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
+            }
 
             if(req.get("content-type") !== "application/sql")
                 throw new Error(`request content type must be of type "application/sql" to execute the statement`);
@@ -1083,6 +1127,9 @@ module.exports = function(api)
         }
         catch(x)
         {
+            if(x === "handled")
+                return;
+
             res.status(400).json({ success: false, error: x?.response?.data || x?.message || x });
         }
     });
@@ -1124,6 +1171,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             let link = new DocumentLink({ document_a: req.params.id, ...req.body });
             await link.validate();
             await link.save();
@@ -1169,6 +1218,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(DocumentLink, [
                 { $match: { $or: [ { document_a: new req.ObjectId(req.params.id) }, { document_b: new req.ObjectId(req.params.id) } ] } }
             ]));

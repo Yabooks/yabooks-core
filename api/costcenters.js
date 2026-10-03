@@ -39,6 +39,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "cost-centers", req.params.id, res);
+
             let query = CostCenter.find({ business: req.params.id }, null, req.pagination);
             res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
         }
@@ -79,6 +81,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "cost-centers", req.params.id, res);
+
             let cc = new CostCenter({ business: req.params.id, ...req.body });
             await cc.save();
             res.send(cc);
@@ -125,6 +129,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "cost-centers", await req.permissions.businessOf(CostCenter, req.params.id), res);
+
             let cc = await CostCenter.findOne({ _id: req.params.id });
             if(!cc)
                 res.status(404).send({ error: "not found" });
@@ -167,10 +173,16 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.patch("/api/v1/cost-centers/:id", async (req, res) =>
+    api.patch("/api/v1/cost-centers/:id", async (req, res, next) =>
     {
-        await CostCenter.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "cost-centers", await req.permissions.businessOf(CostCenter, req.params.id), res);
+
+            await CostCenter.updateOne({ _id: req.params.id }, req.body);
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
@@ -201,9 +213,15 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.delete("/api/v1/cost-centers/:id", async (req, res) =>
+    api.delete("/api/v1/cost-centers/:id", async (req, res, next) =>
     {
-        await CostCenter.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "cost-centers", await req.permissions.businessOf(CostCenter, req.params.id), res);
+
+            await CostCenter.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 };

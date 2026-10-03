@@ -96,6 +96,12 @@ app.on("window-all-closed", () =>
         if(!await User.findOne({ email: single_user.email }))
             await single_user.save();
 
+        // the single user may do everything; ensured at every start, so that installations created before permissions
+        // were enforced keep full access
+        const casbin = require("./services/casbin.js"), enforcer = await casbin.getEnforcer();
+        single_user = await User.findOne({ email: single_user.email });
+        await enforcer.addRoleForUser(casbin.subjectOfUser(single_user._id), casbin.ADMIN_ROLE, "*");
+
         // navigate to web app
         mainWindow.loadURL(dbReady = process.env.base_url || `http://localhost:${process.env.port}`);
 

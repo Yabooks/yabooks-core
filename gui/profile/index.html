@@ -7,28 +7,61 @@
         <script type="text/javascript" src="/js/yabooks/searchable-dropdown.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+    </head>
     <body>
         <main>
-            <div>
+            <header>
+                <img src="/api/v1/session/profile-picture" alt="" />
+                <b>{{ profile.email }}</b>
+            </header>
 
+            <div class="sections">
+                <section>
+                    <h2>{{ $filters.translate("profile.language") }}</h2>
+                    <searchable-dropdown :options="languages" v-model:selected="profile.preferred_language"></searchable-dropdown>
+                    <span class="hint">{{ $filters.translate("profile.language.change-warning") }}</span>
+                    <div><button class="primary" @click="saveLanguage()">{{ $filters.translate("profile.save") }}</button></div>
+                </section>
+
+                <section v-if="!singleUserMode && hasPassword">
+                    <h2>{{ $filters.translate("profile.password") }}</h2>
+                    <input id="profile-current-password" type="password" v-model="password.current" autocomplete="current-password"
+                        :placeholder="$filters.translate('profile.password.current')" />
+                    <input id="profile-new-password" type="password" v-model="password.new" autocomplete="new-password"
+                        :placeholder="$filters.translate('profile.password.new')" />
+                    <div><button :disabled="!password.current || !password.new" @click="changePassword()">{{ $filters.translate("profile.password.change") }}</button></div>
+                </section>
+
+                <section v-if="!singleUserMode">
+                    <h2>{{ $filters.translate("profile.authenticator") }}</h2>
+                    <template v-if="hasAuthenticator">
+                        <span><span class="pill active">{{ $filters.translate("profile.authenticator.active") }}</span></span>
+                    </template>
+                    <template v-else-if="qrCode">
+                        <img class="qr" :src="qrCode" alt="QR code" />
+                        <span class="hint">{{ $filters.translate("profile.authenticator.scan") }}</span>
+                        <input id="profile-authenticator-token" v-model="token" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
+                        <div><button class="primary" :disabled="!token" @click="finishAuthenticator()">{{ $filters.translate("profile.authenticator.confirm") }}</button></div>
+                    </template>
+                    <template v-else>
+                        <span><span class="pill">{{ $filters.translate("profile.authenticator.inactive") }}</span></span>
+                        <span class="hint">{{ $filters.translate("profile.authenticator.hint") }}</span>
+                        <div><button @click="startAuthenticator()">{{ $filters.translate("profile.authenticator.setup") }}</button></div>
+                    </template>
+                </section>
+
+                <section>
+                    <h2>{{ $filters.translate("profile.access") }}</h2>
+                    <div>
+                        <span class="chip" v-for="assignment in access.roles">
+                            {{ assignment.role === "admin" ? $filters.translate("settings.roles.administrator") : assignment.name }}
+                            <span class="secondary">· {{ scopeLabel(assignment) }}</span>
+                        </span>
+                        <span class="hint" v-if="!access.roles.length">{{ $filters.translate("profile.access.none") }}</span>
+                    </div>
+                    <div v-if="!singleUserMode"><button @click="signOutOthers()">{{ $filters.translate("profile.sign-out-others") }}</button></div>
+                </section>
             </div>
-            <table>
-                <tr>
-                    <td>{{ $filters.translate("profile.email") }}</td>
-                    <td>{{ profile?.email }}</td>
-                </tr>
-                <tr>
-                    <td>{{ $filters.translate("profile.language") }}</td>
-                    <td>
-                        <searchable-dropdown :options="languages"
-                            v-model:selected="profile.preferred_language"></searchable-dropdown>
-                        <span :title="$filters.translate('profile.language.change-warning')">&#x26A0;&#xFE0F;</span>
-                    </td>
-                </tr>
-            </table>
-            <button @click="save()">
-                {{ $filters.translate("profile.save") }}
-            </button>
         </main>
         <script type="text/javascript" src="app.js"></script>
     </body>

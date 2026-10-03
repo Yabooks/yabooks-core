@@ -7,12 +7,14 @@ const CostCenter = mongoose.model("CostCenter", (function()
 {
     const schemaDefinition = (
     {
+        business: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: true },
         display_name: String,
         display_number: String,
         data: mongoose.Schema.Types.Mixed
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, discriminatorKey: "kind", autoIndex: false });
+    schema.path("business").index(true);
     registerAuditLog(schema, "CostCenter");
     return schema;
 })());

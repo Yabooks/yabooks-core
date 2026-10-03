@@ -149,11 +149,25 @@ app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err
 // establish the acting app/user for the remainder of the request, so e.g. audit log entries can attribute data changes
 app.use("/api/*", require("./services/audit-context.js").middleware);
 
-// inject permission handler
+// tokens of sessions that no longer exist (signed out, or the user was deactivated) are not accepted anymore
+app.use("/api/*", (req, res, next) =>
+{
+    if(req.auth?.session_id && !require("./services/audit-context.js").getActor().user_id)
+        return void res.status(401).send({ error: "unauthorized" });
+    next();
+});
+
+// load system settings stored in the database
+require("./services/settings.js").Settings.load().catch(err =>
+    require("./services/logger.js").Logger.log("error", "could not load system settings", err?.message || err));
+
+// inject permission handler, which is created once and shared by all requests
+const { getEnforcer } = require("./services/casbin.js");
+getEnforcer().catch(err => require("./services/logger.js").Logger.log("error", "could not load permissions", err?.message || err));
 app.use(async (req, _, next) =>
 {
-    const loadHandler = require("./services/casbin.js");
-    req.permissions = await loadHandler();
+    try { req.permissions = await getEnforcer(); }
+    catch(x) { return next(x); }
     next();
 });
 

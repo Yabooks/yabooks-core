@@ -62,7 +62,7 @@ module.exports = function(api)
             if(!levels.includes(level))
                 return res.status(400).send({ error: "bad request", details: `level must be one of ${levels.join(", ")}` });
 
-            Logger.log(level, `[app:${req.auth.app_id}]`, req.body.message);
+            Logger.logFrom(String(req.auth.app_id), level, req.body.message);
             res.send({ success: true });
         }
         catch(x) { next(x) }
