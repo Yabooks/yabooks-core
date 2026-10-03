@@ -16,6 +16,7 @@ const User = mongoose.model("User", (function()
         authenticator_key: { type: String, required: false },
         external_auth_info: { type: mongoose.Schema.Types.Mixed }, // oauth or saml config
         preferred_language: { type: String }, // BCP 47
+        active: { type: Boolean, default: true }, // deactivated users cannot sign in; users are never deleted
         individual: { type: mongoose.Schema.Types.ObjectId, ref: "Individual" }
     });
 

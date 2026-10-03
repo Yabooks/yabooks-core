@@ -39,8 +39,13 @@ module.exports = function(api)
     {
         try
         {
-            let query = Business.find({ owner: req.params.id }, null, req.pagination);
-            res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
+            // only the businesses the request may read
+            let data = [];
+            for(let business of await Business.find({ owner: req.params.id }, null, req.pagination))
+                if(await req.permissions.isAllowed(req, "read", "business", business._id))
+                    data.push(business);
+
+            res.send({ ...req.pagination, data, total: data.length });
         }
         catch(x) { next(x) }
     });
@@ -79,6 +84,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "businesses", null, res);
+
             let business = new Business({ owner: req.params.id, ...req.body });
             await business.save();
             res.send(business);
@@ -125,6 +132,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "business", req.params.id, res);
+
             let business = await Business.findOne({ _id: req.params.id });
             if(!business)
                 res.status(404).send({ error: "not found" });
@@ -167,10 +176,27 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.patch("/api/v1/businesses/:id", async (req, res) =>
+    api.patch("/api/v1/businesses/:id", async (req, res, next) =>
     {
-        await Business.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            // changing locked_until requires lock-period (later date) or unlock-period (earlier date or removed); all
+            // other fields require write
+            if(Object.keys(req.body ?? {}).join() !== "locked_until")
+                await req.permissions.requirePermission(req, "write", "business", req.params.id, res);
+
+            if(req.body?.locked_until !== undefined)
+            {
+                const current = (await Business.findOne({ _id: req.params.id }, "locked_until").lean())?.locked_until ?? null;
+                const until = req.body.locked_until ? new Date(req.body.locked_until) : null;
+                if(current?.getTime() !== until?.getTime())
+                    await req.permissions.requirePermission(req, !current || until > current ? "lock-period" : "unlock-period", "business", req.params.id, res);
+            }
+
+            await Business.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
@@ -201,10 +227,16 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.delete("/api/v1/businesses/:id", async (req, res) =>
+    api.delete("/api/v1/businesses/:id", async (req, res, next) =>
     {
-        await Business.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "business", req.params.id, res);
+
+            await Business.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
@@ -253,6 +285,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "business", req.params.id, res);
+
             let business = await Business.findOne({ _id: req.params.id });
             if(!business)
                 res.status(404).send({ error: "not found" });
@@ -316,6 +350,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "business", req.params.id, res);
+
             let business = await Business.findOne({ _id: req.params.id });
             if(!business)
                 res.status(404).send({ error: "not found" });

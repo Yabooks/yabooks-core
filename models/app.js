@@ -16,6 +16,16 @@ const App = mongoose.model("App", (function()
         text: { type: String, required: true }
     });
 
+    // an area the app declares for the permission catalog; stored with the app's namespace (see services/permissions.js)
+    const permissionSchema = new mongoose.Schema(
+    {
+        object: { type: String, required: true, match: /^[\w.-]+(\/[\w.-]+)*$/ },
+        scope: { type: String, enum: [ "business", "system" ], required: true },
+        actions: { type: [ String ], required: true },
+        name: { type: String, required: true },
+        translated_names: [ translationSchema ]
+    }, { _id: false });
+
     const schemaDefinition = (
     {
         bundle_id: { type: String, unique: true },
@@ -31,7 +41,8 @@ const App = mongoose.model("App", (function()
         auto_start_command: String,
         license_key: String,
         pid: String,
-        webhooks: [ webhookSchema ]
+        webhooks: [ webhookSchema ],
+        permissions: [ permissionSchema ]
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
@@ -145,7 +156,7 @@ App.startLocalApps = async function()
         {
             // prepare environment variables for app
             let env = {
-                LOG_LEVEL: process.env.LOG_LEVEL || "INFO",
+                LOG_LEVEL: require("../services/settings.js").Settings.get("log_level").toUpperCase(),
                 YABOOKS_CORE_BASE_URL: process.env.base_url || `http://localhost:${process.env.port}/`,
                 YABOOKS_IS_SECONDARY_INSTANCE: process.env.is_secondary_instance,
                 YABOOKS_APP_ID: app._id,
@@ -161,9 +172,14 @@ App.startLocalApps = async function()
             const child = cmd.spawn(app_script, {
                 cwd: app.install_path,
                 env,
-                stdio: "inherit",
+                stdio: [ "ignore", "pipe", "pipe" ],
                 shell: process.env.shell || true
             });
+
+            // route the app's output through the logger, so it shows up in the system log tagged with the app
+            const { Logger } = require("../services/logger.js");
+            require("node:readline").createInterface({ input: child.stdout }).on("line", line => Logger.logFrom(String(app._id), "info", line));
+            require("node:readline").createInterface({ input: child.stderr }).on("line", line => Logger.logFrom(String(app._id), "error", line));
 
             child.on("exit", (code, signal) =>
                 require("../services/logger.js").Logger.log("error", `app ${app.name} exited with signal ${signal}`));

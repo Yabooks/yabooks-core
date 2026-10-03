@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css" />
+        <script type="text/javascript" src="/js/axios/axios.min.js"></script>
+        <script type="text/javascript" src="/js/vue/vue.js"></script>
+        <script type="text/javascript" src="/_generic/session.js"></script>
+        <script type="text/javascript" src="/_generic/filters.js"></script>
+    </head>
+    <body>
+        <main>
+            <div class="layout" v-if="loaded">
+                <nav class="menu">
+                    <template v-for="group in menu">
+                        <div class="group" v-if="group.tabs.some(tab => tab.visible)">
+                            {{ $filters.translate(`settings.menu.${group.code}`) }}
+                        </div>
+                        <template v-for="tab in group.tabs">
+                            <button v-if="tab.visible" class="item" :class="{ selected: tab.code === selectedTab }" @click="selectTab(tab.code)">
+                                {{ $filters.translate(`settings.menu.${tab.code}`) }}
+                            </button>
+                        </template>
+                    </template>
+                </nav>
+                <section class="pane">
+                    <p v-if="!selectedTab" class="empty">{{ $filters.translate("settings.no-access") }}</p>
+                    <general-tab v-if="selectedTab === 'general'"></general-tab>
+                    <tax-codes-tab v-if="selectedTab === 'tax-codes'"></tax-codes-tab>
+                    <logs-tab v-if="selectedTab === 'logs'"></logs-tab>
+                    <jobs-tab v-if="selectedTab === 'jobs'"></jobs-tab>
+                    <users-tab v-if="selectedTab === 'users'"></users-tab>
+                    <roles-tab v-if="selectedTab === 'roles'"></roles-tab>
+                    <apps-tab v-if="selectedTab === 'apps'"></apps-tab>
+                </section>
+            </div>
+        </main>
+        <script type="text/javascript" src="components/access-drawer.js"></script>
+        <script type="text/javascript" src="tabs/general.js"></script>
+        <script type="text/javascript" src="tabs/taxcodes.js"></script>
+        <script type="text/javascript" src="tabs/logs.js"></script>
+        <script type="text/javascript" src="tabs/jobs.js"></script>
+        <script type="text/javascript" src="tabs/users.js"></script>
+        <script type="text/javascript" src="tabs/roles.js"></script>
+        <script type="text/javascript" src="tabs/apps.js"></script>
+        <script type="text/javascript" src="app.js"></script>
+    </body>
+</html>

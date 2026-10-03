@@ -30,6 +30,7 @@ const loadTranslations = async (filters = {}) =>
         Object.keys(filters).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(filters[key])}`).join("&"));
 
     window.translations.push(...data.data.data);
+    window.translationsLoaded = true;
 };
 
 const beep = () => // play a sound to gain the user's attention
@@ -115,6 +116,9 @@ const filters = (
 
     translate: (code, language, fallback) =>
     {
+        if(!window.translationsLoaded) // show a skeleton placeholder until loadTranslations() has resolved at least once
+            return "░░░░░";
+
         window.translations = window.translations || [];
         language = language || getUserLanguage();
 

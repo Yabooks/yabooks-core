@@ -1,4 +1,78 @@
+:root
+{
+    --primary-color: rgb(249, 143, 94);
+    --success-color: #10b981;
+    --success-soft: #dcf5ec;
+    --border-color: #e5e7eb;
+    --input-border: #d1d5db;
+    --surface: #f9fafb;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --radius-sm: 6px;
+}
+
+html, body
+{
+    margin: 0;
+    font-family: "Roboto", sans-serif;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
 main
 {
     background: white;
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
+
+header { display: flex; gap: 14px; align-items: center; }
+header img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
+header b { font-size: 18px; font-weight: 500; }
+
+.sections
+{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 28px 36px;
+}
+
+section { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+
+h2
+{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0;
+}
+
+.hint, .secondary { color: var(--text-secondary); font-size: 12px; }
+
+input, button
+{
+    font: inherit;
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    background: white;
+    color: inherit;
+}
+
+button { cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--primary-color); border-color: var(--primary-color); color: white; font-weight: 500; }
+input:focus, button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
+
+.pill { display: inline-block; font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--surface); color: var(--text-secondary); }
+.pill.active { background: var(--success-soft); color: var(--success-color); }
+
+.chip { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--surface); margin: 1px 3px 1px 0; }
+
+.qr { width: 180px; height: 180px; }

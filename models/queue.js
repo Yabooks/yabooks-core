@@ -31,7 +31,7 @@ const QueueJob = mongoose.model("QueueJob", (function()
         priority: { type: Number, default: 5 }, // higher priority jobs are dispatched first
         max_retries: { type: Number, default: 3, min: 0 },
         retries: { type: Number, default: 0 },
-        status: { type: String, enum: [ "queued", "dispatching", "accepted", "succeeded", "failed" ], default: "queued" },
+        status: { type: String, enum: [ "queued", "dispatching", "accepted", "succeeded", "failed", "cancelled" ], default: "queued" },
         enqueued_at: { type: Date, default: () => new Date() },
         queued_at: { type: Date, default: () => new Date() }, // position within priority; reset when re-queued after a temporary error
         enqueued_by: {

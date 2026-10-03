@@ -151,6 +151,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "use", "yacob", null, res);
+
             const model = getModel(req.body.model);
 
             if(!model)

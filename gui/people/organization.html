@@ -183,6 +183,7 @@
                     <li class="business" v-for="business in businesses.data">
                         <img class="logo" :src="`/api/v1/businesses/${business._id}/logo`" />
                         <span>{{ business.name }}</span>
+                        <button @click="editBusiness(business)" :title="$filters.translate('people.business.edit')">&#x270F;&#xFE0F;</button>
                         <button @click="selectBusiness(business)" title="focus">&#x1F447;</button>
                     </li>
                 </ul>
@@ -462,7 +463,12 @@
 
                     addBusiness()
                     {
-                        // TODO
+                        parent.document.app.openModal(`/people/business.html?owner=${this.organization._id}`);
+                    },
+
+                    editBusiness(business)
+                    {
+                        parent.document.app.openModal(`/people/business.html?id=${business._id}`);
                     },
 
                     addRelationship()

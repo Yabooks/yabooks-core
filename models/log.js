@@ -49,4 +49,21 @@ ApiRequestLog.countFairUse = async function(from = new Date(2023, 0, 1), thru = 
     } });
 };
 
-module.exports = { AuditLogEntry, ApiRequestLog };
+// system log schema, persisting every line written by the logger (see services/logger.js), from the core and from apps
+const SystemLogEntry = mongoose.model("SystemLogEntry", (function()
+{
+    const schemaDefinition = (
+    {
+        level: { type: String, required: true },
+        source: { type: String, required: true }, // "core" or the id of an app
+        message: String,
+        expires_at: { type: Date, required: true } // removed by mongodb after the log retention period
+    });
+
+    const schema = new mongoose.Schema(schemaDefinition, { id: false });
+    schema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
+    schema.index({ source: 1, _id: -1 });
+    return schema;
+})());
+
+module.exports = { AuditLogEntry, ApiRequestLog, SystemLogEntry };

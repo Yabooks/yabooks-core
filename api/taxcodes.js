@@ -31,6 +31,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "tax-codes", null, res);
+
             res.send(await req.paginatedAggregatePipelineWithFilters(TaxCode));
         }
         catch(x) { next(x) }
@@ -62,6 +64,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "write", "tax-codes", null, res);
+
             let tc = new TaxCode({ ...req.body });
             await tc.save();
             res.send(tc);
@@ -108,6 +112,8 @@ module.exports = function(api)
     {
         try
         {
+            await req.permissions.requirePermission(req, "read", "tax-codes", null, res);
+
             let tc = await TaxCode.findOne({ _id: req.params.id });
             if(!tc)
                 res.status(404).send({ error: "not found" });
@@ -150,10 +156,16 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.patch("/api/v1/tax-codes/:id", async (req, res) =>
+    api.patch("/api/v1/tax-codes/:id", async (req, res, next) =>
     {
-        await TaxCode.updateOne({ _id: req.params.id }, req.body);
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "tax-codes", null, res);
+
+            await TaxCode.updateOne({ _id: req.params.id }, req.body);
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 
     /**
@@ -184,9 +196,15 @@ module.exports = function(api)
      *                   type: boolean
      *                   example: true
      */
-    api.delete("/api/v1/tax-codes/:id", async (req, res) =>
+    api.delete("/api/v1/tax-codes/:id", async (req, res, next) =>
     {
-        await TaxCode.deleteOne({ _id: req.params.id });
-        res.send({ success: true });
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "tax-codes", null, res);
+
+            await TaxCode.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
     });
 };

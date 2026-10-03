@@ -10,41 +10,41 @@
     <body>
         <div id="app_screen">
             <div class="app" @click="navigate({ link: '/people/' })">
-                <img class="icon" src="/people/icon.svg" />
+                <img class="icon" src="/people/icon.svg" @load="onIconLoad" @error="onIconLoad" />
                 <span>{{ $filters.translate("home.apps.people") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/accounts/' })">
-                <img class="icon" src="/accounts/icon.svg" />
+                <img class="icon" src="/accounts/icon.svg" @load="onIconLoad" @error="onIconLoad" />
                 <span>{{ $filters.translate("home.apps.accounts") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/documents/' })">
-                <img class="icon" src="/documents/icon.svg" />
+                <img class="icon" src="/documents/icon.svg" @load="onIconLoad" @error="onIconLoad" />
                 <span>{{ $filters.translate("home.apps.documents") }}</span>
             </div>
             <div class="app" @click="navigate({ link: '/balances/' })">
-                <img class="icon" src="/balances/icon.svg" />
+                <img class="icon" src="/balances/icon.svg" @load="onIconLoad" @error="onIconLoad" />
                 <span>{{ $filters.translate("home.apps.balances") }}</span>
             </div>
             <template v-for="app in apps">
                 <div class="app" v-if="app.link" @click="navigate(app)">
-                    <img class="icon" :src="app.icon" />
+                    <img class="icon" :src="app.icon" @load="onIconLoad" @error="onIconLoad" />
                     <span :alt="$filters.translate(app.translated_names, null, app.name)">
                         {{ $filters.translate(app.translated_names, null, app.name) }}
                     </span>
                 </div>
             </template>
             <div class="app" @click="navigate({ link: '/yacob/' })">
-                <img class="icon" src="/yacob/icon.svg" />
+                <img class="icon" src="/yacob/icon.svg" @load="onIconLoad" @error="onIconLoad" />
                 <span>YaCob AI</span>
             </div>
             <div class="app" @click="navigate({ link: '/apps/' })">
-                <img class="icon" src="/apps/icon.png" />
+                <img class="icon" src="/apps/icon.png" @load="onIconLoad" @error="onIconLoad" />
                 <span>{{ $filters.translate("home.apps.market") }}</span>
             </div>
-            <!--<div class="app" @click="navigate({ link: '/settings/' })">
-                <img class="icon" src="/settings/icon.svg" />
+            <div class="app" v-if="showSettings" @click="navigate({ link: '/settings/' })">
+                <img class="icon" src="/settings/icon.svg" @load="onIconLoad" @error="onIconLoad" />
                 <span>{{ $filters.translate("home.apps.settings") }}</span>
-            </div>-->
+            </div>
         </div>
         <script type="text/javascript">
             let app = Vue.createApp(
@@ -52,7 +52,8 @@
                 data()
                 {
                     return {
-                        apps: []
+                        apps: [],
+                        showSettings: false
                     };
                 },
 
@@ -62,6 +63,10 @@
 
                     let res = await axios.get("/api/v1/apps")
                     this.apps = res.data.data;
+
+                    // show the settings only to those who may see at least one part of them
+                    const { permissions } = (await axios.get("/api/v1/session/permissions")).data;
+                    this.showSettings = [ "settings", "tax-codes", "logs", "jobs", "users", "permissions" ].some(area => permissions[area]?.read);
                 },
 
                 methods:
@@ -69,6 +74,11 @@
                     navigate(app)
                     {
                         self.location = app.link;
+                    },
+
+                    onIconLoad(event) // trigger the appear effect only once the icon is actually ready to paint
+                    {
+                        event.target.closest(".app").classList.add("loaded");
                     }
                 }
             });

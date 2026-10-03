@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { App, OAuthCode } = require("../models/app.js"), { User, Session } = require("../models/user.js");
-const { Logger } = require("../services/logger.js");
+const { Logger } = require("../services/logger.js"), { Settings } = require("../services/settings.js");
 
 module.exports = function(api)
 {
@@ -165,6 +165,9 @@ module.exports = function(api)
      *       401:
      *         description: >-
      *           Invalid or missing credentials
+     *       403:
+     *         description: >-
+     *           User is deactivated
      *       412:
      *         description: >-
      *           Authenticator token is missing
@@ -200,13 +203,16 @@ module.exports = function(api)
                 else if(!user.verifyAuthenticatorToken(authenticator_token))
                     return res.status(401).send(msg_unauthorized);
             
+            if(user.active === false)
+                return res.status(403).send({ error: "forbidden", error_description: "user is deactivated" });
+
             if(![ "authenticator", "password", "password-authenticator", ].includes(user.auth_type)) // TODO oauth, saml
                 return res.status(501).send({ error: "not implemented", error_description: `type ${user.auth_type}` });
 
             let session = new Session({ user: user._id, data: { language: user.preferred_language } });
             await session.save();
 
-            let user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
+            let user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: Settings.get("session_duration") });
             let secure_cookie_only = req.protocol === "https" || process.env.base_url?.includes("https://");
 
             res.cookie("user_token", user_token, {
@@ -320,7 +326,7 @@ module.exports = function(api)
                 return void res.status(401).send({ error: "unauthorized", error_description: "provided client secret is incorrect" });
 
             let app_session = { session_id: code.session, app_id: code.app_id };
-            let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
+            let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: Settings.get("session_duration") });
             res.send({ token });
         }
         catch(x) { res.status(401).send({ error: "exchanging code for token failed" }) }
@@ -375,7 +381,7 @@ module.exports = function(api)
             if(!app) throw "401 unauthorized app";
 
             let app_session = { session_id: null, app_id: app._id };
-            let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: process.env.session_duration || "30d" });
+            let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: Settings.get("session_duration") });
             res.send({ token });
         }
         catch(x) { next(x) }
