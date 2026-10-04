@@ -1,18 +1,23 @@
+/* global SearchableDropdown */
+
 /**
  * drawer to create or edit a user (kind "users") or to edit the access of an app (kind "apps"): account details, role
  * assignments with their scope, exceptions (direct allow/deny policies) and the resulting effective permissions
  */
 const AccessDrawer = (
 {
+    components: { SearchableDropdown },
+
     props: [ "kind", "subject" ], // subject is null when creating a new user
 
     emits: [ "close", "saved" ],
 
     template: `
         <div class="drawer">
+            <button class="close" :title="$filters.translate('settings.close')" @click="$emit('close')">&rsaquo;</button>
             <div class="content">
                 <div class="header">
-                    <img :src="picture" alt="" />
+                    <img :src="picture" :class="{ app: kind === 'apps' }" alt="" />
                     <div class="title">
                         <b>{{ title }}</b>
                         <span class="secondary" v-if="kind === 'users' && subject?.full_name">{{ subject.email }}</span>
@@ -20,7 +25,6 @@ const AccessDrawer = (
                     <span v-if="kind === 'users' && subject" class="pill" :class="{ active: subject.active }">
                         {{ $filters.translate(subject.active ? "settings.users.active" : "settings.users.deactivated") }}
                     </span>
-                    <button class="link" @click="$emit('close')">&#10006;</button>
                 </div>
 
                 <div class="section" v-if="kind === 'users'">
@@ -33,10 +37,15 @@ const AccessDrawer = (
                             <input id="user-password" type="password" v-model="account.password" autocomplete="new-password" />
                         </template>
                         <label for="user-language">{{ $filters.translate("settings.users.language") }}</label>
-                        <select id="user-language" v-model="account.preferred_language" :disabled="!mayWriteUsers">
-                            <option value=""></option>
-                            <option v-for="language in languages" :value="language">{{ language }}</option>
-                        </select>
+                        <searchable-dropdown id="user-language" class="language" :options="languages" v-model:selected="account.preferred_language"
+                            :disabled="!mayWriteUsers"></searchable-dropdown>
+                        <template v-if="subject && mayWriteUsers && subject.auth_type?.includes('authenticator')">
+                            <span>{{ $filters.translate("settings.users.authenticator") }}</span>
+                            <div class="add">
+                                <span class="pill active">{{ $filters.translate("settings.users.authenticator-active") }}</span>
+                                <button class="danger" @click="resetAuthenticator()">{{ $filters.translate("settings.users.reset-authenticator") }}</button>
+                            </div>
+                        </template>
                         <template v-if="subject && mayWriteUsers">
                             <label for="user-new-password">{{ $filters.translate("settings.users.new-password") }}</label>
                             <div class="add">
@@ -145,7 +154,7 @@ const AccessDrawer = (
     data()
     {
         return {
-            account: { email: "", password: "", preferred_language: "" },
+            account: { email: "", password: "", preferred_language: "en" },
             originalAccount: null,
             access: { roles: [], exceptions: [] },
             originalAccess: null,
@@ -213,8 +222,11 @@ const AccessDrawer = (
 
                 if(this.kind === "users")
                 {
-                    this.account = { email: this.subject?.email ?? "", preferred_language: this.subject?.preferred_language ?? "", ...(this.subject ? {} : { password: "" }) };
-                    this.languages = (await axios.get("/api/v1/translations/languages")).data.data.map(language => language.language);
+                    this.account = { email: this.subject?.email ?? "", preferred_language: this.subject?.preferred_language || "en", ...(this.subject ? {} : { password: "" }) };
+                    this.languages = (await axios.get("/api/v1/translations/languages")).data.data.map(language => ({
+                        value: language.language,
+                        label: this.$filters.toLanguageLabel(language.language)
+                    }));
                 }
 
                 if(this.subject && this.$settings.may("permissions", "read"))
@@ -265,6 +277,19 @@ const AccessDrawer = (
                 await axios.post(`/api/v1/users/${this.subject._id}/password`, { password: this.newPassword });
                 this.newPassword = "";
                 alert(this.$filters.translate("settings.users.password-set"));
+            }
+            catch(x) { this.$settings.alertError(x); }
+        },
+
+        async resetAuthenticator()
+        {
+            if(!confirm(this.$filters.translate("settings.users.confirm-reset-authenticator")))
+                return;
+
+            try
+            {
+                await axios.delete(`/api/v1/users/${this.subject._id}/mfa`);
+                this.$emit("saved");
             }
             catch(x) { this.$settings.alertError(x); }
         },

@@ -15,7 +15,7 @@ const GeneralTab = (
             <div class="form">
                 <template v-for="setting in settings" :key="setting.key">
                     <label :for="'setting-' + setting.key">{{ $filters.translate("settings.general." + setting.key) }}</label>
-                    <div>
+                    <div class="setting">
                         <select v-if="setting.key === 'default_role'" :id="'setting-' + setting.key" v-model="values[setting.key]" :disabled="readonly(setting)">
                             <option value="">{{ $filters.translate("settings.general.no-role") }}</option>
                             <option v-for="role in $settings.roles" :value="role._id">{{ $settings.roleName(role._id) }}</option>
@@ -24,9 +24,7 @@ const GeneralTab = (
                             <option v-for="value in setting.values" :value="value">{{ value }}</option>
                         </select>
                         <input v-else :id="'setting-' + setting.key" :type="setting.type === 'number' ? 'number' : 'text'" v-model="values[setting.key]" :disabled="readonly(setting)" />
-                        <div class="locked" v-if="setting.locked">
-                            &#x1F512; {{ $filters.translate("settings.general.locked").split("ENV").join(setting.env) }}
-                        </div>
+                        <span class="locked" v-if="setting.locked" :title="$filters.translate('settings.general.locked').split('ENV').join(setting.env)">&#x1F512;</span>
                     </div>
                 </template>
             </div>

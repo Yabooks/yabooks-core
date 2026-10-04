@@ -36,12 +36,27 @@
                     <h2>{{ $filters.translate("profile.authenticator") }}</h2>
                     <template v-if="hasAuthenticator">
                         <span><span class="pill active">{{ $filters.translate("profile.authenticator.active") }}</span></span>
+                        <template v-if="removing">
+                            <span class="hint">{{ $filters.translate("profile.authenticator.remove-hint") }}</span>
+                            <input id="profile-authenticator-remove-token" v-model="token" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
+                            <div class="buttons">
+                                <button class="danger" :disabled="!token" @click="removeAuthenticator()">{{ $filters.translate("profile.authenticator.remove") }}</button>
+                                <button @click="cancelAuthenticator()">{{ $filters.translate("profile.authenticator.cancel") }}</button>
+                            </div>
+                        </template>
+                        <template v-else-if="hasPassword">
+                            <span class="hint">{{ $filters.translate("profile.authenticator.change-hint") }}</span>
+                            <div><button @click="removing = true">{{ $filters.translate("profile.authenticator.remove") }}</button></div>
+                        </template>
                     </template>
                     <template v-else-if="qrCode">
                         <img class="qr" :src="qrCode" alt="QR code" />
                         <span class="hint">{{ $filters.translate("profile.authenticator.scan") }}</span>
                         <input id="profile-authenticator-token" v-model="token" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
-                        <div><button class="primary" :disabled="!token" @click="finishAuthenticator()">{{ $filters.translate("profile.authenticator.confirm") }}</button></div>
+                        <div class="buttons">
+                            <button class="primary" :disabled="!token" @click="finishAuthenticator()">{{ $filters.translate("profile.authenticator.confirm") }}</button>
+                            <button @click="cancelAuthenticator()">{{ $filters.translate("profile.authenticator.cancel") }}</button>
+                        </div>
                     </template>
                     <template v-else>
                         <span><span class="pill">{{ $filters.translate("profile.authenticator.inactive") }}</span></span>

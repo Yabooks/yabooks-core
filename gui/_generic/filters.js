@@ -136,5 +136,28 @@ const filters = (
 
         let codePoints = countryCode.toUpperCase().split("").map(char => char.charCodeAt(0) + 127397);
         return String.fromCodePoint(...codePoints);
+    },
+
+    // label of a BCP 47 language code with the flag emoji of its country, e.g. "🇦🇹 de-AT"
+    toLanguageLabel: (languageCode) =>
+    {
+        let [ language, country ] = languageCode.split("-");
+        country = country && country.match(/^[A-Z]{2}$/) ? country : null;
+
+        if(!country)
+        {
+            if(language == "cs") country = "cz"; // Czech
+            if(language == "en") country = "us"; // English
+            if(language == "el") country = "gr"; // Greek
+            if(language == "et") country = "ee"; // Estonian
+            if(language == "ja") country = "jp"; // Japanese
+            if(language == "sl") country = "si"; // Slovenian
+            if(language == "sr") country = "cs"; // Serbian
+            if(language == "sq") country = "al"; // Albanian
+            if(language == "sv") country = "se"; // Swedish
+            if(language == "uk") country = "ua"; // Ukrainian
+        }
+
+        return `${filters.toFlagEmoji(country || language) ?? ""} ${languageCode}`.trim();
     }
 });

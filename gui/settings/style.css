@@ -38,8 +38,6 @@ main, .layout
 {
     display: grid;
     grid-template-columns: 220px 1fr;
-    padding-top: 40px; /* space for the navigation bar of the main window */
-    box-sizing: border-box;
 }
 
 /* side menu */
@@ -108,6 +106,9 @@ h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: v
 }
 
 .toolbar .grow { flex: 1; }
+
+/* the logo and profile picture of the main window overlap the top right corner */
+.pane > div > .toolbar:first-child { padding-right: 72px; }
 
 button, .button
 {
@@ -212,14 +213,15 @@ button.chip.selected { background: var(--primary-soft); border-color: var(--prim
     align-items: center;
 }
 
-.form .locked { font-size: 12px; color: var(--text-secondary); }
+.form .setting { display: flex; gap: 8px; align-items: center; }
+.form .locked { cursor: help; }
 
 /* drawer */
 
 .drawer
 {
     position: fixed;
-    top: 40px;
+    top: 0;
     right: 0;
     bottom: 0;
     width: 440px;
@@ -242,8 +244,30 @@ button.chip.selected { background: var(--primary-soft); border-color: var(--prim
     gap: 18px;
 }
 
-.drawer .header { display: flex; gap: 12px; align-items: center; }
+.drawer .header { display: flex; gap: 12px; align-items: center; padding-right: 100px; }
 .drawer .header img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
+.drawer .header img.app { border-radius: 20%; border: none; } /* app icons are rounded squares, like on the home screen */
+
+/* handle on the outer left edge of the drawer that slides it away */
+.drawer .close
+{
+    position: absolute;
+    top: 24px;
+    left: -29px;
+    width: 28px;
+    height: 44px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--text-secondary);
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-radius: var(--radius) 0 0 var(--radius);
+    box-shadow: -4px 0 8px rgba(0, 0, 0, .06);
+}
+
+.drawer .close:hover { color: var(--primary-color); border-color: var(--border-color); }
 .drawer .header .title { flex: 1; min-width: 0; }
 .drawer .header .title b { display: block; font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
 
@@ -252,7 +276,9 @@ button.chip.selected { background: var(--primary-soft); border-color: var(--prim
 .drawer .add { display: flex; gap: 6px; flex-wrap: wrap; }
 .drawer .add select { max-width: 100%; }
 .drawer .add input { flex: 1; min-width: 0; }
+.drawer .add .pill { align-self: center; }
 .drawer .fields { display: grid; grid-template-columns: 120px 1fr; gap: 8px 10px; align-items: center; }
+.drawer .fields .language, .drawer .fields .language input { width: 100%; }
 .drawer .footer { display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid var(--border-color); padding: 12px 20px; }
 
 .effect { display: inline-block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; }

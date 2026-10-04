@@ -1,27 +1,5 @@
 /* global loadTranslations, SearchableDropdown, filters */
 
-const extractCountryCode = function(languageCode)
-{
-    let [ language, country ] = languageCode.split("-");
-    country = country && country.match(/^[A-Z]{2}$/) ? country : null;
-
-    if(!country)
-    {
-        if(language == "cs") country = "cz"; // Czech
-        if(language == "en") country = "us"; // English
-        if(language == "el") country = "gr"; // Greek
-        if(language == "et") country = "ee"; // Estonian
-        if(language == "ja") country = "jp"; // Japanese
-        if(language == "sl") country = "si"; // Slovenian
-        if(language == "sr") country = "cs"; // Serbian
-        if(language == "sq") country = "al"; // Albanian
-        if(language == "sv") country = "se"; // Swedish
-        if(language == "uk") country = "ua"; // Ukrainian
-    }
-
-    return country || language;
-};
-
 const app = Vue.createApp(
 {
     components: { SearchableDropdown },
@@ -37,6 +15,7 @@ const app = Vue.createApp(
             password: { current: "", new: "" },
             qrCode: null,
             token: "",
+            removing: false,
             singleUserMode: !!parent?.document?.app?.isInSingleUserMode
         };
     },
@@ -64,7 +43,7 @@ const app = Vue.createApp(
         let data = await axios.get("/api/v1/translations/languages");
         this.languages = data.data.data.map(language => ({
             value: language.language,
-            label: `${this.$filters.toFlagEmoji(extractCountryCode(language.language))} ${language.language}`
+            label: this.$filters.toLanguageLabel(language.language)
         }));
 
         // load user profile data and own access
@@ -135,6 +114,27 @@ const app = Vue.createApp(
 
                 this.qrCode = null;
                 this.token = "";
+                await this.reload();
+            }
+            catch(x) { this.alertError(x); }
+        },
+
+        cancelAuthenticator()
+        {
+            this.qrCode = null;
+            this.removing = false;
+            this.token = "";
+        },
+
+        async removeAuthenticator()
+        {
+            try
+            {
+                const res = await axios.delete("/api/v1/users/me/mfa", { params: { token: this.token } });
+                if(!res.data.success)
+                    return alert(this.$filters.translate("profile.authenticator.wrong-code"));
+
+                this.cancelAuthenticator();
                 await this.reload();
             }
             catch(x) { this.alertError(x); }

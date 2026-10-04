@@ -3,6 +3,7 @@
     --primary-color: rgb(249, 143, 94);
     --success-color: #10b981;
     --success-soft: #dcf5ec;
+    --danger-color: #dc2626;
     --border-color: #e5e7eb;
     --input-border: #d1d5db;
     --surface: #f9fafb;
@@ -67,6 +68,7 @@ input, button
 
 button { cursor: pointer; }
 button:disabled { opacity: .5; cursor: default; }
+button.danger { color: var(--danger-color); border-color: var(--danger-color); }
 button.primary { background: var(--primary-color); border-color: var(--primary-color); color: white; font-weight: 500; }
 input:focus, button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
 
@@ -76,3 +78,5 @@ input:focus, button:focus-visible { outline: 2px solid var(--primary-color); out
 .chip { display: inline-block; font-size: 12px; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--surface); margin: 1px 3px 1px 0; }
 
 .qr { width: 180px; height: 180px; }
+
+.buttons { display: flex; gap: 8px; }

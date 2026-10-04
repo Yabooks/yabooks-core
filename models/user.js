@@ -15,7 +15,7 @@ const User = mongoose.model("User", (function()
         password_hash: { type: String, required: false },
         authenticator_key: { type: String, required: false },
         external_auth_info: { type: mongoose.Schema.Types.Mixed }, // oauth or saml config
-        preferred_language: { type: String }, // BCP 47
+        preferred_language: { type: String, required: true, default: "en" }, // BCP 47
         active: { type: Boolean, default: true }, // deactivated users cannot sign in; users are never deleted
         individual: { type: mongoose.Schema.Types.ObjectId, ref: "Individual" }
     });
@@ -63,6 +63,26 @@ const User = mongoose.model("User", (function()
             return true;
         },
 
+        async removeAuthenticator(authenticator_token)
+        {
+            if(this.auth_type !== "password-authenticator")
+                throw "authenticator can only be removed if the user signs in with password and authenticator";
+
+            if(!this.verifyAuthenticatorToken(authenticator_token))
+                return false;
+
+            await this.resetAuthenticator();
+            return true;
+        },
+
+        // removes the authenticator without verification, e.g. if an administrator resets it after the device got lost
+        async resetAuthenticator()
+        {
+            this.auth_type = "password";
+            this.authenticator_key = undefined;
+            await this.save();
+        },
+
         verifyAuthenticatorToken(authenticator_token)
         {
             if(!this.authenticator_key)
@@ -94,5 +114,9 @@ const Session = mongoose.model("Session", (function()
     registerAuditLog(schema, "Session");
     return schema;
 })());
+
+// users created before the language became mandatory get the default language
+User.updateMany({ preferred_language: { $in: [ null, "" ] } }, { preferred_language: "en" }).catch(x =>
+    require("../services/logger.js").Logger.log("error", "could not set default language of users", x?.message || x));
 
 module.exports = { User, Session };

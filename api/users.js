@@ -115,7 +115,7 @@ module.exports = function(api)
      *             properties:
      *               email: { type: string }
      *               password: { type: string, description: initial password, at least 8 characters }
-     *               preferred_language: { type: string }
+     *               preferred_language: { type: string, description: BCP 47 language code, defaults to `en` }
      *               individual: { type: string, description: ID of the individual identity of the user }
      *     responses:
      *       200:
@@ -144,7 +144,7 @@ module.exports = function(api)
             if(await User.exists({ email }))
                 return res.status(400).send({ error: "bad request", details: "a user with this email address already exists" });
 
-            let user = new User({ email, preferred_language, individual, auth_type: "password", password_hash: await bcrypt.hash(password, 10) });
+            let user = new User({ email, preferred_language: preferred_language || "en", individual, auth_type: "password", password_hash: await bcrypt.hash(password, 10) });
             await user.save();
             res.send(await User.findOne({ _id: user._id }, secretFields));
         }
@@ -317,6 +317,9 @@ module.exports = function(api)
 
             if(!_id || !await User.exists({ _id }))
                 return res.status(404).send({ error: "not found" });
+
+            if(req.body?.preferred_language !== undefined && (typeof req.body.preferred_language !== "string" || !req.body.preferred_language.trim()))
+                return res.status(400).send({ error: "bad request", details: "preferred_language must not be empty" });
 
             let update = {};
             for(let field of fields)
@@ -540,6 +543,85 @@ module.exports = function(api)
                 res.send({
                     success: await user.finalizeAuthenticatorConfiguration(req.query.token)
                 });
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/users/{id}/mfa:
+     *   delete:
+     *     summary: Remove the authenticator app as second factor
+     *     description: >-
+     *       Removes the authenticator app, so that the user signs in with password only. For the own user, a current
+     *       code of the authenticator app is required, and users that sign in with the authenticator app only cannot
+     *       remove it. For other users (e.g. after their device got lost), it resets the authenticator app without code,
+     *       signs the user out everywhere and requires the permission to write users; a user without password needs
+     *       a new password afterwards to be able to sign in.
+     *     tags:
+     *       - users
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the user, or `me` for the user of the current session
+     *       - in: query
+     *         name: token
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           Current code of the authenticator app, required for the own user
+     *     responses:
+     *       200:
+     *         description: Result, false if the code is not correct
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success: { type: boolean }
+     *       400:
+     *         description: Token missing
+     *       404:
+     *         description: Not found
+     *       409:
+     *         description: No authenticator app configured, or the authenticator app is the own user's only sign-in method
+     */
+    api.delete("/api/v1/users/:id/mfa", async (req, res, next) =>
+    {
+        try
+        {
+            const { _id, isOwn } = await resolve(req);
+            if(!isOwn)
+                await req.permissions.requirePermission(req, "write", "users", null, res);
+
+            let user = _id && await User.findOne({ _id });
+            if(!user)
+                return res.status(404).send({ error: "not found" });
+
+            if(!isOwn) // reset by an administrator
+            {
+                if(!user.auth_type.includes("authenticator"))
+                    return res.status(409).send({ error: "conflict", details: "no authenticator app configured" });
+
+                await user.resetAuthenticator();
+                await Session.deleteMany({ user: user._id });
+                return res.send({ success: true });
+            }
+
+            if(!req.query.token)
+                return res.status(400).send({ error: "bad request", details: "token missing" });
+
+            if(user.auth_type !== "password-authenticator")
+                return res.status(409).send({ error: "conflict", details: user.auth_type === "authenticator" ?
+                    "the authenticator app is the only sign-in method and cannot be removed" : "no authenticator app configured" });
+
+            res.send({
+                success: await user.removeAuthenticator(req.query.token)
+            });
         }
         catch(x) { next(x) }
     });
