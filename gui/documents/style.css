@@ -344,6 +344,13 @@ html, body
     position: relative;
 }
 
+#notification span small {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.9em;
+    color: #64748b;
+}
+
 #notification span:not(:last-child) {
     border-bottom: 1px solid #ffe4d6;
 }

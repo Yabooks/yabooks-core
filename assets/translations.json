@@ -562,6 +562,8 @@
     { "code": "documents.list.confirm-delete", "language": "de", "text": "Sind Sie sicher, dass Sie dieses Dokument l\u00f6schen m\u00f6chten?" },
     { "code": "documents.list.deleted", "language": "en", "text": ">NAME< was successfully deleted." },
     { "code": "documents.list.deleted", "language": "de", "text": ">NAME< wurde erfolgreich gel\u00f6scht." },
+    { "code": "documents.list.deleted-ledger-records", "language": "en", "text": "its ledger records were removed" },
+    { "code": "documents.list.deleted-ledger-records", "language": "de", "text": "seine Buchungen wurden entfernt" },
     { "code": "documents.list.uploaded", "language": "en", "text": ">NAME< was successfully uploaded." },
     { "code": "documents.list.uploaded", "language": "de", "text": ">NAME< wurde erfolgreich hochgeladen." },
     { "code": "documents.list.unnamed", "language": "en", "text": "Unnamed document" },

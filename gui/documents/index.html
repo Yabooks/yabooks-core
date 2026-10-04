@@ -79,6 +79,7 @@
             <div id="notification" v-if="notifications?.length > 0" @click="notifications = []">
                 <span v-for="notification in notifications">
                     {{ notification.message }}
+                    <small v-if="notification.details">{{ notification.details }}</small>
                 </span>
             </div>
         </div>

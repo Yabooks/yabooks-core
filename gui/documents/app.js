@@ -302,7 +302,14 @@ let app = Vue.createApp(
                 try
                 {
                     await axios.delete(`/api/v1/documents/${doc._id}`);
-                    this.showNotification(this.$filters.translate("documents.list.deleted").split(">NAME<").join(doc.name), true);
+
+                    // describe the document by what is known about it, its name alone is often empty
+                    const details = [
+                        this.businessPartners[doc.business_partner]?.full_name,
+                        doc.date && this.$filters.formatDate(doc.date),
+                        doc.posted && this.$filters.translate("documents.list.deleted-ledger-records")
+                    ].filter(Boolean).join(" · ");
+                    this.showNotification(this.$filters.translate("documents.list.deleted").split(">NAME<").join(this.describeDocument(doc)), true, details);
                     this.loadDocuments();
                 }
                 catch(x)
@@ -334,15 +341,22 @@ let app = Vue.createApp(
             });
         },
 
+        // e.g. "invoice RE-2026-001 · scan.pdf", falling back to "unnamed document"
+        describeDocument(doc)
+        {
+            const reference = [ doc.type, doc.internal_reference || doc.external_reference ].filter(Boolean).join(" ");
+            return [ reference, doc.name ].filter(Boolean).join(" · ") || this.$filters.translate("documents.list.unnamed");
+        },
+
         showUploadedNotification(doc)
         {
-            let name = doc.name ?? this.$filters.translate("documents.list.unnamed");
+            let name = doc.name || this.$filters.translate("documents.list.unnamed");
             this.showNotification(this.$filters.translate("documents.list.uploaded").split(">NAME<").join(name), true);
         },
 
-        showNotification(message, good = true)
+        showNotification(message, good = true, details = "")
         {
-            this.notifications.push({ message, good });
+            this.notifications.push({ message, good, details });
             this.$forceUpdate();
 
             setTimeout(_ => {
