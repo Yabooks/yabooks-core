@@ -12,7 +12,7 @@ module.exports = function(api)
      *     description: >-
      *       Supports pagination and filtering, e.g. via reconciled_date__gte and reconciled_date__lte.
      *     tags:
-     *       - balance-reconciliations
+     *       - general-ledger
      *     parameters:
      *       - in: path
      *         name: id
@@ -57,7 +57,7 @@ module.exports = function(api)
      *   post:
      *     summary: Create a balance reconciliation entry for a ledger account
      *     tags:
-     *       - balance-reconciliations
+     *       - general-ledger
      *     parameters:
      *       - in: path
      *         name: id
@@ -111,7 +111,7 @@ module.exports = function(api)
      *   delete:
      *     summary: Delete a balance reconciliation entry
      *     tags:
-     *       - balance-reconciliations
+     *       - general-ledger
      *     parameters:
      *       - in: path
      *         name: id
