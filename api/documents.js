@@ -1,4 +1,5 @@
 const { Document, DocumentVersion, DocumentLink } = require("../models/document.js"), { App } = require("../models/app.js"), { Logger } = require("../services/logger.js");
+const { Comment } = require("../models/comment.js");
 const fs = require("node:fs").promises, sqlite = require("sqlite"), sqlite3 = require("sqlite3");
 const pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs"), { createCanvas, loadImage } = require("@napi-rs/canvas"), { PDFDocument, PDFArray, PDFName } = require("pdf-lib");
 const standardFontDataUrl = require("path").dirname(require.resolve("pdfjs-dist/standard_fonts/FoxitFixed.pfb")) + "/";
@@ -955,6 +956,10 @@ module.exports = function(api)
 
             // links to the deleted document would point nowhere
             try { await DocumentLink.deleteMany({ $or: [ { from: req.params.id }, { to: req.params.id } ] }); }
+            catch(x) {}
+
+            // comments on the deleted document cannot be shown anymore
+            try { await Comment.deleteMany({ referenced_entity: "Document", referenced_id: req.params.id }); }
             catch(x) {}
 
             res.send({ success: true });

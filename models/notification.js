@@ -6,7 +6,8 @@ const Notification = mongoose.model("Notification", (function()
 {
     const schema = new mongoose.Schema(
     {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: function() { return !this.app; } },
+        app: { type: mongoose.Schema.Types.ObjectId, ref: "App" }, // receiving app, for app notifications not addressed to a user
         title: { type: String, required: true },
         tags: [ String ],
         text: String,
