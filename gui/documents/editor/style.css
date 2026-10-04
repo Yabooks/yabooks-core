@@ -670,6 +670,135 @@ main #tabs
     border-color: var(--primary-hover);
 }
 
+/* Links (relationships) of the document to other documents */
+.tab .item table.links td.icon
+{
+    width: 32px;
+    font-size: 18px;
+    text-align: center;
+}
+
+.tab .item table.links td a
+{
+    color: var(--text-primary);
+}
+
+.tab .item table.links td a:hover
+{
+    color: var(--primary-hover);
+}
+
+.tab .item table.links .restricted
+{
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.link-type
+{
+    display: inline-block;
+    margin: 0 6px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: #ffe4d6;
+    color: #9a3412;
+}
+
+.modal-dialog.links-modal .picker
+{
+    position: relative;
+    display: block;
+    flex: 1;
+}
+
+.modal-dialog.links-modal .type-row
+{
+    display: flex;
+    gap: 6px;
+}
+
+.modal-dialog.links-modal .type-row input.icon
+{
+    width: 48px;
+    flex: none;
+    text-align: center;
+}
+
+.modal-dialog.links-modal .suggestions
+{
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--background);
+    border: 1px solid #ffe4d6;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+}
+
+.modal-dialog.links-modal .suggestion, .modal-dialog.links-modal .suggestions .none
+{
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.modal-dialog.links-modal .suggestion.highlighted
+{
+    background: #fff7f4;
+}
+
+.modal-dialog.links-modal .suggestions .none
+{
+    cursor: default;
+    color: var(--text-secondary);
+}
+
+.modal-dialog.links-modal .suggestion .emoji
+{
+    width: 20px;
+    text-align: center;
+}
+
+/* preview of the link as a sentence, with a button to swap its direction */
+.modal-dialog.links-modal .direction
+{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin: 12px 6px 0 6px;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.modal-dialog.links-modal .direction .swap
+{
+    margin-left: auto;
+    padding: 2px 10px;
+}
+
+.modal-dialog.links-modal .error
+{
+    display: block;
+    margin-top: 12px;
+    color: var(--danger-color);
+}
+
+.modal-dialog.links-modal .modal-actions button + button
+{
+    margin-left: 8px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 680px)
 {

@@ -30,6 +30,10 @@
                     <span class="icon">&#x1F4D2;</span>
                     <label>{{ $filters.translate("documents.editor.alternate-ledgers") }}</label>
                 </button>
+                <button class="menuitem" :class="{ selected: tab === 'links' }" @click="selectTab('links')">
+                    <span class="icon">&#x1F517;</span>
+                    <label>{{ $filters.translate("documents.editor.links") }}</label>
+                </button>
                 <!--<button class="menuitem" :class="{ selected: tab === 'costs' }" @click="selectTab('costs')">
                     <span class="icon">&#x1F4B5;</span>
                     <label>Costs</label>
@@ -57,6 +61,9 @@
                     <div class="tab" v-if="tab === 'alternate'">
                         <ledger-tab :doc="doc" :options="options" :alternate="true"></ledger-tab>
                     </div>
+                    <div class="tab" v-if="tab === 'links'">
+                        <links-tab :doc="doc"></links-tab>
+                    </div>
                     <div class="tab" v-if="tab === 'costs'">
                         <!-- TODO -->
                     </div>
@@ -75,6 +82,7 @@
         <script type="text/javascript" src="tabs/general.js"></script>
         <script type="text/javascript" src="tabs/financial.js"></script>
         <script type="text/javascript" src="tabs/ledger.js"></script>
+        <script type="text/javascript" src="tabs/links.js"></script>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>
