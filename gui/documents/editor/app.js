@@ -23,7 +23,6 @@ let app = Vue.createApp(
                 tax_codes: [],
                 cost_centers: [],
                 assets: [],
-                identities: [],
                 alternate_ledgers: []
             }
         };
@@ -65,13 +64,12 @@ let app = Vue.createApp(
             const get = (url) => axios.get(url).then(res => res.data).catch(x => { console.error(x); return null; });
             const business = this.doc.business;
 
-            const [ businessData, accounts, tax_codes, cost_centers, assets, identities ] = await Promise.all([
+            const [ businessData, accounts, tax_codes, cost_centers, assets ] = await Promise.all([
                 get(`/api/v1/businesses/${business}`),
                 get(`/api/v1/businesses/${business}/ledger-accounts?limit=10000`),
                 get("/api/v1/tax-codes?limit=10000"),
                 get(`/api/v1/businesses/${business}/cost-centers?limit=10000`),
-                get(`/api/v1/businesses/${business}/assets?limit=10000`),
-                get("/api/v1/identities?limit=1000")
+                get(`/api/v1/businesses/${business}/assets?limit=10000`)
             ]);
 
             this.options = {
@@ -80,7 +78,6 @@ let app = Vue.createApp(
                 tax_codes: tax_codes?.data ?? [],
                 cost_centers: (cost_centers?.data ?? []).map(center => ({ ...center, description: [ center.display_number, center.display_name ].filter(Boolean).join(" ") })),
                 assets: assets?.data ?? [],
-                identities: identities?.data ?? [],
                 alternate_ledgers: [ ...new Set((businessData?.alternate_ledgers ?? []).map(name => String(name).trim()).filter(Boolean)) ]
             };
         },

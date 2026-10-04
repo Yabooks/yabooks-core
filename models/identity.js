@@ -68,7 +68,7 @@ const Individual = Identity.discriminator("Individual",
 const Organization = Identity.discriminator("Organization",
 {
     registration_number: String,
-    jurisdiction_of_incorporation: { type: String, validate: { validator: (v) => /^[A-Z]{2}(\-.+)?$/.test(v) } }
+    jurisdiction_of_incorporation: { type: String, validate: { validator: (v) => v == null || /^[A-Z]{2}(\-.+)?$/.test(v) } }
 });
 
 // relationship schema connecting two indentities with one another

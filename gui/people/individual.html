@@ -5,6 +5,8 @@
         <script type="text/javascript" src="/js/vue/vue.js"></script>
         <script type="text/javascript" src="/_generic/session.js"></script>
         <script type="text/javascript" src="/_generic/filters.js"></script>
+        <script type="text/javascript" src="/_generic/identity-picker.js"></script>
+        <script type="text/javascript" src="relationships.js"></script>
         <link rel="stylesheet" type="text/css" href="profile.css" />
     </head>
     <body>
@@ -70,7 +72,7 @@
                     </li>
                     <li class="contact" v-for="adr in individual.more_addresses">
                         &#x1F3E0;
-                        {{ adr.full_address.split("\n").join(", ") }}
+                        {{ (adr.full_address || "").split("\n").join(", ") }}
                     </li>
                 </ul>
                 <div v-else>
@@ -186,24 +188,7 @@
                     </li>
                 </ul>
             </div>
-            <div class="widget">
-                <span class="title">{{ $filters.translate("people.relationships") }}</span>
-                <button class="plus" @click="addRelationship()" :title="$filters.translate('people.relationships.add')">+</button>
-                <ul>
-                    <li class="relationship" v-for="rel in relationships" :set="partner = (rel?.from._id == individual?._id ? rel?.to : rel?.from)">
-                        {{ rel?.icon || "🔗" }}
-                        <span class="tag" v-if="rel?.from?._id == individual?._id">
-                            {{ rel?.type }}
-                        </span>
-                        <a :href="`${partner?.kind?.toLowerCase?.()}.html?${partner?._id}`">
-                            {{ partner?.full_name }}
-                        </a>
-                        <span class="tag" v-if="rel?.to?._id == individual?._id">
-                            {{ rel?.type }}
-                        </span>
-                    </li>
-                </ul>
-            </div>
+            <relationships-widget :identity="individual"></relationships-widget>
         </main>
         <script type="text/javascript">
             let app = Vue.createApp(
@@ -213,7 +198,6 @@
                     return {
                         individual: {},
                         businesses: [],
-                        relationships: [],
                         editing: false,
                         snapshot: null,
                         saving: false,
@@ -257,12 +241,8 @@
                         this.individual = res.data;
                         this.$forceUpdate();
 
-                        res = await await axios.get(`/api/v1/identities/${this.individual._id}/businesses`);
+                        res = await axios.get(`/api/v1/identities/${this.individual._id}/businesses`);
                         this.businesses = res.data;
-                        this.$forceUpdate();
-
-                        res = await await axios.get(`/api/v1/identities/${this.individual._id}/relationships`);
-                        this.relationships = res.data;
                         this.$forceUpdate();
                     },
 
@@ -270,6 +250,10 @@
                     {
                         this.error = null;
                         this.snapshot = JSON.parse(JSON.stringify(this.individual));
+
+                        // date inputs need YYYY-MM-DD, the api returns a timestamp
+                        if(this.individual.birthdate)
+                            this.individual.birthdate = String(this.individual.birthdate).substring(0, 10);
 
                         this.individual.dba = this.individual.dba || [];
                         this.individual.tax_numbers = this.individual.tax_numbers || {};
@@ -310,11 +294,19 @@
 
                     normalizeBankAccount(account)
                     {
+                        // empty codes are omitted instead of being sent as "", which the server would reject
                         return {
                             ...account,
-                            iban: account.iban ? account.iban.toUpperCase().replace(/\s+/g, "") : account.iban,
-                            bic: account.bic ? account.bic.toUpperCase().replace(/\s+/g, "") : account.bic
+                            iban: account.iban?.trim() ? account.iban.toUpperCase().replace(/\s+/g, "") : undefined,
+                            bic: account.bic?.trim() ? account.bic.toUpperCase().replace(/\s+/g, "") : undefined
                         };
+                    },
+
+                    // e.g. "0043 664 / 123-45 67" -> "+436641234567", as the server expects digits with a leading +
+                    normalizePhoneNumber(number)
+                    {
+                        number = number.trim().replace(/[\s\-\/().]/g, "");
+                        return number.startsWith("00") ? "+" + number.substring(2) : number;
                     },
 
                     normalizeAddress(address)
@@ -332,8 +324,14 @@
                     {
                         this.error = null;
 
+                        if(this.individual.main_phone?.number)
+                            this.individual.main_phone.number = this.normalizePhoneNumber(this.individual.main_phone.number);
+
                         if(this.individual.main_phone?.number && !/^\+[0-9]{6,14}$/.test(this.individual.main_phone.number))
                             return this.error = this.$filters.translate("people.error.invalid-phone");
+
+                        if(!this.individual.first_name?.trim() || !this.individual.last_name?.trim())
+                            return this.error = this.$filters.translate("people.new.error.name-required");
 
                         let addresses = [ this.individual.main_address, ...this.individual.more_addresses ];
                         if(!addresses.every(a => this.isAddressBlank(a) || this.isAddressComplete(a)))
@@ -344,15 +342,16 @@
                         try
                         {
                             let payload = {
-                                first_name: this.individual.first_name,
-                                last_name: this.individual.last_name,
-                                title_pre: this.individual.title_pre,
-                                title_post: this.individual.title_post,
-                                birthdate: this.individual.birthdate || undefined,
+                                first_name: this.individual.first_name?.trim(),
+                                last_name: this.individual.last_name?.trim(),
+                                title_pre: this.individual.title_pre?.trim() || null,
+                                title_post: this.individual.title_post?.trim() || null,
+                                birthdate: this.individual.birthdate || null, // null clears it, undefined would not be sent
                                 dba: this.individual.dba.filter(dba => dba?.trim()),
                                 tax_numbers: Object.fromEntries(Object.entries(this.individual.tax_numbers)
-                                    .filter(([ key, value ]) => key?.trim() && value?.trim())),
-                                main_email: this.individual.main_email?.address?.trim() ? this.individual.main_email : null,
+                                    .filter(([ key, value ]) => key?.trim() && String(value ?? "").trim())
+                                    .map(([ key, value ]) => [ key.trim(), String(value).trim() ])),
+                                main_email: this.individual.main_email?.address?.trim() ? { ...this.individual.main_email, address: this.individual.main_email.address.trim() } : null,
                                 main_phone: this.individual.main_phone?.number?.trim() ? this.individual.main_phone : null,
                                 main_address: this.isAddressBlank(this.individual.main_address) ?
                                     null : this.normalizeAddress(this.individual.main_address),
@@ -467,11 +466,6 @@
                         parent.document.app.openModal(`/people/business.html?id=${business._id}`);
                     },
 
-                    addRelationship()
-                    {
-                        // TODO
-                    },
-
                     selectBusiness: async (business) =>
                     {
                         // store selection in session and refresh page
@@ -483,6 +477,7 @@
             });
 
             app.config.globalProperties.$filters = { ...filters };
+            app.component("relationships-widget", RelationshipsWidget);
             app.mount("main");
         </script>
     </body>

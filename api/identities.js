@@ -1,4 +1,14 @@
+const mongoose = require("mongoose");
 const { Identity, Individual, Organization, Relationship } = require("../models/identity.js");
+
+// fields that identify a document and must not be overwritten by updates
+const protectedFields = [ "_id", "__v", "kind" ];
+const assignFields = (doc, body) =>
+{
+    for(let key in body ?? {})
+        if(!protectedFields.includes(key))
+            doc[key] = body[key];
+};
 
 module.exports = function(api)
 {
@@ -341,15 +351,13 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "identities", null, res);
 
-            let identity = await Identity.findOne({ _id: req.params.id });
+            let identity = await Individual.findOne({ _id: req.params.id });
 
             if(!identity)
-                res.status(404).send({ error: "not found" });
+                return res.status(404).send({ error: "not found" });
 
-            identity.full_name = `${req.body.first_name ?? identity.first_name ?? ""} ${req.body.last_name ?? identity.last_name ?? ""}`.trim();
-
-            for(let key in req.body)
-                identity[key] = req.body[key];
+            assignFields(identity, req.body);
+            identity.full_name = `${identity.first_name ?? ""} ${identity.last_name ?? ""}`.trim();
 
             await identity.save();
             res.send({ success: true });
@@ -399,11 +407,9 @@ module.exports = function(api)
             let identity = await Organization.findOne({ _id: req.params.id });
 
             if(!identity)
-                res.status(404).send({ error: "not found" });
+                return res.status(404).send({ error: "not found" });
 
-            for(let key in req.body)
-                identity[key] = req.body[key];
-
+            assignFields(identity, req.body);
             await identity.save();
             res.send({ success: true });
         }
@@ -710,7 +716,8 @@ module.exports = function(api)
                 .populate("from", "full_name kind") // from: { _id, full_name, kind }
                 .populate("to", "full_name kind"); // to: { _id, full_name, kind }
 
-            res.send(relationships);
+            // relationships to identities that were deleted meanwhile cannot be shown
+            res.send(relationships.filter(relationship => relationship.from && relationship.to));
         }
         catch(x) { next(x) }
     });
@@ -780,9 +787,64 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "identities", null, res);
 
-            let relationship = new Relationship({ from: req.params.id, ...req.body });
+            const { from: _from, _id, __v, ...body } = req.body ?? {};
+
+            if(!mongoose.Types.ObjectId.isValid(body.to) || !await Identity.exists({ _id: body.to }) || !await Identity.exists({ _id: req.params.id }))
+                return res.status(400).send({ error: "both identities of the relationship must exist" });
+
+            if(String(body.to) === String(req.params.id))
+                return res.status(400).send({ error: "an identity cannot have a relationship with itself" });
+
+            if(typeof body.type === "string")
+                body.type = body.type.trim();
+
+            let relationship = new Relationship({ ...body, from: req.params.id });
             await relationship.save();
             res.send(relationship);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/relationships/types:
+     *   get:
+     *     summary: List the relationship types in use
+     *     description: >-
+     *       Returns the distinct types of all relationships with the number of relationships per type and the icon
+     *       used most often with it, most used types first. Meant to suggest types when creating relationships;
+     *       any other type may be used as well.
+     *     tags:
+     *       - relationships
+     *     responses:
+     *       200:
+     *         description: Relationship types
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   type: { type: string }
+     *                   count: { type: integer }
+     *                   icon: { type: string }
+     */
+    api.get("/api/v1/relationships/types", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "read", "identities", null, res);
+
+            const types = await Relationship.aggregate([
+                { $match: { type: { $type: "string", $ne: "" } } },
+                { $group: { _id: { type: "$type", icon: "$icon" }, count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $group: { _id: "$_id.type", count: { $sum: "$count" }, icons: { $push: "$_id.icon" } } },
+                { $sort: { count: -1, _id: 1 } }
+            ]);
+
+            res.send(types.map(type => ({ type: type._id, count: type.count, icon: type.icons.find(Boolean) ?? null })));
         }
         catch(x) { next(x) }
     });
@@ -859,9 +921,7 @@ module.exports = function(api)
             if(!relationship)
                 return res.status(404).send({ error: "not found" });
 
-            for(let key in req.body)
-                relationship[key] = req.body[key];
-
+            assignFields(relationship, req.body);
             await relationship.save();
             res.send({ success: true });
         }
@@ -893,6 +953,8 @@ module.exports = function(api)
      *               properties:
      *                 success:
      *                   type: boolean
+     *       404:
+     *         description: Relationship not found
      */
     api.delete("/api/v1/relationships/:id", async (req, res, next) =>
     {
@@ -900,7 +962,10 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "identities", null, res);
 
-            await Relationship.deleteOne({ _id: req.params.id });
+            const { deletedCount } = await Relationship.deleteOne({ _id: req.params.id });
+            if(!deletedCount)
+                return res.status(404).send({ error: "not found" });
+
             res.send({ success: true });
         }
         catch(x) { next(x) }

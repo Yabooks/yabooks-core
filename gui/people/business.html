@@ -8,67 +8,74 @@
         <link rel="stylesheet" type="text/css" href="profile.css" />
     </head>
     <body>
-        <main class="single-column">
-            <div class="widget">
-                <div class="profile-row">
-                    <div class="picture-wrap" @click="$refs.logoInput.click()" :title="$filters.translate('people.business.change-logo')">
-                        <img class="profile_picture" :src="logoUrl" />
+        <main class="sheet-page">
+            <div class="modal sheet">
+                <div class="sheet-header">
+                    <div class="logo-wrap" @click="$refs.logoInput.click()" :title="$filters.translate('people.business.change-logo')">
+                        <img :src="logoUrl" alt="" />
                         <span class="picture-overlay">&#x1F4F7;</span>
                         <input type="file" accept="image/*" ref="logoInput" style="display: none" @change="selectLogo($event)" />
                     </div>
-                    <span>
-                        {{ $filters.translate(business._id ? "people.business.edit" : "people.business.new") }}
+                    <div>
+                        <h3>{{ $filters.translate(business._id ? "people.business.edit" : "people.business.new") }}</h3>
                         <small v-if="business._id">{{ business.name }}</small>
-                    </span>
-                </div>
-            </div>
-            <div class="widget">
-                <span class="title">{{ $filters.translate("people.business.general") }}</span>
-                <div class="fields">
-                    <input type="text" v-model="business.name" :placeholder="$filters.translate('people.business.name')" />
-                    <div class="row">
-                        <input type="text" v-model="business.business_number" :placeholder="$filters.translate('people.business.number')" />
-                        <input type="text" v-model="business.default_currency" maxlength="3" style="max-width: 110px"
-                            :placeholder="$filters.translate('people.business.currency')" :title="$filters.translate('people.business.currency')" />
                     </div>
+                </div>
+
+                <div class="fields">
+                    <span class="title">{{ $filters.translate("people.business.general") }}</span>
                     <label>
+                        {{ $filters.translate("people.business.name") }}
+                        <input type="text" v-model="business.name" />
+                    </label>
+                    <div class="row">
+                        <label>
+                            {{ $filters.translate("people.business.number") }}
+                            <input type="text" v-model="business.business_number" />
+                        </label>
+                        <label class="narrow">
+                            {{ $filters.translate("people.business.currency") }}
+                            <input type="text" v-model="business.default_currency" maxlength="3" />
+                        </label>
+                    </div>
+                    <label class="checkbox">
                         <input type="checkbox" v-model="business.fictive" />
                         {{ $filters.translate("people.business.fictive") }}
                     </label>
-                </div>
-            </div>
-            <div class="widget">
-                <span class="title">{{ $filters.translate("people.business.fiscal-year") }}</span>
-                <div class="fields">
+
+                    <span class="title">{{ $filters.translate("people.business.fiscal-year") }}</span>
                     <div class="row">
-                        <select v-model="business.closing_month" style="flex: 1">
-                            <option :value="null">{{ $filters.translate("people.business.closing-month") }}</option>
-                            <option v-for="month in 12" :value="month">{{ monthName(month) }}</option>
-                        </select>
-                        <input type="number" min="1" max="31" v-model.number="business.closing_day_of_month"
-                            :placeholder="$filters.translate('people.business.closing-day')" />
+                        <label>
+                            {{ $filters.translate("people.business.closing-month") }}
+                            <select v-model="business.closing_month">
+                                <option :value="null">–</option>
+                                <option v-for="month in 12" :value="month">{{ monthName(month) }}</option>
+                            </select>
+                        </label>
+                        <label class="narrow">
+                            {{ $filters.translate("people.business.closing-day") }}
+                            <input type="number" min="1" max="31" v-model.number="business.closing_day_of_month" />
+                        </label>
                     </div>
-                    <label>
-                        {{ $filters.translate("people.business.locked-until") }}
-                        <input type="date" v-model="business.locked_until" />
-                    </label>
-                    <label>
-                        {{ $filters.translate("people.business.canceled-at") }}
-                        <input type="date" v-model="business.canceled_at" />
-                    </label>
-                </div>
-            </div>
-            <div class="widget">
-                <span class="title">{{ $filters.translate("people.business.alternate-ledgers") }}</span>
-                <ul>
-                    <li v-for="(ledger, index) in business.alternate_ledgers">
+                    <div class="row">
+                        <label>
+                            {{ $filters.translate("people.business.locked-until") }}
+                            <input type="date" v-model="business.locked_until" />
+                        </label>
+                        <label>
+                            {{ $filters.translate("people.business.canceled-at") }}
+                            <input type="date" v-model="business.canceled_at" />
+                        </label>
+                    </div>
+
+                    <span class="title">{{ $filters.translate("people.business.alternate-ledgers") }}</span>
+                    <div class="row" v-for="(ledger, index) in business.alternate_ledgers">
                         <input type="text" v-model="business.alternate_ledgers[index]" />
                         <button class="remove" @click="business.alternate_ledgers.splice(index, 1)">&#x2715;</button>
-                    </li>
-                </ul>
-                <button class="add-mini" @click="business.alternate_ledgers.push('')">+ {{ $filters.translate("people.business.alternate-ledgers.add") }}</button>
-            </div>
-            <div class="widget">
+                    </div>
+                    <div><button class="add-mini" @click="business.alternate_ledgers.push('')">+ {{ $filters.translate("people.business.alternate-ledgers.add") }}</button></div>
+                </div>
+
                 <span class="error" v-if="error">{{ error }}</span>
                 <div class="actions">
                     <button @click="save()" :disabled="saving">{{ $filters.translate("people.save") }}</button>
@@ -104,7 +111,12 @@
 
                 async mounted()
                 {
+                    // the escape key of the main window does not reach this frame
+                    addEventListener("keydown", event => event.key === "Escape" && this.close());
+
+                    // translations are not reactive, so render again once they are available
                     await loadTranslations({ "code*": "people." });
+                    this.$forceUpdate();
 
                     // called either as business.html?id=<business id> to edit or business.html?owner=<identity id> to create
                     let params = new URLSearchParams(self.location.search);

@@ -57,7 +57,9 @@
 
                 async mounted()
                 {
+                    // translations are not reactive, so render again once they are available
                     await loadTranslations({ "code*": "people." });
+                    this.$forceUpdate();
                 },
 
                 methods:

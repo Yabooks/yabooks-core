@@ -13,7 +13,7 @@ const Address = (function()
         additional_info: String,
         zip_code: { type: String, required: true },
         city: { type: String, required: true },
-        jurisdiction: { type: String, validate: { validator: (v) => /^[A-Z]{2}(\-.+)?$/.test(v) } },
+        jurisdiction: { type: String, validate: { validator: (v) => v == null || /^[A-Z]{2}(\-.+)?$/.test(v) } },
         purpose: String,
         comment: String,
         full_address: String // automatically set by pre-save hook
@@ -52,7 +52,7 @@ const Email = (function()
 {
     const schemaDefinition = (
     {
-        address: { type: String, validate: { validator: (v) => /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/.test(v) }, required: true },
+        address: { type: String, validate: { validator: (v) => /^([\w-\.+]+@([\w-]+\.)+[\w-]{2,})?$/.test(v) }, required: true },
         purpose: String,
         comment: String
     });
@@ -66,7 +66,7 @@ const Phone = (function()
     const schemaDefinition = (
     {
         number: { type: String, validate: { validator: (v) => /^\+[0-9]{6,14}$/.test(v) }, required: true },
-        additional_dial_tones: { type: String, validate: { validator: (v) => /^[0-9\*\#]*$/.test(v) } },
+        additional_dial_tones: { type: String, validate: { validator: (v) => v == null || /^[0-9\*\#]*$/.test(v) } },
         purpose: String,
         comment: String,
         formatted_national_number: String, // automatically set by pre-save hook
@@ -92,8 +92,8 @@ const BankAccount = (function()
     const schemaDefinition = (
     {
         account_holder_name: String,
-        iban: { type: String, validate: { validator: (v) => /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(v) } },
-        bic: { type: String, validate: { validator: (v) => /^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(v) } },
+        iban: { type: String, validate: { validator: (v) => v == null || /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(v) } },
+        bic: { type: String, validate: { validator: (v) => v == null || /^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(v) } },
         bank_name: String,
         local_account_number: String,
         local_bank_identifier: String,

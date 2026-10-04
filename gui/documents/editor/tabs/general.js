@@ -1,4 +1,4 @@
-/* global TagsInput, SearchableDropdown */
+/* global TagsInput, IdentityPicker */
 
 const GeneralTab = (
 {
@@ -6,7 +6,7 @@ const GeneralTab = (
 
     emits: [ "file-replaced" ],
 
-    components: { TagsInput, SearchableDropdown },
+    components: { TagsInput, IdentityPicker },
 
     data()
     {
@@ -81,9 +81,9 @@ const GeneralTab = (
                 <tr>
                     <td>{{ $filters.translate("documents.editor.business-partner") }}</td>
                     <td>
-                        <searchable-dropdown v-model:selected="doc.business_partner" @emptied="doc.business_partner = null"
-                            value="_id" label="full_name" :options="options.identities" :autoSelectFirstMatch="true"
-                            :placeholder="$filters.translate('documents.editor.search-business-partner')" />
+                        <identity-picker v-model="doc.business_partner"
+                            :placeholder="$filters.translate('documents.editor.search-business-partner')"
+                            :no-results-text="$filters.translate('documents.editor.no-business-partner-found')"></identity-picker>
                     </td>
                 </tr>
             </table>

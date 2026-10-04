@@ -1,4 +1,4 @@
-/* global CurrencyInput, SearchableDropdown */
+/* global CurrencyInput, SearchableDropdown, IdentityPicker */
 
 /** modal dialog with the less frequently used fields of a ledger transaction */
 const LedgerTransactionSettings = (
@@ -7,7 +7,7 @@ const LedgerTransactionSettings = (
 
     emits: [ "close" ],
 
-    components: { CurrencyInput, SearchableDropdown },
+    components: { CurrencyInput, SearchableDropdown, IdentityPicker },
 
     data()
     {
@@ -118,9 +118,9 @@ const LedgerTransactionSettings = (
                         <tr>
                             <td>{{ $filters.translate("documents.editor.business-partner") }}</td>
                             <td>
-                                <searchable-dropdown v-model:selected="tx.override_business_partner" @emptied="tx.override_business_partner = null"
-                                    value="_id" label="full_name" :options="options.identities"
-                                    :placeholder="$filters.translate('documents.editor.search-business-partner')" />
+                                <identity-picker v-model="tx.override_business_partner"
+                                    :placeholder="$filters.translate('documents.editor.search-business-partner')"
+                                    :no-results-text="$filters.translate('documents.editor.no-business-partner-found')"></identity-picker>
                             </td>
                         </tr>
                         <tr v-if="!tx.alternate_ledger">

@@ -316,6 +316,263 @@ small .tag, small .id
     border-bottom-style: solid;
 }
 
+/* flex gap, as the template drops the whitespace between tag and name */
+.relationship .description
+{
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.relationship .description small
+{
+    font-size: 0.8em;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+
+/* relationships whose validity ended are still listed, but faded */
+.relationship.ended .description
+{
+    opacity: 0.55;
+}
+
+.widget li.empty
+{
+    font-size: 0.85em;
+    color: #94a3b8;
+}
+
+/* Modal for adding relationships */
+
+.modal-shadow
+{
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(30, 41, 59, 0.35);
+}
+
+.modal
+{
+    width: 480px;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 24px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(30, 41, 59, 0.25);
+}
+
+.modal h3
+{
+    margin: 0 0 16px 0;
+    font-size: 1.1em;
+}
+
+.modal .fields label, .modal .fields .field
+{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    font-size: 0.9em;
+    color: #475569;
+}
+
+/* free text field for the relationship type with suggestions of known types, emoji before the name */
+.modal .type-input
+{
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+}
+
+.modal .type-input input
+{
+    flex: 1;
+    min-width: 0;
+}
+
+.modal .suggestions
+{
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    max-height: 240px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ffe4d6;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(249, 143, 94, 0.2);
+}
+
+.modal .suggestion
+{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    color: #1e293b;
+    cursor: pointer;
+}
+
+.modal .suggestion.highlighted
+{
+    background: #fff7f4;
+}
+
+.modal .suggestion .emoji
+{
+    width: 1.4em;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.modal .fields .row label
+{
+    flex: 1;
+}
+
+.modal .fields .row input.icon /* specific enough to override .fields .row input */
+{
+    flex: 0 0 52px;
+    text-align: center;
+}
+
+/* Modal page in the main window's modal frame (e.g. business editor): a single card like the relationship modal */
+
+main.sheet-page
+{
+    column-count: 1;
+    max-width: none;
+    padding: 24px 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.modal.sheet
+{
+    width: 520px;
+    align-self: flex-start;
+}
+
+.sheet-header
+{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.sheet-header h3
+{
+    margin: 0;
+}
+
+.sheet-header small
+{
+    color: #94a3b8;
+}
+
+/* business logos are rounded squares, like app icons */
+.logo-wrap
+{
+    position: relative;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 20%;
+    overflow: hidden;
+}
+
+.logo-wrap img
+{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.logo-wrap .picture-overlay
+{
+    border-radius: 0;
+}
+
+.logo-wrap:hover .picture-overlay
+{
+    opacity: 1;
+}
+
+.modal .fields .title
+{
+    margin: 10px 0 0 0;
+}
+
+.modal .fields .row label.narrow
+{
+    flex: 0 0 110px;
+}
+
+.modal .fields label.checkbox
+{
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal .fields .row .remove
+{
+    align-self: center;
+}
+
+/* preview of the relationship as a sentence, with a button to swap its direction */
+.modal .direction
+{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #fff7f4;
+    border: 1px solid #ffe4d6;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.modal .direction .swap
+{
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #ffe4d6;
+    border-radius: 50%;
+    background: white;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.modal .direction .swap:hover
+{
+    color: #f98f5e;
+    border-color: #f98f5e;
+}
+
 /* Single column layout, used by the new-identity modal */
 
 main.single-column
