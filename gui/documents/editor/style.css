@@ -705,6 +705,12 @@ main #tabs
     color: #9a3412;
 }
 
+/* the dialog is short, so the suggestion lists may extend beyond it instead of being cut off */
+.modal-dialog.links-modal
+{
+    overflow: visible;
+}
+
 .modal-dialog.links-modal .picker
 {
     position: relative;
