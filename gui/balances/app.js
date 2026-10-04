@@ -39,6 +39,7 @@ let app = Vue.createApp(
             loadCounter: 0,
             translationsVersion: 0,
             error: null,
+            unpostedCount: 0, // unposted documents with ledger transactions within the selected period
             reconciliationStatus: {}, // account._id -> latest balance-reconciliation entry as of "until", or null
             dialog: null // open reconciliation dialog: { account, entries, newEntry, busy, error }
         };
@@ -182,6 +183,7 @@ let app = Vue.createApp(
             this.accounts = res.data.data;
             this.error = null;
             this.loadReconciliationStatuses(loadId);
+            this.loadUnpostedCount(loadId);
 
             // calculate profit
             this.profit = 0;
@@ -206,6 +208,43 @@ let app = Vue.createApp(
                 "posting_date__lte": this.until
             });
             self.location = `/ledger/?${params}`;
+        },
+
+        // unposted documents holding ledger transactions of the default ledger with an amount within the selected
+        // period, i.e. transactions that are missing from the balances; posting dates are stored as midnight UTC
+        unpostedDocumentsQuery()
+        {
+            return {
+                posted: false,
+                ledger_transactions: { $elemMatch: {
+                    alternate_ledger: null,
+                    amount: { $ne: 0 },
+                    posting_date: { $gte: { $date: `${this.from}T00:00:00Z` }, $lte: { $date: `${this.until}T00:00:00Z` } }
+                } }
+            };
+        },
+
+        async loadUnpostedCount(loadId)
+        {
+            try
+            {
+                const res = await axios.get(`/api/v1/businesses/${this.business_id}/documents`, {
+                    params: { q: JSON.stringify(this.unpostedDocumentsQuery()), limit: 1 }
+                });
+
+                if(loadId === this.loadCounter) // ignore results for a date range that is no longer selected
+                    this.unpostedCount = res.data.total;
+            }
+            catch(x)
+            {
+                if(loadId === this.loadCounter)
+                    this.unpostedCount = 0;
+            }
+        },
+
+        showUnpostedDocuments()
+        {
+            self.location = `/documents/?${new URLSearchParams({ q: JSON.stringify(this.unpostedDocumentsQuery()) })}`;
         },
 
         getAccountBalance(account)

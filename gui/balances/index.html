@@ -43,6 +43,14 @@
                 <chart-component :config="assetChartConfig"></chart-component>
                 <chart-component :config="revenueExpenseChartConfig"></chart-component>
             </div>
+            <button class="unposted-warning" v-if="unpostedCount > 0" @click="showUnpostedDocuments()">
+                <span class="icon">&#x26A0;&#xFE0F;</span>
+                <span class="text">
+                    <b>{{ $filters.translate("balances.unposted.title").replace("{count}", unpostedCount) }}</b>
+                    <span>{{ $filters.translate("balances.unposted.hint") }}</span>
+                </span>
+                <span class="arrow">&rsaquo;</span>
+            </button>
             <div v-for="type in accountTypes" class="container accounts" :class="{ loading }">
                 <h1>{{ $filters.translate("accounts.types." + type) }}</h1>
                 <table>
