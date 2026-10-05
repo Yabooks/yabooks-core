@@ -1,20 +1,7 @@
-/* global filters, loadTranslations, GeneralTab, FinancialTab, LedgerTab, CostsTab, SearchableDropdown */
+/* global filters, loadTranslations, GeneralTab, FinancialTab, LedgerTab, CostsTab */
 
 // date inputs need YYYY-MM-DD; the API returns timestamps like 2025-03-01T00:00:00.000
 const toDateOnly = (date) => typeof date === "string" && date.length >= 10 ? date.substring(0, 10) : (date ?? null);
-
-// the searchable dropdown only shows the label of its selected option once its options change after being mounted, and
-// the raw value (e.g. an object id) otherwise; tabs are mounted after the options have been loaded, so the label is
-// looked up initially as well
-const setupSearchableDropdown = SearchableDropdown.setup;
-SearchableDropdown.setup = (props, context) =>
-{
-    const state = setupSearchableDropdown(props, context);
-    const selected = props.options?.find(option => option[props.value] == props.selected);
-    if(selected)
-        state.searchQuery.value = selected[props.label];
-    return state;
-};
 
 let app = Vue.createApp(
 {

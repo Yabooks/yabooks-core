@@ -10,12 +10,14 @@
     </head>
     <body>
         <main>
-            <nav id="tabs">
-                <button :class="{ selected: tab === 'accounts' }" @click="selectTab('accounts')">
-                    {{ $filters.translate("accounts.tabs.ledger-accounts") }}
+            <nav class="menubar">
+                <button class="menuitem" :class="{ selected: tab === 'accounts' }" @click="selectTab('accounts')">
+                    <span class="icon">&#x1F4D6;</span>
+                    <label>{{ $filters.translate("accounts.tabs.ledger-accounts") }}</label>
                 </button>
-                <button :class="{ selected: tab === 'cost-centers' }" @click="selectTab('cost-centers')">
-                    {{ $filters.translate("accounts.tabs.cost-centers") }}
+                <button class="menuitem" :class="{ selected: tab === 'cost-centers' }" @click="selectTab('cost-centers')">
+                    <span class="icon">&#x1F3F7;&#xFE0F;</span>
+                    <label>{{ $filters.translate("accounts.tabs.cost-centers") }}</label>
                 </button>
             </nav>
 
