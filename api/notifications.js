@@ -1,8 +1,7 @@
 const { Notification } = require("../models/notification.js");
 const { Session } = require("../models/user.js");
+const { addListener, push } = require("../services/notifications.js");
 const QRCode = require("qrcode");
-
-const listeners = {};
 
 module.exports = function(api)
 {
@@ -24,9 +23,7 @@ module.exports = function(api)
                 throw "no session found";
 
             // register web socket connection as listener for new notification
-            if(listeners[session.user])
-                listeners[session.user].push(ws);
-            else listeners[session.user] = [ ws ];
+            addListener(session.user, ws);
 
             // listen to incoming web socket messages (required to keep connection alive)
             ws.on("message", async (msg) => { /* do nothing */ });
@@ -97,11 +94,8 @@ module.exports = function(api)
             else res.json(msg);
 
             // notify all registered listeners of receiver
-            if(listeners[req.body.user] && (!req.query.type || req.query.type == msg.type))
-                for(let ws of listeners[req.body.user])
-                    if(ws.readyState == 1) // connected and open
-                        ws.send(JSON.stringify(msg));
-                    else ;// TODO remove listener
+            if(msg.user && (!req.query.type || req.query.type == msg.type))
+                push(msg);
         }
         catch(x) { next(x) }
     });
@@ -113,7 +107,8 @@ module.exports = function(api)
      *     summary: List notifications and tasks
      *     description: >
      *       Returns a paginated list of notifications and tasks belonging to the current session's
-     *       user, plus any tasks owned by the authenticated app. Supports filtering by read status.
+     *       user, plus any tasks owned by and notifications addressed to the authenticated app. Supports
+     *       filtering by read status.
      *     tags:
      *       - notifications
      *     parameters:
@@ -148,7 +143,7 @@ module.exports = function(api)
                 filters.$or.push({ user: (await Session.findOne({ _id: req.auth.session_id }))?.user })
 
             if(req.auth.app_id)
-                filters.$or.push({ is_task_by: req.auth.app_id });
+                filters.$or.push({ owned_by: req.auth.app_id }, { app: req.auth.app_id }); // tasks owned by and notifications addressed to the app
 
             if(req.query.read === "false")
                 filters.read = null;

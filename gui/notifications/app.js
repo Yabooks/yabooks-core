@@ -38,7 +38,7 @@ let app = Vue.createApp(
                 if(!url)
                     return false;
 
-                url = new URL(url);
+                url = new URL(url, self.location.href); // links may be relative, e.g. to a document
                 return url.host === self.location.host && url.protocol === self.location.protocol;
             }
             catch(x) { return false; }

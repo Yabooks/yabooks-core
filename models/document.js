@@ -287,7 +287,6 @@ const CostTransaction = (function()
     {
         posting_date: { type: Date, required: true, default: Date.now, get: formatCalendarDay, set: toCalendarDay },
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: true },
-        corresponding_ledger_transaction: mongoose.Schema.Types.ObjectId,
         is_budget: { type: Boolean, required: true, default: false },
         value: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
         quantity: mongoose.Schema.Types.Decimal128, // in the unit of the cost center, e.g. pieces, hours or kilograms
@@ -296,7 +295,6 @@ const CostTransaction = (function()
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { getters: true } });
     schema.path("cost_center").index(true);
-    schema.path("corresponding_ledger_transaction").index(true);
     schema.path("is_budget").index(true);
     return schema;
 })();
@@ -367,22 +365,23 @@ const DocumentVersion = mongoose.model("DocumentVersion", (function()
     return schema;
 })());
 
+// directed relationship between two documents, e.g. "credit note of" or "delivery note of"; read as "from <type> to",
+// comparable to the relationship between identities
 const DocumentLink = mongoose.model("DocumentLink", (function()
 {
     const schemaDefinition = (
     {
-        document_a: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
-        document_b: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
-        name_ab: { type: String, required: true },
-        name_ba: { type: String, required: true },
-        code: String
+        from: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
+        to: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
+        type: { type: String, required: true },
+        icon: String, // unicode emoji
+        data: mongoose.Schema.Types.Mixed
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, timestamps: { updatedAt: "last_updated_at" }, autoIndex: false });
-    schema.path("document_a").index(true);
-    schema.path("document_b").index(true);
-    schema.path("name_ab").index(true);
-    schema.path("name_ba").index(true);
+    schema.path("from").index(true);
+    schema.path("to").index(true);
+    schema.path("type").index(true);
     registerAuditLog(schema, "DocumentLink");
     return schema;
 })());

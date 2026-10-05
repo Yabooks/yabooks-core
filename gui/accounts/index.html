@@ -73,7 +73,7 @@
                         </span>
                     </div>
                 </div>
-                <a name="newAccount" />
+                <a name="newAccount"></a>
                 <div v-if="accounts.length === 0" class="message">
                     {{ $filters.translate("accounts.no-accounts") }}
                 </div>
@@ -104,7 +104,7 @@
                         </span>
                     </div>
                 </div>
-                <a name="newCostCenter" />
+                <a name="newCostCenter"></a>
                 <div v-if="costCenters.length === 0" class="message">
                     {{ $filters.translate("accounts.no-cost-centers") }}
                 </div>
@@ -113,9 +113,7 @@
                 </datalist>
             </div>
 
-            <button @click="tab === 'accounts' ? newAccount() : newCostCenter()" id="newButton">
-                &#x2795;
-            </button>
+            <button @click="tab === 'accounts' ? newAccount() : newCostCenter()" id="newButton">+</button>
         </main>
         <script type="text/javascript" src="app.js"></script>
     </body>

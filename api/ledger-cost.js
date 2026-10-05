@@ -30,7 +30,6 @@ const costEntries = (business) =>
                 source: "ledger",
                 posting_date: "$ledger_transactions.posting_date",
                 cost_center: { $ifNull: [ "$ledger_transactions.override_default_cost_center", { $first: "$account.default_cost_center" }, null ] },
-                corresponding_ledger_transaction: "$ledger_transactions._id",
                 is_budget: false,
                 value: "$ledger_transactions.amount",
                 text: "$ledger_transactions.text",

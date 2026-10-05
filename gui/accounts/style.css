@@ -453,8 +453,8 @@ nav.menubar .menuitem label
 #newButton
 {
     position: fixed;
-    right: 24px;
-    bottom: 24px;
+    right: 20px;
+    bottom: 20px;
     width: 56px;
     height: 56px;
     display: flex;
@@ -464,7 +464,10 @@ nav.menubar .menuitem label
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
     color: white;
-    font-size: 22px;
+    font-family: inherit;
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1;
     cursor: pointer;
     box-shadow: 0 4px 16px rgba(249, 143, 94, 0.4);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
