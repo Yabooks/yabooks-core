@@ -1,5 +1,5 @@
 const mongoose = require("../services/connector.js");
-const { Address, Email, Phone } = require("./contact.js");
+const { Address } = require("./contact.js");
 const registerAuditLog = require("../services/audit-log.js");
 
 // cost center schema, which is also used by articles and stores
@@ -23,9 +23,9 @@ const CostCenter = mongoose.model("CostCenter", (function()
 const Article = CostCenter.discriminator("Article",
 {
     unit: String,
-    tax_code: String,
-    kn8_code: String,
-    hts_code: String,
+    kn8_code: String, // https://www.statistik.at/fileadmin/pages/1135/WVZ_2024__KN2-_bis_KN8-Codes_mit_Warentext_DE.pdf
+    hts_code: String, // https://hts.usitc.gov/
+    cpa_code: String, // https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Glossary:Statistical_classification_of_products_by_activity_(CPA)
     serial_number: String
 });
 
