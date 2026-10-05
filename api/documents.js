@@ -953,6 +953,10 @@ module.exports = function(api)
             try { await Document.deleteFromDisk(req.params.id); }
             catch(x) {}
 
+            // links to the deleted document would point nowhere
+            try { await DocumentLink.deleteMany({ $or: [ { from: req.params.id }, { to: req.params.id } ] }); }
+            catch(x) {}
+
             res.send({ success: true });
 
             App.callWebhooks("document.deleted", { document_id: req.params.id }, doc.owned_by);
@@ -1134,52 +1138,8 @@ module.exports = function(api)
         }
     });
 
-    /**
-     * @openapi
-     * /api/v1/documents/{id}/links:
-     *   post:
-     *     summary: Link a document to another one
-     *     tags:
-     *       - documents
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *         description: >-
-     *           ID of the document (document_a of the link)
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             allOf:
-     *               - $ref: '#/components/schemas/DocumentLink'
-     *               - description: >-
-     *                   document_a is set from the path
-     *     responses:
-     *       200:
-     *         description: >-
-     *           The created link
-     *         content:
-     *           application/json:
-     *             schema:
-     *               $ref: '#/components/schemas/DocumentLink'
-     */
-    api.post("/api/v1/documents/:id/links", async (req, res, next) =>
-    {
-        try
-        {
-            await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
-
-            let link = new DocumentLink({ document_a: req.params.id, ...req.body });
-            await link.validate();
-            await link.save();
-            res.send(link);
-        }
-        catch(x) { next(x) }
-    });
+    // fields of linked documents shown in the links of a document
+    const linkedDocumentFields = "business type date name internal_reference external_reference mime_type posted";
 
     /**
      * @openapi
@@ -1187,7 +1147,8 @@ module.exports = function(api)
      *   get:
      *     summary: List links of a document
      *     description: >-
-     *       Returns the links in both directions (the document as document_a or document_b). Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *       Returns the links in both directions (the document as from or to). The from and to fields are populated with
+     *       the meta data of the linked documents; of documents the user may not read, only the _id is returned.
      *     tags:
      *       - documents
      *     parameters:
@@ -1201,18 +1162,19 @@ module.exports = function(api)
      *     responses:
      *       200:
      *         description: >-
-     *           Paginated list of links
+     *           List of links involving this document
      *         content:
      *           application/json:
      *             schema:
-     *               type: object
-     *               allOf:
-     *                 - $ref: '#/components/schemas/PaginatedResponse'
-     *                 - properties:
-     *                     data:
-     *                       type: array
-     *                       items:
-     *                         $ref: '#/components/schemas/DocumentLink'
+     *               type: array
+     *               items:
+     *                 allOf:
+     *                   - $ref: '#/components/schemas/DocumentLink'
+     *                   - properties:
+     *                       from:
+     *                         $ref: '#/components/schemas/Document'
+     *                       to:
+     *                         $ref: '#/components/schemas/Document'
      */
     api.get("/api/v1/documents/:id/links", async (req, res, next) =>
     {
@@ -1220,9 +1182,218 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
 
-            res.send(await req.paginatedAggregatePipelineWithFilters(DocumentLink, [
-                { $match: { $or: [ { document_a: new req.ObjectId(req.params.id) }, { document_b: new req.ObjectId(req.params.id) } ] } }
-            ]));
+            let links = await DocumentLink.find({ $or: [ { from: req.params.id }, { to: req.params.id } ] })
+                .sort({ createdAt: 1 })
+                .populate("from", linkedDocumentFields)
+                .populate("to", linkedDocumentFields)
+                .lean();
+
+            // links to documents that were deleted meanwhile cannot be shown
+            links = links.filter(link => link.from && link.to);
+
+            // documents of other businesses are only described if the user may read them
+            const readable = new Map();
+            const mayRead = (business) =>
+            {
+                const key = String(business ?? "*");
+                if(!readable.has(key))
+                    readable.set(key, req.permissions.isAllowed(req, "read", "documents", business ?? "*"));
+                return readable.get(key);
+            };
+
+            for(let link of links)
+                for(let side of [ "from", "to" ])
+                    if(!await mayRead(link[side].business))
+                        link[side] = { _id: link[side]._id, restricted: true };
+
+            res.send(links);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/links:
+     *   post:
+     *     summary: Link a document to another one
+     *     description: >-
+     *       Creates a link from the document specified in the path to the target document (to). Requires permission to
+     *       write the document and to read the target document.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the source document (sets the "from" field)
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - to
+     *               - type
+     *             properties:
+     *               to:
+     *                 type: string
+     *                 description: ID of the target document
+     *               type:
+     *                 type: string
+     *                 description: Link type, read as "from <type> to" (e.g. credit note of, delivery note of)
+     *               icon:
+     *                 type: string
+     *                 description: Emoji or icon for the link
+     *               data:
+     *                 type: object
+     *                 description: Arbitrary additional data
+     *     responses:
+     *       200:
+     *         description: >-
+     *           The created link
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/DocumentLink'
+     *       400:
+     *         description: >-
+     *           One of the documents does not exist, or a document is linked to itself
+     */
+    api.post("/api/v1/documents/:id/links", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
+            const { from: _from, _id, __v, createdAt, last_updated_at, ...body } = req.body ?? {};
+
+            if(!req.ObjectId.isValid(body.to) || !await Document.exists({ _id: body.to }) || !await Document.exists({ _id: req.params.id }))
+                return res.status(400).send({ error: "both documents of the link must exist" });
+
+            if(String(body.to) === String(req.params.id))
+                return res.status(400).send({ error: "a document cannot be linked to itself" });
+
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, body.to), res);
+
+            if(typeof body.type === "string")
+                body.type = body.type.trim();
+
+            let link = new DocumentLink({ ...body, from: req.params.id });
+            await link.save();
+            res.send(link);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/businesses/{id}/document-links/types:
+     *   get:
+     *     summary: List the document link types in use
+     *     description: >-
+     *       Returns the distinct types of the links of the business' documents with the number of links per type and the
+     *       icon used most often with it, most used types first. Meant to suggest types when linking documents; any other
+     *       type may be used as well.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the business
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Link types
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   type: { type: string }
+     *                   count: { type: integer }
+     *                   icon: { type: string }
+     */
+    api.get("/api/v1/businesses/:id/document-links/types", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "read", "documents", req.params.id, res);
+
+            const types = await DocumentLink.aggregate([
+                { $match: { type: { $type: "string", $ne: "" } } },
+                { $lookup: { from: Document.collection.name, let: { from: "$from" }, as: "from_document",
+                    pipeline: [ { $match: { $expr: { $eq: [ "$_id", "$$from" ] } } }, { $project: { business: 1 } } ] } },
+                { $match: { "from_document.business": new req.ObjectId(req.params.id) } },
+                { $group: { _id: { type: "$type", icon: "$icon" }, count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $group: { _id: "$_id.type", count: { $sum: "$count" }, icons: { $push: "$_id.icon" } } },
+                { $sort: { count: -1, _id: 1 } }
+            ]);
+
+            res.send(types.map(type => ({ type: type._id, count: type.count, icon: type.icons.find(Boolean) ?? null })));
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/document-links/{id}:
+     *   delete:
+     *     summary: Delete a link between two documents
+     *     description: >-
+     *       Permanently deletes a link. Requires permission to write one of the two linked documents.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the link
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Link deleted
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *       404:
+     *         description: >-
+     *           Link not found
+     */
+    api.delete("/api/v1/document-links/:id", async (req, res, next) =>
+    {
+        try
+        {
+            const link = req.ObjectId.isValid(req.params.id) ? await DocumentLink.findOne({ _id: req.params.id }, "from to").lean() : null;
+            if(!link)
+                return res.status(404).send({ error: "not found" });
+
+            let allowed = false;
+            for(let side of [ link.from, link.to ])
+                allowed ||= await req.permissions.isAllowed(req, "write", "documents", await req.permissions.businessOf(Document, side));
+
+            if(!allowed)
+                return res.status(403).send({ error: "permission denied", details: "write documents" });
+
+            await DocumentLink.deleteOne({ _id: req.params.id });
+            res.send({ success: true });
         }
         catch(x) { next(x) }
     });
