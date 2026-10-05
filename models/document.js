@@ -287,7 +287,6 @@ const CostTransaction = (function()
     {
         posting_date: { type: Date, required: true, default: Date.now, get: formatCalendarDay, set: toCalendarDay },
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: true },
-        corresponding_ledger_transaction: mongoose.Schema.Types.ObjectId,
         is_budget: { type: Boolean, required: true, default: false },
         value: { type: mongoose.Schema.Types.Decimal128, required: true },
         text: String
