@@ -11,8 +11,8 @@ const fail = (statusCode, message) => { throw Object.assign(new Error(message), 
 /** directory that locally installed apps are extracted to, one folder per app id */
 const appsDirectory = () => path.resolve(process.env.installed_apps_dir || "./installed_apps");
 
-/** base url of the app marketplace */
-const marketUrl = () => (process.env.market_url || "https://market.yabooks.net").replace(/\/+$/, "");
+// the app marketplace that subscription codes are redeemed at
+const MARKET_URL = "https://market.yabooks.net";
 
 /** whether a path lies within the directory of installed apps, so that it may be deleted when an app is removed */
 const isWithinAppsDirectory = (dir) => !!dir && path.resolve(dir).startsWith(appsDirectory() + path.sep);
@@ -119,7 +119,7 @@ async function downloadSubscription(subscription_key)
     let response;
     try
     {
-        response = await fetch(`${marketUrl()}/api/v1/subscriptions/${encodeURIComponent(subscription_key)}/zip`,
+        response = await fetch(`${MARKET_URL}/api/v1/subscriptions/${encodeURIComponent(subscription_key)}/zip`,
             { signal: AbortSignal.timeout(5 * 60 * 1000) });
     }
     catch(x) { fail(502, `marketplace could not be reached: ${x?.message || x}`); }
@@ -132,4 +132,4 @@ async function downloadSubscription(subscription_key)
     return Buffer.from(await response.arrayBuffer());
 }
 
-module.exports = { appsDirectory, marketUrl, isWithinAppsDirectory, readPackage, extractPackage, missingDependencies, installDependencies, downloadSubscription };
+module.exports = { MARKET_URL, appsDirectory, isWithinAppsDirectory, readPackage, extractPackage, missingDependencies, installDependencies, downloadSubscription };

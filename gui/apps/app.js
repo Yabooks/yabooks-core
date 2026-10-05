@@ -2,6 +2,30 @@
 
 const MARKET_URL = "https://market.yabooks.net/";
 
+// stroke icons (24 x 24) used on this page, drawn in the current text color
+const ICONS = {
+    "install": '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+    "market": '<path d="M3 9 4.5 4h15L21 9"/><path d="M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0Z"/><path d="M5 13v8h14v-8"/><path d="M10 21v-5h4v5"/>',
+    "code": '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
+    "permissions": '<path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5Z"/><path d="m9 12 2 2 4-4"/>',
+    "trash": '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+    "subscription": '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 11v2"/><path d="M13 17v2"/>',
+    "api-key": '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m11.5 11.5 9.5-9.5"/><path d="m15.5 7.5 3 3"/><path d="m18 5 3 3"/>',
+    "package": '<path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/><path d="m7.5 5.5 9 5"/>',
+    "upload": '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+    "copy": '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    "check": '<path d="M20 6 9 17l-5-5"/>',
+    "close": '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
+};
+
+const Icon = (
+{
+    props: [ "name" ],
+    template: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true" v-html="paths"></svg>`,
+    computed: { paths() { return ICONS[this.name] ?? ""; } }
+});
+
 let app = Vue.createApp(
 {
     data()
@@ -22,9 +46,9 @@ let app = Vue.createApp(
         methods()
         {
             return [
-                { code: "subscription", symbol: "\u{1F39F}", allowed: this.may("apps", "install") },
-                { code: "api-key", symbol: "\u{1F511}", allowed: this.may("apps", "write") },
-                { code: "package", symbol: "\u{1F4E6}", allowed: this.may("apps", "install") }
+                { code: "subscription", allowed: this.may("apps", "install") },
+                { code: "api-key", allowed: this.may("apps", "write") },
+                { code: "package", allowed: this.may("apps", "install") }
             ];
         },
 
@@ -45,6 +69,13 @@ let app = Vue.createApp(
                 "package": !!this.install.file
             }[this.install.method];
         }
+    },
+
+    watch:
+    {
+        // an error refers to the input it was caused by, so it is cleared once that input changes
+        "install.method"() { if(this.install) this.install.error = null; },
+        "install.file"() { if(this.install) this.install.error = null; }
     },
 
     async created()
@@ -194,4 +225,5 @@ let app = Vue.createApp(
 });
 
 app.config.globalProperties.$filters = { ...filters };
+app.component("icon", Icon);
 app.mount("main");

@@ -33,22 +33,31 @@ main
     padding: 24px 28px 40px;
 }
 
-/* header and toolbar */
+/* header: an opaque panel, so title and actions stay readable on the colorful background of the main window */
 
 header
 {
     display: flex;
     gap: 16px;
-    align-items: flex-end;
-    justify-content: space-between;
+    align-items: center;
     flex-wrap: wrap;
-    padding-right: 72px; /* the logo and profile picture of the main window overlap the top right corner */
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 20px;
     margin-bottom: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .06), 0 2px 4px -2px rgba(0, 0, 0, .06);
 }
 
-header h1 { font-size: 22px; font-weight: 600; margin: 0; }
-header p { margin: 4px 0 0; color: var(--text-secondary); }
+header .logo { width: 48px; height: 48px; border-radius: 20%; flex-shrink: 0; }
+header .title { flex: 1; min-width: 240px; }
+header h1 { font-size: 20px; font-weight: 700; margin: 0; color: var(--text-primary); }
+header p { margin: 2px 0 0; color: var(--text-secondary); font-size: 13px; }
 header nav { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* icons */
+
+.ico { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* buttons */
 
@@ -80,7 +89,6 @@ button.primary:hover:not(:disabled) { background: var(--primary-hover); border-c
 button.danger { color: var(--danger-color); border-color: transparent; background: transparent; }
 button.danger:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger-soft); color: var(--danger-color); }
 
-.symbol { font-size: 15px; line-height: 1; }
 
 /* app cards */
 
@@ -182,7 +190,8 @@ button.danger:hover:not(:disabled) { background: var(--danger-soft); border-colo
 
 .dialog-header { display: flex; justify-content: space-between; align-items: center; }
 .dialog-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
-.dialog-header .close { border: none; font-size: 22px; padding: 0 6px; color: var(--text-secondary); }
+.dialog-header .close { border: none; padding: 6px; color: var(--text-secondary); }
+.dialog-header .close .ico { width: 18px; height: 18px; }
 .dialog-footer { display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 16px; }
 
 .methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -199,9 +208,20 @@ button.danger:hover:not(:disabled) { background: var(--danger-soft); border-colo
     border-radius: var(--radius);
 }
 
-.method .symbol { font-size: 20px; margin-bottom: 2px; }
+.method .method-icon
+{
+    display: inline-flex;
+    padding: 7px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-secondary);
+}
+
+.method .method-icon .ico { width: 20px; height: 20px; }
+.method.selected .method-icon { background: var(--primary-color); color: white; }
 .method b { font-weight: 600; color: var(--text-primary); }
-.method span:last-child { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+.method > span:last-child { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
 .method.selected { border-color: var(--primary-color); background: var(--primary-soft); box-shadow: inset 0 0 0 1px var(--primary-color); }
 
 .fields, .credentials { display: grid; grid-template-columns: 130px 1fr; gap: 10px 14px; align-items: center; }
@@ -231,6 +251,7 @@ input, select
     padding: 10px;
     border: 2px dashed var(--input-border);
     border-radius: var(--radius);
+    gap: 10px;
     color: var(--text-secondary);
     text-align: center;
     cursor: pointer;
@@ -240,6 +261,8 @@ input, select
 .dropzone:hover, .dropzone.dragging { border-color: var(--primary-color); background: var(--primary-soft); }
 .dropzone.chosen { border-style: solid; border-color: var(--success-color); background: var(--success-soft); color: var(--text-primary); }
 .dropzone input { display: none; }
+.dropzone .ico { width: 22px; height: 22px; }
+.dropzone.chosen .ico { color: var(--success-color); }
 
 .notice { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px; }
 .notice.error { background: var(--danger-soft); color: var(--danger-color); }
@@ -247,4 +270,4 @@ input, select
 
 .copy { display: flex; gap: 8px; }
 .copy input { flex: 1; }
-.copy button { min-width: 80px; }
+.copy button { min-width: 100px; }

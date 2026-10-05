@@ -34,9 +34,6 @@ JWT_SECRET=change-this-to-a-long-random-string
 # Optional: directory that apps installed from packages or the marketplace are extracted to (default: ./installed_apps)
 installed_apps_dir=
 
-# Optional: base URL of the app marketplace that subscription codes are redeemed at (default: https://market.yabooks.net)
-market_url=
-
 # Optional: AI provider keys, only needed if you use the AI-powered features
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=

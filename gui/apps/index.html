@@ -10,20 +10,21 @@
     <body>
         <main>
             <header>
+                <img class="logo" src="icon.png" alt="" />
                 <div class="title">
                     <h1>{{ $filters.translate("apps-registry.title") }}</h1>
                     <p>{{ $filters.translate("apps-registry.subtitle") }}</p>
                 </div>
                 <nav>
-                    <button class="primary" v-if="mayInstallAny" @click="openInstall()">
-                        <span class="symbol">+</span> {{ $filters.translate("apps-registry.install-app") }}
-                    </button>
-                    <button @click="openMarket()">
-                        <span class="symbol">&#8599;</span> {{ $filters.translate("apps-registry.go-to-market") }}
-                    </button>
                     <a class="button" href="/api/doc/" target="_blank">
-                        <span class="symbol">&#123;&#125;</span> {{ $filters.translate("apps-registry.api-documentation") }}
+                        <icon name="code"></icon> {{ $filters.translate("apps-registry.api-documentation") }}
                     </a>
+                    <button @click="openMarket()">
+                        <icon name="market"></icon> {{ $filters.translate("apps-registry.go-to-market") }}
+                    </button>
+                    <button class="primary" v-if="mayInstallAny" @click="openInstall()">
+                        <icon name="install"></icon> {{ $filters.translate("apps-registry.install-app") }}
+                    </button>
                 </nav>
             </header>
 
@@ -45,10 +46,10 @@
                     </div>
                     <div class="actions" v-if="may('permissions', 'read') || may('apps', 'delete')">
                         <a class="button" v-if="may('permissions', 'read')" :href="`/settings/#apps/${app._id}`">
-                            <span class="symbol">&#9881;</span> {{ $filters.translate("apps-registry.permissions") }}
+                            <icon name="permissions"></icon> {{ $filters.translate("apps-registry.permissions") }}
                         </a>
                         <button class="danger" v-if="may('apps', 'delete')" @click="unregister(app)">
-                            {{ $filters.translate("apps-registry.unregister") }}
+                            <icon name="trash"></icon> {{ $filters.translate("apps-registry.unregister") }}
                         </button>
                     </div>
                 </div>
@@ -62,7 +63,7 @@
                 <div class="dialog" role="dialog" aria-modal="true">
                     <div class="dialog-header">
                         <h2>{{ $filters.translate("apps-registry.install-dialog-title") }}</h2>
-                        <button class="close" :title="$filters.translate('apps-registry.cancel')" @click="closeInstall()">&times;</button>
+                        <button class="close" :title="$filters.translate('apps-registry.cancel')" @click="closeInstall()"><icon name="close"></icon></button>
                     </div>
 
                     <p class="notice error" v-if="!mayInstallAny">{{ $filters.translate("apps-registry.not-authorized") }}</p>
@@ -71,7 +72,7 @@
                         <div class="methods">
                             <button v-for="method in methods" :key="method.code" class="method" :class="{ selected: install.method === method.code }"
                                 :disabled="!method.allowed" @click="install.method = method.code">
-                                <span class="symbol">{{ method.symbol }}</span>
+                                <span class="method-icon"><icon :name="method.code"></icon></span>
                                 <b>{{ $filters.translate(`apps-registry.method.${method.code}`) }}</b>
                                 <span>{{ $filters.translate(`apps-registry.method.${method.code}.hint`) }}</span>
                             </button>
@@ -93,6 +94,7 @@
                                 <label class="dropzone" :class="{ dragging: install.dragging, chosen: install.file }"
                                     @dragover.prevent="install.dragging = true" @dragleave="install.dragging = false" @drop.prevent="dropFile($event)">
                                     <input id="install-package" type="file" accept=".zip,application/zip" @change="install.file = $event.target.files[0]" />
+                                    <icon :name="install.file ? 'check' : 'upload'"></icon>
                                     <span v-if="install.file"><b>{{ install.file.name }}</b> · {{ formatSize(install.file.size) }}</span>
                                     <span v-else>{{ $filters.translate("apps-registry.package-hint") }}</span>
                                 </label>
@@ -122,6 +124,7 @@
                     <div class="dialog-footer">
                         <button @click="closeInstall()">{{ $filters.translate("apps-registry.cancel") }}</button>
                         <button class="primary" v-if="mayInstallAny" :disabled="!installReady || install.busy" @click="submitInstall()">
+                            <icon :name="install.method === 'api-key' ? 'api-key' : 'install'"></icon>
                             {{ $filters.translate(install.busy ? "apps-registry.installing" : install.method === "api-key" ? "apps-registry.generate-key" : "apps-registry.install") }}
                         </button>
                     </div>
@@ -139,12 +142,12 @@
                         <label for="credentials-id">{{ $filters.translate("apps-registry.app-id") }}</label>
                         <div class="copy">
                             <input id="credentials-id" class="mono" readonly :value="credentials._id" @focus="$event.target.select()" />
-                            <button @click="copy('id', credentials._id)">{{ $filters.translate(copied === "id" ? "apps-registry.copied" : "apps-registry.copy") }}</button>
+                            <button @click="copy('id', credentials._id)"><icon :name="copied === 'id' ? 'check' : 'copy'"></icon> {{ $filters.translate(copied === "id" ? "apps-registry.copied" : "apps-registry.copy") }}</button>
                         </div>
                         <label for="credentials-secret">{{ $filters.translate("apps-registry.api-key") }}</label>
                         <div class="copy">
                             <input id="credentials-secret" class="mono" readonly :value="credentials.secret" @focus="$event.target.select()" />
-                            <button @click="copy('secret', credentials.secret)">{{ $filters.translate(copied === "secret" ? "apps-registry.copied" : "apps-registry.copy") }}</button>
+                            <button @click="copy('secret', credentials.secret)"><icon :name="copied === 'secret' ? 'check' : 'copy'"></icon> {{ $filters.translate(copied === "secret" ? "apps-registry.copied" : "apps-registry.copy") }}</button>
                         </div>
                     </div>
                     <div class="dialog-footer">
