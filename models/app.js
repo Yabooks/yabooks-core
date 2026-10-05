@@ -145,6 +145,114 @@ App.getWebhook = async function(event, app_id)
     else throw `no webhook for event "${event}" found for app ${app_id}`;
 };
 
+// child processes of the locally installed apps started by this core instance, by app id
+const processes = new Map();
+
+// starts a locally installed app as a child process
+App.startApp = async function(app)
+{
+    const { Logger } = require("../services/logger.js");
+
+    // install dependencies the app declares but are missing, e.g. if they were not shipped within its package
+    await require("../services/app-installer.js").installDependencies(app.install_path);
+
+    // prepare environment variables for app
+    let env = {
+        PATH: process.env.PATH,
+        LOG_LEVEL: require("../services/settings.js").Settings.get("log_level").toUpperCase(),
+        YABOOKS_CORE_BASE_URL: process.env.base_url || `http://localhost:${process.env.port}/`,
+        YABOOKS_IS_SECONDARY_INSTANCE: process.env.is_secondary_instance,
+        YABOOKS_APP_ID: app._id,
+        YABOOKS_APP_SECRET: app.secret,
+        YABOOKS_APP_LICENSE_KEY: app.license_key
+    };
+
+    if(process.platform === "win32")
+        env.SystemRoot = process.env.SystemRoot;
+
+    // within the desktop app, node is not necessarily installed, so node apps are run by the electron binary acting as node
+    let command = app.auto_start_command;
+    if(process.versions.electron && /^node(\s|$)/.test(command))
+    {
+        command = JSON.stringify(process.execPath) + command.substring(4);
+        env.ELECTRON_RUN_AS_NODE = "1";
+    }
+
+    // start app as child process in its own process group, so it can be stopped including the processes it spawns
+    const app_script = (process.env.shell_init ? `${process.env.shell_init};` : "") + command;
+    const child = cmd.spawn(app_script, {
+        cwd: app.install_path,
+        env,
+        stdio: [ "ignore", "pipe", "pipe" ],
+        shell: process.env.shell || true,
+        detached: process.platform !== "win32"
+    });
+
+    processes.set(String(app._id), child);
+
+    // route the app's output through the logger, so it shows up in the system log tagged with the app
+    require("node:readline").createInterface({ input: child.stdout }).on("line", line => Logger.logFrom(String(app._id), "info", line));
+    require("node:readline").createInterface({ input: child.stderr }).on("line", line => Logger.logFrom(String(app._id), "error", line));
+
+    child.on("error", err => Logger.log("error", `app ${app.name} could not be started`, err?.message || err));
+
+    child.on("exit", (code, signal) =>
+    {
+        if(processes.get(String(app._id)) !== child)
+            return; // app has been stopped on purpose
+
+        processes.delete(String(app._id));
+        Logger.log("error", `app ${app.name} exited with ${signal ? `signal ${signal}` : `code ${code}`}`);
+        App.updateOne({ _id: app._id, pid: String(child.pid) }, { $unset: { pid: true } }).catch(() => null);
+    });
+
+    // store process id in the database
+    await App.updateOne({ _id: app._id }, { pid: child.pid });
+    Logger.log("info", "successfully started app", app.name);
+};
+
+// stops a locally installed app started by this core instance, including the processes it spawned
+App.stopApp = async function(app_id)
+{
+    const child = processes.get(String(app_id));
+    if(!child)
+        return;
+
+    processes.delete(String(app_id));
+    const exited = new Promise(resolve => child.exitCode !== null || child.signalCode !== null ? resolve() : child.once("exit", resolve));
+
+    try
+    {
+        if(process.platform === "win32")
+            cmd.execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: "ignore" });
+        else process.kill(-child.pid, "SIGTERM");
+    }
+    catch(x) { child.kill(); }
+
+    // give the app a moment to shut down gracefully before it is killed
+    const timeout = new Promise(resolve => setTimeout(resolve, 5000).unref());
+    if(await Promise.race([ exited.then(() => true), timeout ]) !== true)
+        try { process.kill(-child.pid, "SIGKILL"); } catch(x) { child.kill("SIGKILL"); }
+
+    await App.updateOne({ _id: app_id }, { $unset: { pid: true } });
+    require("../services/logger.js").Logger.log("info", "stopped app", app_id);
+};
+
+// apps run in their own process groups, so they need to be stopped explicitly when the core shuts down
+const stopAllApps = () =>
+{
+    for(let child of processes.values())
+        try
+        {
+            if(process.platform === "win32") cmd.execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: "ignore" });
+            else process.kill(-child.pid, "SIGTERM");
+        }
+        catch(x) { /* already gone */ }
+};
+process.on("exit", stopAllApps);
+for(let signal of [ "SIGINT", "SIGTERM" ])
+    process.once(signal, () => { stopAllApps(); process.exit(128 + require("node:os").constants.signals[signal]); });
+
 // starts locally installed apps
 App.startLocalApps = async function()
 {
@@ -154,42 +262,7 @@ App.startLocalApps = async function()
     for(let app of query)
         try
         {
-            // prepare environment variables for app
-            let env = {
-                LOG_LEVEL: require("../services/settings.js").Settings.get("log_level").toUpperCase(),
-                YABOOKS_CORE_BASE_URL: process.env.base_url || `http://localhost:${process.env.port}/`,
-                YABOOKS_IS_SECONDARY_INSTANCE: process.env.is_secondary_instance,
-                YABOOKS_APP_ID: app._id,
-                YABOOKS_APP_SECRET: app.secret,
-                YABOOKS_APP_LICENSE_KEY: app.license_key
-            };
-
-            // TODO https://www.electronjs.org/docs/latest/api/utility-process
-            // TODO https://stackoverflow.com/questions/15302618/node-js-check-if-module-is-installed-without-actually-requiring-it
-
-            // start app as child process
-            const app_script = (process.env.shell_init ? `${process.env.shell_init};` : "") + app.auto_start_command;
-            const child = cmd.spawn(app_script, {
-                cwd: app.install_path,
-                env,
-                stdio: [ "ignore", "pipe", "pipe" ],
-                shell: process.env.shell || true
-            });
-
-            // route the app's output through the logger, so it shows up in the system log tagged with the app
-            const { Logger } = require("../services/logger.js");
-            require("node:readline").createInterface({ input: child.stdout }).on("line", line => Logger.logFrom(String(app._id), "info", line));
-            require("node:readline").createInterface({ input: child.stderr }).on("line", line => Logger.logFrom(String(app._id), "error", line));
-
-            child.on("exit", (code, signal) =>
-                require("../services/logger.js").Logger.log("error", `app ${app.name} exited with signal ${signal}`));
-
-            child.on("close", (code) =>
-                require("../services/logger.js").Logger.log("error", `app ${app.name} closed with code ${code}`));
-
-            // store process id in the database
-            await App.updateOne({ _id: app._id }, { pid: child.pid });
-            require("../services/logger.js").Logger.log("info", "successfully started app", app.name);
+            await App.startApp(app);
         }
         catch(err)
         {
