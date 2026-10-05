@@ -34,6 +34,10 @@
                     <span class="icon">&#x1F517;</span>
                     <label>{{ $filters.translate("documents.editor.links") }}</label>
                 </button>
+                <button class="menuitem" :class="{ selected: tab === 'comments' }" @click="selectTab('comments')">
+                    <span class="icon">&#x1F4AC;</span>
+                    <label>{{ $filters.translate("documents.editor.comments") }}</label>
+                </button>
                 <!--<button class="menuitem" :class="{ selected: tab === 'costs' }" @click="selectTab('costs')">
                     <span class="icon">&#x1F4B5;</span>
                     <label>Costs</label>
@@ -64,6 +68,9 @@
                     <div class="tab" v-if="tab === 'links'">
                         <links-tab :doc="doc"></links-tab>
                     </div>
+                    <div class="tab" v-if="tab === 'comments'">
+                        <comments-tab :doc="doc"></comments-tab>
+                    </div>
                     <div class="tab" v-if="tab === 'costs'">
                         <!-- TODO -->
                     </div>
@@ -83,6 +90,7 @@
         <script type="text/javascript" src="tabs/financial.js"></script>
         <script type="text/javascript" src="tabs/ledger.js"></script>
         <script type="text/javascript" src="tabs/links.js"></script>
+        <script type="text/javascript" src="tabs/comments.js"></script>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

@@ -1,16 +1,16 @@
-/* global filters, loadTranslations, GeneralTab, FinancialTab, LedgerTab, LinksTab */
+/* global filters, loadTranslations, GeneralTab, FinancialTab, LedgerTab, LinksTab, CommentsTab */
 
 // date inputs need YYYY-MM-DD; the API returns timestamps like 2025-03-01T00:00:00.000
 const toDateOnly = (date) => typeof date === "string" && date.length >= 10 ? date.substring(0, 10) : (date ?? null);
 
 let app = Vue.createApp(
 {
-    components: { GeneralTab, FinancialTab, LedgerTab, LinksTab },
+    components: { GeneralTab, FinancialTab, LedgerTab, LinksTab, CommentsTab },
 
     data()
     {
         return {
-            tab: "general",
+            tab: [ "comments", "links" ].includes(self.location.hash.substring(1)) ? self.location.hash.substring(1) : "general", // e.g. opened from a notification
             loaded: false,
             previewVersion: 0,
             error: null,
