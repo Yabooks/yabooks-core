@@ -1,11 +1,24 @@
-/* global filters, loadTranslations, GeneralTab, FinancialTab, LedgerTab */
+/* global filters, loadTranslations, GeneralTab, FinancialTab, LedgerTab, CostsTab, SearchableDropdown */
 
 // date inputs need YYYY-MM-DD; the API returns timestamps like 2025-03-01T00:00:00.000
 const toDateOnly = (date) => typeof date === "string" && date.length >= 10 ? date.substring(0, 10) : (date ?? null);
 
+// the searchable dropdown only shows the label of its selected option once its options change after being mounted, and
+// the raw value (e.g. an object id) otherwise; tabs are mounted after the options have been loaded, so the label is
+// looked up initially as well
+const setupSearchableDropdown = SearchableDropdown.setup;
+SearchableDropdown.setup = (props, context) =>
+{
+    const state = setupSearchableDropdown(props, context);
+    const selected = props.options?.find(option => option[props.value] == props.selected);
+    if(selected)
+        state.searchQuery.value = selected[props.label];
+    return state;
+};
+
 let app = Vue.createApp(
 {
-    components: { GeneralTab, FinancialTab, LedgerTab },
+    components: { GeneralTab, FinancialTab, LedgerTab, CostsTab },
 
     data()
     {
@@ -14,7 +27,7 @@ let app = Vue.createApp(
             loaded: false,
             previewVersion: 0,
             error: null,
-            doc: { ledger_transactions: [] },
+            doc: { ledger_transactions: [], cost_transactions: [] },
 
             // reference data shared by all tabs, loaded once
             options: {
@@ -44,6 +57,10 @@ let app = Vue.createApp(
                 tx.posting_date = toDateOnly(tx.posting_date);
                 tx.due_date = toDateOnly(tx.due_date);
             }
+
+            doc.data.cost_transactions = doc.data.cost_transactions ?? [];
+            for(let tx of doc.data.cost_transactions)
+                tx.posting_date = toDateOnly(tx.posting_date);
 
             this.doc = doc.data;
             await this.loadOptions();
@@ -99,6 +116,14 @@ let app = Vue.createApp(
             {
                 this.tab = "alternate";
                 alert(this.$filters.translate("documents.editor.missing-alternate-ledger"));
+                return;
+            }
+
+            // cost transactions have to be assigned to a cost center
+            if((this.doc.cost_transactions ?? []).some(tx => !tx.cost_center))
+            {
+                this.tab = "costs";
+                alert(this.$filters.translate("documents.editor.missing-cost-center"));
                 return;
             }
 

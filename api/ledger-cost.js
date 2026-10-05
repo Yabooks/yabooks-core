@@ -2,6 +2,45 @@ const mongoose = require("mongoose");
 const { LedgerAccount } = require("../models/account.js"), { CostCenter, Article, Store } = require("../models/costcenter.js");
 const { Document } = require("../models/document.js"), { Business } = require("../models/business.js");
 
+// pipeline stages turning the posted documents of a business into one entry per cost transaction, consisting of the cost
+// transactions and time transactions recorded on documents, as well as the general ledger transactions that are assigned
+// to a cost center, either via override_default_cost_center or via the default_cost_center of their ledger account;
+// entries carry their document's fields, document_id and source ("cost", "time" or "ledger")
+const costEntries = (business) =>
+{
+    const postedDocumentsOf = { $match: { business: new mongoose.Types.ObjectId(business), posted: true } };
+
+    const unwound = (field, source) => [
+        postedDocumentsOf,
+        { $unwind: `$${field}` },
+        { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", `$${field}`, { document_id: "$$ROOT._id", source } ] } } }
+    ];
+
+    return [
+        ...unwound("cost_transactions", "cost"),
+        { $unionWith: { coll: Document.collection.collectionName, pipeline: unwound("time_transactions", "time") } },
+        { $unionWith: { coll: Document.collection.collectionName, pipeline: [
+            postedDocumentsOf,
+            { $unwind: "$ledger_transactions" },
+            { $match: { "ledger_transactions.alternate_ledger": null } }, // general ledger only
+            { $lookup: { from: LedgerAccount.collection.collectionName, localField: "ledger_transactions.account", foreignField: "_id", as: "account" } },
+            { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", {
+                _id: "$ledger_transactions._id",
+                document_id: "$$ROOT._id",
+                source: "ledger",
+                posting_date: "$ledger_transactions.posting_date",
+                cost_center: { $ifNull: [ "$ledger_transactions.override_default_cost_center", { $first: "$account.default_cost_center" }, null ] },
+                corresponding_ledger_transaction: "$ledger_transactions._id",
+                is_budget: false,
+                value: "$ledger_transactions.amount",
+                text: "$ledger_transactions.text",
+                account: { $first: "$account._id" }
+            } ] } } },
+            { $match: { cost_center: { $ne: null } } } // ledger transactions not assigned to any cost center are no cost transactions
+        ] } }
+    ];
+};
+
 module.exports = function(api)
 {
     /**
@@ -10,7 +49,7 @@ module.exports = function(api)
      *   get:
      *     summary: Get cost ledger entries of a business
      *     description: >-
-     *       Returns the cost and time transactions of all posted documents, each merged with its document's fields (document_id) and populated cost_center. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *       Returns the cost and time transactions of all posted documents, as well as their general ledger transactions assigned to a cost center (via override_default_cost_center or the ledger account's default_cost_center), each merged with its document's fields (document_id) and populated cost_center. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
      *     tags:
      *       - cost-ledger
      *     parameters:
@@ -42,6 +81,8 @@ module.exports = function(api)
      *                           cost_center:
      *                             $ref: '#/components/schemas/CostCenter'
      *                           value: { type: number }
+     *                           quantity: { type: number }
+     *                           source: { type: string, enum: [ cost, time, ledger ] }
      *                           is_budget: { type: boolean }
      *                           text: { type: string }
      */
@@ -53,16 +94,7 @@ module.exports = function(api)
 
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
-                { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
-                // TODO union with cost transactions from general ledger based on default_cost_center or override_default_cost_center, ignore if null
-                { $unwind: "$cost_transactions" },
-                { $set: { "document_id": "$_id._id" } },
-                { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$cost_transactions", { document_id: "$$ROOT._id" } ] } } },
-                { $unionWith: { coll: Document.collection.collectionName, pipeline: [
-                    { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
-                    { $unwind: "$time_transactions" },
-                    { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$time_transactions", { document_id: "$$ROOT._id" } ] } } },
-                ] } },
+                ...costEntries(req.params.id),
                 { $project: { bytes: 0, ledger_transactions: 0, cost_transactions: 0, time_transactions: 0, stock_transactions: 0, shipping_transactions: 0, receivable: 0, pays: 0 } },
                 { $lookup: { from: CostCenter.collection.collectionName, localField: "cost_center", foreignField: "_id", as: "cost_center" } },
                 { $unwind: "$cost_center" }
@@ -77,7 +109,7 @@ module.exports = function(api)
      *   get:
      *     summary: Get cost center balances of a business
      *     description: >-
-     *       Sums up the value and minutes of all posted cost and time transactions per cost center. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
+     *       Sums up the value, quantity and minutes of all posted cost and time transactions, as well as the general ledger transactions assigned to a cost center, per cost center; budget values and quantities are summed up separately. Supports the generic filter, sorting (sort_asc, sort_desc) and pagination (skip, limit) query parameters.
      *     tags:
      *       - cost-ledger
      *     parameters:
@@ -107,6 +139,9 @@ module.exports = function(api)
      *                           - type: object
      *                             properties:
      *                               balance: { type: number }
+     *                               quantity: { type: number }
+     *                               budget: { type: number }
+     *                               budget_quantity: { type: number }
      *                               minutes: { type: number }
      */
     api.get("/api/v1/businesses/:id/cost-ledger-balances", async (req, res, next) =>
@@ -117,16 +152,13 @@ module.exports = function(api)
 
             res.send(await req.paginatedAggregatePipelineWithFilters(Document,
             [
-                { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
-                // TODO union with cost transactions from general ledger based on default_cost_center or override_default_cost_center, ignore if null
-                { $unwind: "$cost_transactions" },
-                { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$cost_transactions", { document_id: "$$ROOT._id" } ] } } },
-                { $unionWith: { coll: Document.collection.collectionName, pipeline: [
-                    { $match: { business: new mongoose.Types.ObjectId(req.params.id), posted: true } },
-                    { $unwind: "$time_transactions" },
-                    { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$time_transactions", { document_id: "$$ROOT._id" } ] } } },
-                ] } },
-                { $group: { _id: "$cost_center", balance: { $sum: "$value" }, minutes: { $sum: "$minutes" } } },
+                ...costEntries(req.params.id),
+                { $group: { _id: "$cost_center",
+                    balance: { $sum: { $cond: [ { $eq: [ "$is_budget", true ] }, 0, "$value" ] } },
+                    quantity: { $sum: { $cond: [ { $eq: [ "$is_budget", true ] }, 0, "$quantity" ] } },
+                    budget: { $sum: { $cond: [ { $eq: [ "$is_budget", true ] }, "$value", 0 ] } },
+                    budget_quantity: { $sum: { $cond: [ { $eq: [ "$is_budget", true ] }, "$quantity", 0 ] } },
+                    minutes: { $sum: "$minutes" } } },
                 { $lookup: { from: CostCenter.collection.collectionName, localField: "_id", foreignField: "_id", as: "cost_center" } },
                 { $unwind: "$cost_center" },
                 { $replaceRoot: { newRoot: { $mergeObjects: [ "$$ROOT", "$cost_center" ] } } },

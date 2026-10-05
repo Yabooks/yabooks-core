@@ -10,6 +10,7 @@ const CostCenter = mongoose.model("CostCenter", (function()
         business: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: true },
         display_name: String,
         display_number: String,
+        unit: String, // unit quantities are recorded in on cost transactions, e.g. pcs, h, kg; none if only values are recorded
         data: mongoose.Schema.Types.Mixed
     });
 
@@ -22,7 +23,6 @@ const CostCenter = mongoose.model("CostCenter", (function()
 // article schema
 const Article = CostCenter.discriminator("Article",
 {
-    unit: String,
     tax_code: String,
     kn8_code: String,
     hts_code: String,

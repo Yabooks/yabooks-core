@@ -289,7 +289,8 @@ const CostTransaction = (function()
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: true },
         corresponding_ledger_transaction: mongoose.Schema.Types.ObjectId,
         is_budget: { type: Boolean, required: true, default: false },
-        value: { type: mongoose.Schema.Types.Decimal128, required: true },
+        value: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
+        quantity: mongoose.Schema.Types.Decimal128, // in the unit of the cost center, e.g. pieces, hours or kilograms
         text: String
     });
 

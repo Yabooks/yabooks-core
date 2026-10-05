@@ -1,4 +1,5 @@
 const { CostCenter, Article, Store } = require("../models/costcenter.js");
+const { LedgerAccount } = require("../models/account.js"), { Document } = require("../models/document.js");
 
 module.exports = function(api)
 {
@@ -41,7 +42,7 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "read", "cost-centers", req.params.id, res);
 
-            let query = CostCenter.find({ business: req.params.id }, null, req.pagination);
+            let query = CostCenter.find({ business: req.params.id }, null, req.pagination).sort({ display_number: 1 });
             res.send({ ...req.pagination, data: await query, total: await query.clone().count() });
         }
         catch(x) { next(x) }
@@ -212,12 +213,23 @@ module.exports = function(api)
      *                 success:
      *                   type: boolean
      *                   example: true
+     *       409:
+     *         description: >-
+     *           The cost center is still in use by a ledger account or a document and cannot be deleted
      */
     api.delete("/api/v1/cost-centers/:id", async (req, res, next) =>
     {
         try
         {
             await req.permissions.requirePermission(req, "delete", "cost-centers", await req.permissions.businessOf(CostCenter, req.params.id), res);
+
+            // cost centers recorded on, or assigned as default to ledger accounts, have to be kept
+            const id = new req.ObjectId(req.params.id);
+            if(await LedgerAccount.exists({ default_cost_center: id }) || await Document.exists({ $or: [
+                { "cost_transactions.cost_center": id },
+                { "ledger_transactions.override_default_cost_center": id }
+            ] }))
+                return res.status(409).send({ error: "conflict", details: "the cost center is still in use by a ledger account or a document" });
 
             await CostCenter.deleteOne({ _id: req.params.id });
             res.send({ success: true });
