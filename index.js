@@ -46,7 +46,7 @@ app.get("/manuals/:page", async (req, res, next) =>
     {
         if(x?.message?.includes("no such file"))
             res.status(404).send("help page does not exist");
-        else res(next);
+        else next(x);
     }
 });
 
