@@ -25,7 +25,7 @@ async function requireInstallPermissions(req, res, runsCode)
 
 // installs an app package (zip archive) locally: registers the app, extracts its files to a folder named after the app
 // id, assigns the role, and starts the app; everything is rolled back if a step fails
-async function installPackage(req, buffer, access, license_key = undefined)
+async function installPackage(req, buffer, access, market_subscription_key = undefined)
 {
     const pkg = installer.readPackage(buffer);
 
@@ -36,7 +36,7 @@ async function installPackage(req, buffer, access, license_key = undefined)
         bundle_id: pkg.pkg.name,
         name: pkg.pkg.productName || pkg.pkg.displayName || pkg.pkg.name,
         description: pkg.pkg.description,
-        license_key
+        market_subscription_key
     });
     app.install_path = path.join(installer.appsDirectory(), String(app._id));
     app.auto_start_command = `node ${JSON.stringify(pkg.main)}`;
@@ -291,7 +291,7 @@ module.exports = function(api)
      *     summary: Install an app from the marketplace
      *     description: >-
      *       Downloads the app package of a marketplace subscription and installs it like an uploaded package. The
-     *       subscription code is stored as the app's license key. Requires the permissions to write and install apps
+     *       subscription code is stored with the app as market_subscription_key. Requires the permissions to write and install apps
      *       and to write permissions.
      *     tags:
      *       - apps
@@ -351,7 +351,7 @@ module.exports = function(api)
      *   get:
      *     summary: Get details of an app
      *     description: >-
-     *       Secrets, redirect URIs, installation details and license keys are omitted. If another app requests the details, the response includes apiToken, a JWT the requesting app can use to authenticate against the requested app.
+     *       Secrets, redirect URIs, installation details and marketplace subscription codes are omitted. If another app requests the details, the response includes apiToken, a JWT the requesting app can use to authenticate against the requested app.
      *     tags:
      *       - apps
      *     parameters:
@@ -394,7 +394,7 @@ module.exports = function(api)
         try
         {
             let app = await App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] },
-                { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, license_key: false });
+                { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, market_subscription_key: false });
 
             // if request is from one app about another, include a JWT token to authenticate potential app to app communication
             if(req?.auth?.app_id && req.auth.app_id != req.params.id)
@@ -475,7 +475,7 @@ module.exports = function(api)
      *     summary: Update an app
      *     description: >-
      *       Lets an app change its own name, description and other details; only the app itself may do so. Its secret,
-     *       license key and installation details cannot be changed.
+     *       marketplace subscription code and installation details cannot be changed.
      *     tags:
      *       - apps
      *     parameters:

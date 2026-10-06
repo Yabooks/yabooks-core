@@ -39,7 +39,7 @@ const App = mongoose.model("App", (function()
         redirect_uris: [ String ], // for oauth flow
         install_path: String,
         auto_start_command: String,
-        license_key: String,
+        market_subscription_key: String, // subscription code the app was installed with from the marketplace
         pid: String,
         webhooks: [ webhookSchema ],
         permissions: [ permissionSchema ]
@@ -48,9 +48,14 @@ const App = mongoose.model("App", (function()
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
     schema.path("bundle_id").index(true);
     schema.path("pid").index(true);
-    registerAuditLog(schema, "App", { redact: [ "secret", "license_key" ] });
+    registerAuditLog(schema, "App", { redact: [ "secret", "market_subscription_key" ] });
     return schema;
 })());
+
+// the subscription code used to be stored as license_key; renamed once on the raw collection, as the schema no longer
+// knows the old field
+App.collection.updateMany({ license_key: { $exists: true } }, { $rename: { license_key: "market_subscription_key" } }).catch(err =>
+    require("../services/logger.js").Logger.log("error", "could not rename license_key of apps", err?.message || err));
 
 // oauth code schema
 const OAuthCode = mongoose.model("OAuthCode", (function()
@@ -164,7 +169,7 @@ App.startApp = async function(app)
         YABOOKS_IS_SECONDARY_INSTANCE: process.env.is_secondary_instance,
         YABOOKS_APP_ID: app._id,
         YABOOKS_APP_SECRET: app.secret,
-        YABOOKS_APP_LICENSE_KEY: app.license_key
+        YABOOKS_APP_LICENSE_KEY: app.market_subscription_key // name expected by the yabooks-app sdk (getLicenseKey)
     };
 
     if(process.platform === "win32")
@@ -257,7 +262,7 @@ for(let signal of [ "SIGINT", "SIGTERM" ])
 App.startLocalApps = async function()
 {
     let query = await App.find({ install_path: { $ne: null }, auto_start_command: { $ne: null } },
-        { _id: true, name: true, install_path: true, auto_start_command: true, secret: true, license_key: true });
+        { _id: true, name: true, install_path: true, auto_start_command: true, secret: true, market_subscription_key: true });
 
     for(let app of query)
         try
