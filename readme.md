@@ -133,6 +133,14 @@ The app will be reachable at `http://localhost:3000`, with Swagger docs at `http
 
 ---
 
+## Running the tests
+
+```bash
+npm test
+```
+
+The tests start an in-memory MongoDB (downloaded on the first run) and the server itself (`node index.js`), and test the general ledger, tax and cost accounting endpoints through the API; no `.env` or MongoDB instance is needed. Set `YABOOKS_TEST_VERBOSE=1` to see the server output.
+
 ## Desktop mode
 
 YaBooks Core can also run with certain limitations as an Electron desktop app instead of a server:
