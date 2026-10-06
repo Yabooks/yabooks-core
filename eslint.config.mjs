@@ -12,6 +12,12 @@ export default [
         }
     },
     {
+        files: [ "test/**/*.js" ],
+        languageOptions: {
+            globals: globals.jest
+        }
+    },
+    {
         files: [ "gui/**/*.js" ],
         languageOptions: {
             globals: {

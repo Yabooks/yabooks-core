@@ -124,8 +124,9 @@ const debitCreditValidation = function(transactions)
             totals[context] += num(tx.amount);
         }
 
+        // compared in cents, as the floating point sum of e.g. 10 and -9.99 is slightly below .01
         for(let context in totals)
-            if(totals[context] >= .01 || totals[context] <= -.01)
+            if(Math.round(totals[context] * 100) !== 0)
                 return false;
     }
 
