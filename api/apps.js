@@ -351,7 +351,7 @@ module.exports = function(api)
      *   get:
      *     summary: Get details of an app
      *     description: >-
-     *       Secrets, redirect URIs, installation details and marketplace subscription codes are omitted. If another app requests the details, the response includes apiToken, a JWT the requesting app can use to authenticate against the requested app.
+     *       Secrets, redirect URIs, installation details, license keys and marketplace subscription codes are omitted. If another app requests the details, the response includes apiToken, a JWT the requesting app can use to authenticate against the requested app.
      *     tags:
      *       - apps
      *     parameters:
@@ -394,7 +394,7 @@ module.exports = function(api)
         try
         {
             let app = await App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] },
-                { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, market_subscription_key: false });
+                { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, license_key: false, market_subscription_key: false });
 
             // if request is from one app about another, include a JWT token to authenticate potential app to app communication
             if(req?.auth?.app_id && req.auth.app_id != req.params.id)
@@ -475,7 +475,7 @@ module.exports = function(api)
      *     summary: Update an app
      *     description: >-
      *       Lets an app change its own name, description and other details; only the app itself may do so. Its secret,
-     *       marketplace subscription code and installation details cannot be changed.
+     *       license key, marketplace subscription code and installation details cannot be changed.
      *     tags:
      *       - apps
      *     parameters:
