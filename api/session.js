@@ -145,7 +145,15 @@ module.exports = function(api)
     api.delete("/api/v1/session", async (req, res) =>
     {
         await Session.findOneAndDelete({ _id: req.auth.session_id });
-        res.clearCookie("user_info").send({ success: true });
+
+        // clear the cookie with the same attributes it was set with, otherwise browsers keep it
+        let secure_cookie_only = req.protocol === "https" || process.env.base_url?.includes("https://");
+        res.clearCookie("user_token", {
+            httpOnly: true,
+            path: "/",
+            secure: secure_cookie_only || undefined,
+            sameSite: secure_cookie_only ? "none" : undefined
+        }).send({ success: true });
     });
 
     /**

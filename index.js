@@ -115,6 +115,9 @@ app.use("/api/*", async (req, res, next) =>
     next();
 });
 
+// user interface translations can be retrieved without being logged in, e.g. for the login page
+const isPublicTranslationRequest = (req) => req?.method === "GET" && req?.originalUrl?.startsWith?.("/api/v1/translations");
+
 // all other routes require to be authenticated
 app.jwt_secret = process.env.secret || require("crypto").randomBytes(32);
 app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err, req, res, next) =>
@@ -134,7 +137,7 @@ app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err
     catch(x)
     {
         // allow user interface translations retrieval without being logged in
-        if(req?.method === "GET" && req?.originalUrl?.substring?.(0, 20) === "/api/v1/translations")
+        if(isPublicTranslationRequest(req))
             return next();
 
         // error response in case of unauthenticated request
@@ -153,7 +156,16 @@ app.use("/api/*", require("./services/audit-context.js").middleware);
 app.use("/api/*", (req, res, next) =>
 {
     if(req.auth?.session_id && !require("./services/audit-context.js").getActor().user_id)
+    {
+        // a stale cookie (e.g. left over after signing out) must not lock the user out of public translations
+        if(isPublicTranslationRequest(req))
+        {
+            delete req.auth;
+            return next();
+        }
+
         return void res.status(401).send({ error: "unauthorized" });
+    }
     next();
 });
 
