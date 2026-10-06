@@ -93,6 +93,28 @@ function cleanSpec(node, depth = 0)
     return out;
 }
 
+// YaBooks list endpoints accept arbitrary filter/pagination query parameters
+// (field=value, field*=prefix, field__gte=..., sort_asc, skip, limit, q={...})
+// that are not declared in the spec — expose them to the model as a free-form
+// `filters` object on GET operations, appended to the query string on execution
+function addFilterParam(def)
+{
+    if(def.method.toUpperCase() !== "GET") return;
+
+    const schema = def.inputSchema?.jsonSchema ?? def.inputSchema;
+    if(!schema || schema.properties?.filters) return;
+
+    schema.type ??= "object";
+    schema.properties ??= {};
+    schema.properties.filters = {
+        type: "object",
+        description: "Optional extra query parameters for filtering, sorting and pagination, "
+            + "e.g. {\"full_name*\": \"Ac\", \"date__gte\": \"2024-01-01\", \"sort_desc\": \"date\", \"limit\": 50, \"q\": \"{\\\"type\\\":\\\"revenues\\\"}\"}",
+        additionalProperties: { type: [ "string", "number", "boolean" ] }
+    };
+    def.acceptsFilters = true;
+}
+
 async function getOpenApiTools(api)
 {
     // openapi-mcp-generator is ESM-only — load via dynamic import (cached by Node)
@@ -119,6 +141,7 @@ async function getOpenApiTools(api)
     for(const def of defs)
     {
         stripAuthParams(def, api);
+        addFilterParam(def);
 
         try { jsonSchema(def.inputSchema?.jsonSchema ?? def.inputSchema); }
         catch(e)
@@ -170,6 +193,12 @@ async function executeOperation(api, def, args)
 
         used.add(p.name);
     }
+
+    // free-form filters (see addFilterParam)
+    if(def.acceptsFilters && args?.filters && typeof args.filters === "object")
+        for(const [ key, value ] of Object.entries(args.filters))
+            if(value !== undefined && value !== null)
+                query.append(key, typeof value === "object" ? JSON.stringify(value) : value);
 
     // request body: explicit requestBody arg, or all remaining args
     let body;

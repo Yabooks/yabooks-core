@@ -6,8 +6,48 @@ const { getOpenApiTools } = require("../services/mcp.js");
 const { createAnthropic } = require("@ai-sdk/anthropic");
 const { createOpenAI } = require("@ai-sdk/openai");
 
-const MAX_STEPS = 10, APPROVAL_HINT = "When a tool execution is not approved by the user, do not retry it; "
-    + "acknowledge the denial and continue without it.";
+const MAX_STEPS = 10;
+
+// general instructions on how to use the YaBooks API tools correctly; prepended
+// to the caller's system prompt whenever tools are enabled
+const TOOL_INSTRUCTIONS = `You have tools that call the YaBooks ERP API on behalf of the current user.
+
+## IDs
+- Never guess or construct IDs. Every ID passed to a tool must be an \`_id\` returned by a previous tool call.
+- Names, business numbers, tax numbers or account numbers are not IDs. Resolve them via the API first.
+- Identities (individuals and organizations: people, companies, customers, suppliers, ...) and businesses are different things with different IDs.
+  An identity owns one or more businesses; all accounting data (ledger, accounts, documents, balances, open items, tax) belongs to a business.
+- To find a business by name: search the identities (GET /api/v1/identities, e.g. filters \`{"q": "{\\"full_name\\": {\\"$regex\\": \\"acme\\", \\"$options\\": \\"i\\"}}"}\`),
+  then list that identity's businesses (GET /api/v1/identities/{identity_id}/businesses) and use the business \`_id\` for all /api/v1/businesses/{id}/... endpoints.
+  Never pass an identity ID where a business ID is expected. Fields named business_partner reference business IDs, too.
+- If a search returns several plausible matches, ask the user which one is meant instead of picking one. If it returns nothing, say so; do not invent data.
+
+## Lists, filters and pagination
+- List endpoints return \`{ data, total, skip, limit }\`. The default limit is 100; if \`total\` exceeds what was returned, page with \`skip\`/\`limit\` or narrow the filter before drawing conclusions.
+- GET tools accept a \`filters\` object with extra query parameters:
+  \`{"field": "value"}\` exact match, \`{"field*": "prefix"}\` case-sensitive prefix match, \`{"field__gte": "2024-01-01", "field__lte": "2024-12-31"}\` ranges,
+  \`{"sort_asc": "field"}\` / \`{"sort_desc": "field"}\`, \`{"skip": 0, "limit": 100}\`, and \`{"q": "<MongoDB filter as JSON>"}\` for anything else (e.g. case-insensitive $regex).
+- Dates are calendar days in the format YYYY-MM-DD.
+- Decimal amounts may be returned as \`{"$numberDecimal": "123.45"}\`; treat that as the number 123.45. Amounts are in the business's default_currency unless stated otherwise.
+
+## Bookkeeping conventions
+- Ledger transaction amounts are signed: positive = debit, negative = credit. The ledger transactions of a posted document sum to zero per posting date.
+- An account balance is the sum of its amounts, so its sign must be read together with the ledger account's \`type\`:
+  - assets, expenses: normally debit, i.e. positive. A positive expense balance is a cost; a negative asset balance (e.g. a bank account) is an overdraft.
+  - liabilities, equity, revenues, oci: normally credit, i.e. negative. A NEGATIVE revenue balance is REVENUE EARNED, not a loss;
+    a negative liability balance is an amount owed; a negative equity balance means positive equity.
+  - A balance with the unusual sign (e.g. a positive revenue balance from credit notes/returns) reduces that category.
+- Profit/loss for a period = -(sum of revenues balances + sum of expenses balances). Example: revenues -10,000 and expenses +6,000 means revenue 10,000, expenses 6,000, profit 4,000.
+- Present figures to the user in natural terms (revenue 10,000; liabilities 2,500), not as raw debit/credit signs, unless they explicitly ask for debit/credit.
+- GET /api/v1/businesses/{id}/general-ledger-balances only counts posted documents. With \`from\`, \`balance_before\` is the opening balance and \`balance\` the movement in the period;
+  the closing balance is their sum. Use \`until\` for the period end. Revenue and expense accounts are period figures: query them for the fiscal year in question
+  (the fiscal year ends on the business's closing_month / closing_day_of_month; if unset, assume the calendar year). Balance sheet accounts (assets, liabilities, equity) are cumulative.
+- Alternate ledgers (e.g. local GAAP vs. IFRS) are separate; only use the {alternate_ledger} endpoints when the user asks for that ledger.
+
+## Acting
+- Read before you write: look up all IDs and current state with GET tools before creating or changing anything, and tell the user what you are about to do.
+- Write operations require the user's approval. When a tool execution is not approved by the user, do not retry it; acknowledge the denial and continue without it.
+- If a tool returns an HTTP error, report it honestly instead of making up a result.`;
 
 async function getMcpTools(api_key)
 {
@@ -202,7 +242,7 @@ module.exports = function(api)
             const result = await generateText({
                 model,
                 messages,
-                system: [ ...(useTools ? [APPROVAL_HINT] : []), system ].filter(Boolean).join("\n"),
+                system: [ ...(useTools ? [TOOL_INSTRUCTIONS, `Today is ${new Date().toISOString().slice(0, 10)}.`] : []), system ].filter(Boolean).join("\n\n"),
                 ...(params.temperature !== undefined && { temperature: Number(params.temperature) }),
                 ...(params.max_tokens && { maxOutputTokens: parseInt(params.max_tokens) }),
                 ...(useTools && { tools: await getMcpTools(req.headers?.authorization ? req.headers.authorization.split(" ")[1] : req.cookies?.user_token) }),
