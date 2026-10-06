@@ -27,17 +27,41 @@ const TOOL_INSTRUCTIONS = `You have tools that call the YaBooks ERP API on behal
 - GET tools accept a \`filters\` object with extra query parameters:
   \`{"field": "value"}\` exact match, \`{"field*": "prefix"}\` case-sensitive prefix match, \`{"field__gte": "2024-01-01", "field__lte": "2024-12-31"}\` ranges,
   \`{"sort_asc": "field"}\` / \`{"sort_desc": "field"}\`, \`{"skip": 0, "limit": 100}\`, and \`{"q": "<MongoDB filter as JSON>"}\` for anything else (e.g. case-insensitive $regex).
+  Simple parameters auto-convert values: numbers, true/false/null, YYYY-MM-DD dates and 24-hex IDs become the matching types. Prefer them whenever they suffice.
+- Using \`q\` correctly:
+  - Its value is ONE string containing a JSON-encoded MongoDB $match filter, not a nested object: \`{"q": "{\\"type\\": \\"revenues\\"}"}\`, not \`{"q": {"type": "revenues"}}\`.
+    Combine several conditions inside that one filter (implicit AND, or \`$and\`/\`$or\`); it is additionally ANDed with any other filter parameters.
+  - Values inside \`q\` are NOT auto-converted. Dates must be written as \`{"$date": "2024-01-01T00:00:00Z"}\` and IDs as \`{"$oid": "<_id>"}\`;
+    a plain string never matches a date or ID field. Example: \`{"q": "{\\"date\\": {\\"$gte\\": {\\"$date\\": \\"2024-01-01T00:00:00Z\\"}}, \\"business_partner\\": {\\"$oid\\": \\"65a1...\\"}}"}\`.
+  - Contains / case-insensitive search: \`{"q": "{\\"full_name\\": {\\"$regex\\": \\"acme\\", \\"$options\\": \\"i\\"}}"}\`. Escape regex special characters (. * + ? ( ) [ ] etc.) in user-supplied text.
+    Search across several fields with \`$or\`: \`{"q": "{\\"$or\\": [{\\"full_name\\": {\\"$regex\\": \\"acme\\", \\"$options\\": \\"i\\"}}, {\\"email\\": {\\"$regex\\": \\"acme\\", \\"$options\\": \\"i\\"}}]}"}\`.
+  - Use dot notation for nested fields (e.g. \`"main_bank_account.iban"\`). Field names are those of the returned objects; only use fields you have seen in a response or the schema.
+  - Only query operators allowed in $match are valid ($eq, $ne, $in, $nin, $gt, $gte, $lt, $lte, $regex, $exists, $and, $or, $not, $elemMatch, ...). Invalid JSON results in an HTTP error.
 - Dates are calendar days in the format YYYY-MM-DD.
 - Decimal amounts may be returned as \`{"$numberDecimal": "123.45"}\`; treat that as the number 123.45. Amounts are in the business's default_currency unless stated otherwise.
 
 ## Bookkeeping conventions
-- Ledger transaction amounts are signed: positive = debit, negative = credit. The ledger transactions of a posted document sum to zero per posting date.
-- An account balance is the sum of its amounts, so its sign must be read together with the ledger account's \`type\`:
-  - assets, expenses: normally debit, i.e. positive. A positive expense balance is a cost; a negative asset balance (e.g. a bank account) is an overdraft.
-  - liabilities, equity, revenues, oci: normally credit, i.e. negative. A NEGATIVE revenue balance is REVENUE EARNED, not a loss;
-    a negative liability balance is an amount owed; a negative equity balance means positive equity.
-  - A balance with the unusual sign (e.g. a positive revenue balance from credit notes/returns) reduces that category.
-- Profit/loss for a period = -(sum of revenues balances + sum of expenses balances). Example: revenues -10,000 and expenses +6,000 means revenue 10,000, expenses 6,000, profit 4,000.
+### Signs of amounts and balances (read carefully, this is the most common source of wrong answers)
+- Every ledger transaction amount is signed: positive = debit, negative = credit. The ledger transactions of a posted document sum to zero per posting date.
+- \`balance\` and \`balance_before\` are plain sums of these signed amounts. They are NOT already in natural terms. Each balance object carries the ledger account's \`type\`;
+  always convert using that type before interpreting or presenting a figure:
+  - \`type\` is assets or expenses → natural value = balance (as returned)
+  - \`type\` is liabilities, equity, revenues or oci → natural value = -balance (flip the sign)
+- What the raw sign means per type:
+  | type        | raw balance negative (credit)                  | raw balance positive (debit)                          |
+  | assets      | unusual: e.g. bank overdraft, customer credit  | normal: cash on the bank, receivables, VAT refund claim |
+  | liabilities | normal: amount owed (suppliers, tax office, loans) | unusual: overpaid / prepaid, i.e. effectively a claim |
+  | equity      | normal: positive equity                        | unusual: negative equity (e.g. accumulated losses)    |
+  | revenues    | normal: REVENUE EARNED (this is NOT a loss)    | unusual: credit notes / returns reducing revenue      |
+  | expenses    | unusual: refunds / corrections reducing costs  | normal: costs incurred                                |
+  | oci         | normal: OCI gain                               | unusual: OCI loss                                     |
+- The same applies to single ledger transactions: a negative amount on a revenue account is a sale, a positive amount on a bank account is money received,
+  a negative amount on a bank account is money paid out, a negative amount on a supplier/payables account increases what is owed.
+- Worked examples (raw → natural): revenues -10,000 → revenue 10,000; expenses 6,000 → expenses 6,000; bank 2,500 → 2,500 on the bank;
+  bank -300 → overdraft of 300; payables -1,200 → 1,200 owed to suppliers; output VAT (liability) -800 → 800 owed to the tax office; equity -50,000 → equity of 50,000.
+- Profit/loss for a period = natural revenues - natural expenses = -(sum of raw revenues balances + sum of raw expenses balances).
+  Example: revenues -10,000 and expenses +6,000 → profit 4,000. A positive result of that formula is a profit, a negative one a loss.
+- When summing a category, sum the raw balances first and convert once; never sum absolute values (unusual-sign accounts would then be added instead of subtracted).
 - Present figures to the user in natural terms (revenue 10,000; liabilities 2,500), not as raw debit/credit signs, unless they explicitly ask for debit/credit.
 - GET /api/v1/businesses/{id}/general-ledger-balances only counts posted documents. With \`from\`, \`balance_before\` is the opening balance and \`balance\` the movement in the period;
   the closing balance is their sum. Use \`until\` for the period end. Revenue and expense accounts are period figures: query them for the fiscal year in question
