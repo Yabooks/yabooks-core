@@ -1,3 +1,4 @@
+const { assertNoOperators, omit } = require("../services/sanitize.js");
 const { CostCenter, Article, Store } = require("../models/costcenter.js");
 const { LedgerAccount } = require("../models/account.js"), { Document } = require("../models/document.js");
 
@@ -84,7 +85,7 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "cost-centers", req.params.id, res);
 
-            let cc = new CostCenter({ business: req.params.id, ...req.body });
+            let cc = new CostCenter({ ...req.body, business: req.params.id });
             await cc.save();
             res.send(cc);
         }
@@ -180,7 +181,9 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "cost-centers", await req.permissions.businessOf(CostCenter, req.params.id), res);
 
-            await CostCenter.updateOne({ _id: req.params.id }, req.body);
+            // cost centers stay within their business; operators like $set would get around that
+            assertNoOperators(req.body);
+            await CostCenter.updateOne({ _id: req.params.id }, { $set: omit(req.body, "_id", "__v", "business") });
             res.send({ success: true });
         }
         catch(x) { next(x) }

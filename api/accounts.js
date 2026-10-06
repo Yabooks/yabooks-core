@@ -1,3 +1,4 @@
+const { assertNoOperators, omit } = require("../services/sanitize.js");
 const { LedgerAccount } = require("../models/account.js"), { Document } = require("../models/document.js");
 
 module.exports = function(api)
@@ -80,10 +81,10 @@ module.exports = function(api)
             await req.permissions.requirePermission(req, "write", "accounts", req.params.id, res);
 
             if(Array.isArray(req.body))
-                res.send(await LedgerAccount.insertMany(req.body.map(acc => ({ business: req.params.id, ...acc }))));
+                res.send(await LedgerAccount.insertMany(req.body.map(acc => ({ ...acc, business: req.params.id }))));
             else
             {
-                let acc = new LedgerAccount({ business: req.params.id, ...req.body });
+                let acc = new LedgerAccount({ ...req.body, business: req.params.id });
                 await acc.save();
                 res.send(acc);
             }
@@ -166,7 +167,9 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
 
-            await LedgerAccount.updateOne({ _id: req.params.id }, req.body);
+            // accounts stay within their business; operators like $set would get around that
+            assertNoOperators(req.body);
+            await LedgerAccount.updateOne({ _id: req.params.id }, { $set: omit(req.body, "_id", "__v", "business") });
             res.send({ success: true });
         }
         catch(x) { next(x) }

@@ -1,3 +1,4 @@
+const { sendPicture } = require("../services/files.js");
 const { User, Session } = require("../models/user.js"), bcrypt = require("bcrypt");
 const { subjectOfUser } = require("../services/casbin.js"), { hasOtherActiveAdministrator } = require("../services/permissions.js");
 
@@ -256,7 +257,7 @@ module.exports = function(api)
             else
             {
                 let picture = await user.getProfilePicture();
-                res.set("Content-Type", `image/${picture.length > 400 ? "jpeg" : "svg+xml"}`).send(picture);
+                sendPicture(res, picture);
             }
         }
         catch(x) { next(x) }
@@ -393,8 +394,8 @@ module.exports = function(api)
             user.password_hash = await bcrypt.hash(password, 10);
             await user.save();
 
-            if(!isOwn)
-                await Session.deleteMany({ user: user._id });
+            // other sessions, e.g. of whoever got to know the old password, end with the password change
+            await Session.deleteMany({ user: user._id, ...(isOwn ? { _id: { $ne: req.auth.session_id } } : {}) });
 
             res.send({ success: true });
         }

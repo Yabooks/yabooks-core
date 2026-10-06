@@ -5,7 +5,29 @@ const pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs"), { createCanva
 const standardFontDataUrl = require("path").dirname(require.resolve("pdfjs-dist/standard_fonts/FoxitFixed.pfb")) + "/";
 const cMapUrl = require("path").dirname(require.resolve("pdfjs-dist/cmaps/78-H.bcmap")) + "/";
 
+const { assertSafePipeline, omit } = require("../services/sanitize.js"), { attachment, escapeXml } = require("../services/files.js");
+
 const THUMBNAIL_MAX_SIZE = 256;
+
+// preview pages are rendered at most at this scale, larger ones would allocate huge amounts of memory
+const MAX_PREVIEW_SCALE = 4;
+
+// opens a pdf with pdf.js; the returned document must be destroyed after use, otherwise its memory is never released
+const openPdf = async (bytes) =>
+{
+    const pdfjsLib = await pdfjsLibPromise;
+    return await pdfjsLib.getDocument({ data: new Uint8Array(bytes), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
+};
+
+// sql statements that would make sqlite write to other files than the document's database
+const sqlWritingOtherFiles = (sql) =>
+{
+    const code = sql
+        .replace(/--[^\n]*/g, " ")             // line comments
+        .replace(/\/\*[\s\S]*?(\*\/|$)/g, " ")   // block comments
+        .replace(/'(?:[^']|'')*'/g, "''");      // string literals
+    return /\b(attach|detach|load_extension)\b/i.test(code) || /\bvacuum\b[\s\S]*\binto\b/i.test(code);
+};
 
 // generates a small preview image for images and the first page of PDF documents; returns null for any other file type
 const generateThumbnail = async (mime_type, bytes) =>
@@ -24,16 +46,21 @@ const generateThumbnail = async (mime_type, bytes) =>
     if(mime_type === "application/pdf")
     {
         const pdfjsLib = await pdfjsLibPromise;
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
-        const page = await pdf.getPage(1);
+        const pdf = await openPdf(bytes);
 
-        const unscaledViewport = page.getViewport({ scale: 1 });
-        const scale = THUMBNAIL_MAX_SIZE / Math.max(unscaledViewport.width, unscaledViewport.height);
-        const viewport = page.getViewport({ scale });
+        try
+        {
+            const page = await pdf.getPage(1);
 
-        const canvas = createCanvas(viewport.width, viewport.height);
-        await page.render({ viewport, canvasContext: canvas.getContext("2d"), annotationMode: pdfjsLib.AnnotationMode.DISABLE }).promise;
-        return canvas.toBuffer("image/png");
+            const unscaledViewport = page.getViewport({ scale: 1 });
+            const scale = THUMBNAIL_MAX_SIZE / Math.max(unscaledViewport.width, unscaledViewport.height);
+            const viewport = page.getViewport({ scale });
+
+            const canvas = createCanvas(viewport.width, viewport.height);
+            await page.render({ viewport, canvasContext: canvas.getContext("2d"), annotationMode: pdfjsLib.AnnotationMode.DISABLE }).promise;
+            return canvas.toBuffer("image/png");
+        }
+        finally { await pdf.destroy(); }
     }
 
     return null; // no thumbnail for other file types
@@ -162,17 +189,11 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "read", "documents", req.params.id, res);
 
-            // stages writing to collections would bypass all validation (e.g. the period lock), at any nesting depth
-            const writesData = (value) => Array.isArray(value) ? value.some(writesData) :
-                !!value && typeof value === "object" && Object.entries(value).some(([ key, nested ]) => [ "$out", "$merge" ].includes(key) || writesData(nested));
+            // stages writing data would bypass all validation (e.g. the period lock), stages reaching into other collections
+            // (e.g. $lookup) would expose other businesses' data and credentials, so only an allowlist of stages is accepted
+            assertSafePipeline(req.body);
 
-            if(!req.body || !Array.isArray(req.body))
-                res.status(400).json({ error: "expecting Mongo pipeline as array in request body" });
-
-            else if(writesData(req.body))
-                res.status(403).json({ error: "pipelines may not write data ($out, $merge)" });
-
-            else res.json(await Document.aggregate([ // FIXME might allow security breach by joining other collections
+            res.json(await Document.aggregate([
                 { $match: { business: new req.ObjectId(req.params.id) } },
                 ...req.body
             ]));
@@ -224,7 +245,7 @@ module.exports = function(api)
             if(req.body?.posted)
                 await req.permissions.requirePermission(req, "record", "general-ledger", req.params.id, res);
 
-            let doc = new Document({ business: req.params.id, ...req.body });
+            let doc = new Document({ ...req.body, business: req.params.id }); // the business is the one permissions were checked for
             await doc.validate();
             await doc.save();
             res.send(doc);
@@ -346,11 +367,25 @@ module.exports = function(api)
             if(!doc)
                 return res.status(404).send({ error: "not found" });
 
-            // posting, unposting and changing the ledger of a posted document record in the general ledger
-            if((req.body?.posted !== undefined && req.body.posted !== doc.posted) || (doc.posted && req.body?.ledger_transactions !== undefined))
-                await req.permissions.requirePermission(req, "record", "general-ledger", doc.business ?? "*", res);
+            const body = omit(req.body, "_id", "__v");
+            if(Object.keys(body).some(key => key.startsWith("$")))
+                return res.status(400).send({ error: "bad request", details: "update operators are not allowed" });
 
-            await Document.updateOne({ _id: req.params.id }, { $set: req.body }, { runValidators: true });
+            // moving a document to another business requires permission to write documents there as well
+            const movesBusiness = body.business !== undefined && String(body.business) !== String(doc.business);
+            if(movesBusiness)
+                await req.permissions.requirePermission(req, "write", "documents", body.business ?? "*", res);
+
+            // posting, unposting and changing the ledger of a posted document record in the general ledger
+            if((body.posted !== undefined && body.posted !== doc.posted) || (doc.posted && (movesBusiness ||
+                    Object.keys(body).some(key => key === "ledger_transactions" || key.startsWith("ledger_transactions.")))))
+            {
+                await req.permissions.requirePermission(req, "record", "general-ledger", doc.business ?? "*", res);
+                if(movesBusiness)
+                    await req.permissions.requirePermission(req, "record", "general-ledger", body.business ?? "*", res);
+            }
+
+            await Document.updateOne({ _id: req.params.id }, { $set: body }, { runValidators: true });
             res.send({ success: true });
 
             App.callWebhooks("document.updated", { document_id: req.params.id }, doc.owned_by);
@@ -400,8 +435,8 @@ module.exports = function(api)
             else if(!await Document.hasCurrentVersion(doc._id))
                 res.status(404).send({ error: "no current version found" });
 
-            else res.header("content-type", doc["mime_type"])
-                    .header("content-disposition", `attachment; filename="${doc.name}"`)
+            else res.header("content-type", doc["mime_type"] || "application/octet-stream")
+                    .header("content-disposition", attachment(doc.name))
                     .send(await Document.readCurrentVersion(doc._id));
         }
         catch(x) { next(x) }
@@ -457,6 +492,11 @@ module.exports = function(api)
             await req.permissions.requirePermission(req, "write", "documents", await req.permissions.businessOf(Document, req.params.id), res);
 
             let doc = await Document.findOne({ _id: req.params.id });
+            if(!doc)
+                return res.status(404).send({ error: "not found" });
+
+            if(!req.rawBody?.length)
+                return res.status(400).send({ error: "bad request", details: "no file content provided" });
 
             if(req.query.versioning || doc.posted)
                 await Document.archiveCurrentVersion(req.params.id);
@@ -519,11 +559,13 @@ module.exports = function(api)
             await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
 
             let doc = await Document.findOne({ _id: req.params.id }, [ "name", "thumbnail" ]);
+            if(!doc)
+                return res.status(404).send({ error: "not found" });
 
             if(doc.thumbnail && doc.thumbnail.length < 67) // assume unicode emoji
             {
                 let svg = await fs.readFile("./gui/documents/unicode-icon.svg", "utf8");
-                svg = svg.split("$$ICON").join(Buffer.from(doc.thumbnail).toString("utf8"));
+                svg = svg.split("$$ICON").join(escapeXml(Buffer.from(doc.thumbnail).toString("utf8")));
                 res.header("content-type", "image/svg+xml").send(svg);
             }
 
@@ -534,7 +576,7 @@ module.exports = function(api)
             {
                 let ext = "";
                 if(doc.name && doc.name.lastIndexOf(".") > -1)
-                    ext = doc.name.substring(doc.name.lastIndexOf(".") + 1).toUpperCase().substring(0, 4);
+                    ext = doc.name.substring(doc.name.lastIndexOf(".") + 1).toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 4);
 
                 const extColors = { 0: 0, /*D*/3: 4302318, /*P*/15: 16720150, /*X*/23: 1596471, /*C*/2: 1596471, 25: 0 };
                 extColors.get = (i) => extColors[i] ? extColors[i] : 0;
@@ -617,40 +659,42 @@ module.exports = function(api)
 
             else if(doc.mime_type == "application/pdf")
             {
-                const pdfjsLib = await pdfjsLibPromise;
-                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
-
-                const annotations = [];
-                for(let i = 1; i <= pdf.numPages; ++i)
+                const pdf = await openPdf(await Document.readCurrentVersion(doc._id));
+                try
                 {
-                    const page = await pdf.getPage(i), pageAnnotations = [];
+                    const annotations = [];
+                    for(let i = 1; i <= pdf.numPages; ++i)
+                    {
+                        const page = await pdf.getPage(i), pageAnnotations = [];
 
-                    for(let annotation of (await page.getAnnotations())
-                            .filter(annotation => annotation.subtype == "Ink"))
-                        for(let inkList of annotation.inkLists)
-                        {
-                            const points = [];
-                            for(let j = 0; j < inkList.length; j += 2)
-                                points.push({ x: inkList[j], y: inkList[j + 1] });
-                            pageAnnotations.push({
-                                color: [ ...annotation.color ],
-                                points,
-                                opacity: annotation.opacity ?? 1,
-                                lineWidth: annotation.borderStyle?.width ?? 1
-                            });
-                        }
+                        for(let annotation of (await page.getAnnotations())
+                                .filter(annotation => annotation.subtype == "Ink"))
+                            for(let inkList of annotation.inkLists)
+                            {
+                                const points = [];
+                                for(let j = 0; j < inkList.length; j += 2)
+                                    points.push({ x: inkList[j], y: inkList[j + 1] });
+                                pageAnnotations.push({
+                                    color: [ ...annotation.color ],
+                                    points,
+                                    opacity: annotation.opacity ?? 1,
+                                    lineWidth: annotation.borderStyle?.width ?? 1
+                                });
+                            }
 
-                    annotations.push(pageAnnotations);
+                        annotations.push(pageAnnotations);
+                    }
+
+                    res.json({
+                        name: doc.name,
+                        mime_type: doc.mime_type,
+                        has_binary,
+                        annotations_supported: true,
+                        pages: pdf.numPages,
+                        annotations
+                    });
                 }
-
-                res.json({
-                    name: doc.name,
-                    mime_type: doc.mime_type,
-                    has_binary,
-                    annotations_supported: true,
-                    pages: pdf.numPages,
-                    annotations
-                });
+                finally { await pdf.destroy(); }
             }
 
             else if(typeof doc.mime_type == "string" && doc.mime_type.indexOf("image/") === 0)
@@ -725,37 +769,42 @@ module.exports = function(api)
             const doc = await Document.findOne({ _id: req.params.id }, [ "mime_type" ]);
 
             if(!doc)
-                res.status(404).send({ error: "not found" });
+                return res.status(404).send({ error: "not found" });
 
             // render PDF document page to image preview
             if(doc.mime_type == "application/pdf")
             {
                 const pdfjsLib = await pdfjsLibPromise;
-                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await Document.readCurrentVersion(doc._id)), standardFontDataUrl, cMapUrl, cMapPacked: true }).promise;
+                const pdf = await openPdf(await Document.readCurrentVersion(doc._id));
 
-                if(isNaN(req.params.page) || req.params.page < 1 || req.params.page > pdf.numPages)
-                    res.status(404).send({ error: "page not found" });
-
-                else
+                try
                 {
-                    const page = await pdf.getPage(parseInt(req.params.page));
-                    const viewport = page.getViewport({ scale: parseFloat(req.query.scale ?? 2.0) });
+                    if(isNaN(req.params.page) || req.params.page < 1 || req.params.page > pdf.numPages)
+                        res.status(404).send({ error: "page not found" });
 
-                    const canvas = createCanvas(viewport.width, viewport.height);
-                    const context = canvas.getContext("2d");
+                    else
+                    {
+                        const page = await pdf.getPage(parseInt(req.params.page));
+                        const scale = Math.min(Math.max(parseFloat(req.query.scale ?? 2.0) || 2.0, 0.1), MAX_PREVIEW_SCALE);
+                        const viewport = page.getViewport({ scale });
 
-                    let renderOptions = {
-                        viewport,
-                        canvasContext: context,
-                    };
+                        const canvas = createCanvas(viewport.width, viewport.height);
+                        const context = canvas.getContext("2d");
 
-                    if(req.query.annotations == "false" || req.query.annotations === false)
-                        renderOptions.annotationMode = pdfjsLib.AnnotationMode.DISABLE;
+                        let renderOptions = {
+                            viewport,
+                            canvasContext: context,
+                        };
 
-                    await page.render(renderOptions).promise;
+                        if(req.query.annotations == "false" || req.query.annotations === false)
+                            renderOptions.annotationMode = pdfjsLib.AnnotationMode.DISABLE;
 
-                    res.set("content-type", "image/png").send(canvas.toBuffer("image/png"));
+                        await page.render(renderOptions).promise;
+
+                        res.set("content-type", "image/png").send(canvas.toBuffer("image/png"));
+                    }
                 }
+                finally { await pdf.destroy(); }
             }
 
             // image preview is the image itself
@@ -830,6 +879,12 @@ module.exports = function(api)
             else if(doc.mime_type != "application/pdf")
                 res.status(406).json({ error: `saving annotations not supported for documents of type ${doc.mime_type}` });
 
+            else if(!Array.isArray(req.body) || !req.body.every(page => Array.isArray(page) && page.every(stroke =>
+                    Array.isArray(stroke?.points) && stroke.points.length <= 100000 &&
+                    stroke.points.every(point => Number.isFinite(point?.x) && Number.isFinite(point?.y)) &&
+                    Array.isArray(stroke.color) && stroke.color.length === 3 && stroke.color.every(Number.isFinite))))
+                res.status(400).json({ error: "expecting an array of pages, each an array of strokes with points and color" });
+
             else
             {
                 const pdf = await PDFDocument.load(new Uint8Array(await Document.readCurrentVersion(doc._id)));
@@ -846,21 +901,17 @@ module.exports = function(api)
 
                         const xs = stroke.points.map(point => point.x);
                         const ys = stroke.points.map(point => point.y);
+                        const min = (values) => values.reduce((a, b) => Math.min(a, b)), max = (values) => values.reduce((a, b) => Math.max(a, b));
 
                         const annotation = pdf.context.obj(
                         {
                             Type: "Annot",
                             Subtype: "Ink",
-                            Rect: [
-                                Math.min(...xs),
-                                Math.min(...ys),
-                                Math.max(...xs),
-                                Math.max(...ys)
-                            ],
+                            Rect: [ min(xs), min(ys), max(xs), max(ys) ],
                             InkList: [ stroke.points.flatMap(point => [ point.x, point.y ]) ],
                             C: stroke.color.map(val => val / 255),
-                            CA: stroke.opacity,
-                            Border: [ 0, 0, stroke.lineWidth ]
+                            CA: Number.isFinite(stroke.opacity) ? stroke.opacity : 1,
+                            Border: [ 0, 0, Number.isFinite(stroke.lineWidth) ? stroke.lineWidth : 1 ]
                         });
 
                         annotations.push(pdf.context.register(annotation));
@@ -954,6 +1005,10 @@ module.exports = function(api)
             try { await Document.deleteFromDisk(req.params.id); }
             catch(x) {}
 
+            // the archived versions are kept only until the deletion succeeded, they would otherwise be retained forever
+            try { await DocumentVersion.deleteMany({ document: req.params.id }); }
+            catch(x) { Logger.log("error", `could not delete versions of deleted document ${req.params.id}`, x?.message || x); }
+
             // links to the deleted document would point nowhere
             try { await DocumentLink.deleteMany({ $or: [ { from: req.params.id }, { to: req.params.id } ] }); }
             catch(x) {}
@@ -1017,6 +1072,9 @@ module.exports = function(api)
 
             let doc = await Document.findOne({ _id: req.params.id }, "owned_by");
             let editor_url = await App.getWebhook("document.editor", doc.owned_by);
+
+            if(!/^(https?:\/\/|\/(?!\/))/i.test(editor_url))
+                throw "editor url must be a http(s) url";
 
             if(req.query.redirect)
                 res.redirect(editor_url.split("$$ID$$").join(req.params.id));
@@ -1130,9 +1188,17 @@ module.exports = function(api)
             if(!sql)
                 return void res.status(400).send({ error: "no sql statement provided" });
 
+            // statements may only work on the document's database, never create or read other files on the server
+            if(sqlWritingOtherFiles(sql))
+                return void res.status(403).send({ error: "forbidden", error_description: "attaching databases, vacuuming into files and loading extensions is not allowed" });
+
             let db = await sqlite.open({ filename: Document.getStorageLocation(req.params.id), driver: sqlite3.Database });
-            res.json(await db[req.query.results === "true" ? "all" : "run"](sql));
-            await db.close();
+            try
+            {
+                db.getDatabaseInstance().configure("limit", sqlite3.LIMIT_ATTACHED, 0); // no other databases at all
+                res.json(await db[req.query.results === "true" ? "all" : "run"](sql));
+            }
+            finally { await db.close(); }
         }
         catch(x)
         {

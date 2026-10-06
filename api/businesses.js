@@ -1,4 +1,5 @@
-const { Business } = require("../models/business.js");
+const { sendPicture, isPicture } = require("../services/files.js");
+const { Business } = require("../models/business.js"), { assertNoOperators, omit } = require("../services/sanitize.js");
 
 module.exports = function(api)
 {
@@ -40,12 +41,13 @@ module.exports = function(api)
         try
         {
             // only the businesses the request may read
-            let data = [];
-            for(let business of await Business.find({ owner: req.params.id }, null, req.pagination))
+            let readable = [];
+            for(let business of await Business.find({ owner: req.params.id }).sort({ _id: 1 }))
                 if(await req.permissions.isAllowed(req, "read", "business", business._id))
-                    data.push(business);
+                    readable.push(business);
 
-            res.send({ ...req.pagination, data, total: data.length });
+            const { skip, limit } = req.pagination;
+            res.send({ ...req.pagination, data: readable.slice(skip, skip + limit), total: readable.length });
         }
         catch(x) { next(x) }
     });
@@ -86,7 +88,7 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "businesses", null, res);
 
-            let business = new Business({ owner: req.params.id, ...req.body });
+            let business = new Business({ ...omit(req.body, "locked_until"), owner: req.params.id });
             await business.save();
             res.send(business);
         }
@@ -180,6 +182,9 @@ module.exports = function(api)
     {
         try
         {
+            // update operators like $set would get around the checks below
+            assertNoOperators(req.body);
+
             // changing locked_until requires lock-period (later date) or unlock-period (earlier date or removed); all
             // other fields require write
             if(Object.keys(req.body ?? {}).join() !== "locked_until")
@@ -193,7 +198,7 @@ module.exports = function(api)
                     await req.permissions.requirePermission(req, !current || until > current ? "lock-period" : "unlock-period", "business", req.params.id, res);
             }
 
-            await Business.updateOne({ _id: req.params.id }, req.body, { runValidators: true });
+            await Business.updateOne({ _id: req.params.id }, { $set: omit(req.body, "_id", "__v") }, { runValidators: true });
             res.send({ success: true });
         }
         catch(x) { next(x) }
@@ -233,7 +238,19 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "delete", "business", req.params.id, res);
 
+            // a business holding records (in particular posted ones, possibly of a locked period) cannot be deleted, as
+            // its records would be left behind without a business
+            const { Document } = require("../models/document.js"), { LedgerAccount } = require("../models/account.js");
+            const { Asset } = require("../models/asset.js"), { CostCenter } = require("../models/costcenter.js");
+            for(let model of [ Document, LedgerAccount, Asset, CostCenter ])
+                if(await model.exists({ business: req.params.id }))
+                    return res.status(409).send({ error: "conflict", details: "the business still holds documents, accounts, assets or cost centers" });
+
+            const business = await Business.findOne({ _id: req.params.id });
             await Business.deleteOne({ _id: req.params.id });
+            if(business)
+                await business.deleteLogo().catch(() => null);
+
             res.send({ success: true });
         }
         catch(x) { next(x) }
@@ -293,7 +310,7 @@ module.exports = function(api)
             else
             {
                 let picture = await business.getLogo();
-                res.set("Content-Type", `image/${picture.length > 400 ? "jpeg" : "svg+xml"}`).send(picture);
+                sendPicture(res, picture);
             }
         }
         catch(x) { next(x) }
@@ -361,6 +378,9 @@ module.exports = function(api)
 
                 if(!picture)
                     return res.json({ success: false, error: "no logo provided" });
+
+                if(!isPicture(picture))
+                    return res.status(415).json({ success: false, error: "logo must be a png, jpeg, gif, webp or svg image" });
 
                 await business.setLogo(picture);
                 res.json({ success: true });

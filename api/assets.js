@@ -1,3 +1,4 @@
+const { assertNoOperators, omit } = require("../services/sanitize.js");
 const mongoose = require("mongoose");
 const { Asset } = require("../models/asset.js");
 const { Document } = require("../models/document.js");
@@ -88,7 +89,7 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "assets", req.params.id, res);
 
-            let asset = new Asset({ business: req.params.id, ...req.body });
+            let asset = new Asset({ ...req.body, business: req.params.id });
             await asset.save();
             res.send(asset);
         }
@@ -446,7 +447,9 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
 
-            await Asset.updateOne({ _id: req.params.id }, req.body);
+            // assets stay within their business; operators like $set would get around that
+            assertNoOperators(req.body);
+            await Asset.updateOne({ _id: req.params.id }, { $set: omit(req.body, "_id", "__v", "business") });
             res.send({ success: true });
         }
         catch(x) { next(x) }
@@ -485,6 +488,10 @@ module.exports = function(api)
         try
         {
             await req.permissions.requirePermission(req, "delete", "assets", await req.permissions.businessOf(Asset, req.params.id), res);
+
+            // assets which have ever been booked on have to be kept
+            if(await Document.exists({ "ledger_transactions.asset": new req.ObjectId(req.params.id) }))
+                return res.status(409).send({ error: "conflict", details: "the asset has been booked on" });
 
             await Asset.deleteOne({ _id: req.params.id });
             res.send({ success: true });

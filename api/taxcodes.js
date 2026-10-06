@@ -1,3 +1,4 @@
+const { assertNoOperators, omit } = require("../services/sanitize.js");
 const { TaxCode } = require("../models/taxcode.js");
 
 module.exports = function(api)
@@ -162,7 +163,8 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "tax-codes", null, res);
 
-            await TaxCode.updateOne({ _id: req.params.id }, req.body);
+            assertNoOperators(req.body);
+            await TaxCode.updateOne({ _id: req.params.id }, { $set: omit(req.body, "_id", "__v") });
             res.send({ success: true });
         }
         catch(x) { next(x) }

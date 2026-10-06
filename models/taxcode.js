@@ -6,14 +6,12 @@ const SubTaxCode = (function()
 {
     const schemaDefinition = (
     {
-        code: { type: String, /*unique: true,*/ sparse: true, required: true },
+        code: { type: String, required: true }, // indexed by the tax code schema
         description: String,
         keywords: [ String ]
     });
 
-    let schema = new mongoose.Schema(schemaDefinition, { id: false });
-    schema.index("code");
-    return schema;
+    return new mongoose.Schema(schemaDefinition, { id: false });
 })();
 
 // tax code model
@@ -35,8 +33,7 @@ const TaxCode = mongoose.model("TaxCode", (function()
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false });
-    schema.index("code");
-    schema.index("sub_codes", { sparse: true });
+    schema.index({ "sub_codes.code": 1 }, { sparse: true });
     registerAuditLog(schema, "TaxCode");
     return schema;
 })());

@@ -1,3 +1,4 @@
+const { assertNoOperators, omit } = require("../services/sanitize.js");
 const { FieldTranslation } = require("../models/translation.js");
 
 module.exports = function(api)
@@ -237,7 +238,8 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "write", "translations", null, res);
 
-            await FieldTranslation.updateOne({ _id: req.params.id }, req.body);
+            assertNoOperators(req.body);
+            await FieldTranslation.updateOne({ _id: req.params.id }, { $set: omit(req.body, "_id", "__v") });
             res.send({ success: true });
         }
         catch(x) { next(x) }
