@@ -149,7 +149,7 @@ module.exports = function(api)
                 port: process.env.port,
                 database: { host: process.env.mongo_host, port: process.env.mongo_port, user: process.env.mongo_user },
                 data_dir: process.env.persistent_data_dir || "./data",
-                ai_keys: { claude: !!process.env.yacob_claude_api_key, openai: !!process.env.yacob_openai_api_key },
+                ai_keys: { claude: !!(process.env.yacob_claude_api_key || process.env.ANTHROPIC_API_KEY), openai: !!(process.env.yacob_openai_api_key || process.env.OPENAI_API_KEY) },
                 fair_use_this_month: await ApiRequestLog.countFairUse(monthStart, now)
             });
         }

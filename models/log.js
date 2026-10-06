@@ -29,10 +29,12 @@ const ApiRequestLog = mongoose.model("ApiRequestLog", (function()
         path: String,
         session_id: String,
         app_id: String,
-        computingEnd: Date
+        computingEnd: Date,
+        expires_at: Date // removed by mongodb after the retention period
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
+    schema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
     schema.path("method").index(true);
     schema.path("path").index(true);
     schema.path("app_id").index(true);

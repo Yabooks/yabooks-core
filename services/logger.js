@@ -1,5 +1,7 @@
 const { ApiRequestLog, SystemLogEntry } = require("../models/log.js"), { Settings } = require("./settings.js");
 
+const API_REQUEST_LOG_MIN_RETENTION_DAYS = 400;
+
 const Logger = (
 {
     // writes a single log line of the core to stdout and the system log
@@ -27,9 +29,13 @@ const Logger = (
     // the request has been authenticated and answered, so that every request under /api is logged, even rejected ones
     logApiCall: async (req) =>
     {
+        // api requests are kept at least for a bit more than a year, as they are the basis of fair use pricing
+        const retentionDays = Math.max(Settings.get("log_retention_days"), API_REQUEST_LOG_MIN_RETENTION_DAYS);
+
         let entry = new ApiRequestLog({
             method: req.method,
-            path: `${req.protocol}://${req.get("host")}${req.originalUrl}`
+            path: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+            expires_at: new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000)
         });
         await entry.save();
         req._apiRequestLogId = entry._id;

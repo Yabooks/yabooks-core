@@ -67,6 +67,9 @@ function extractPackage({ zip, prefix }, dir)
     dir = path.resolve(dir);
     fs.mkdirSync(dir, { recursive: true });
 
+    // the sizes declared in the archive may be wrong, so the size actually unpacked is checked as well
+    let unpacked = 0;
+
     for(let entry of zip.getEntries())
     {
         const name = entry.entryName.replace(/\\/g, "/");
@@ -81,8 +84,12 @@ function extractPackage({ zip, prefix }, dir)
             fs.mkdirSync(target, { recursive: true });
         else
         {
+            const data = entry.getData();
+            if((unpacked += data.length) > MAX_UNPACKED_SIZE)
+                fail(413, "app package is too large");
+
             fs.mkdirSync(path.dirname(target), { recursive: true });
-            fs.writeFileSync(target, entry.getData());
+            fs.writeFileSync(target, data);
         }
     }
 }

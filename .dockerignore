@@ -1,0 +1,12 @@
+# keep secrets, local data and build output out of the image
+.env
+.env.*
+.git
+node_modules
+data
+installed_apps
+dist
+yabooks-linux
+yabooks-macos
+yabooks-win.exe
+.DS_Store
