@@ -288,13 +288,13 @@ const CostTransaction = (function()
         posting_date: { type: Date, required: true, default: Date.now, get: formatCalendarDay, set: toCalendarDay },
         cost_center: { type: mongoose.Schema.Types.ObjectId, ref: "CostCenter", required: true },
         is_budget: { type: Boolean, required: true, default: false },
-        value: { type: mongoose.Schema.Types.Decimal128, required: true },
+        value: { type: mongoose.Schema.Types.Decimal128, required: true, default: 0 },
+        quantity: mongoose.Schema.Types.Decimal128, // in the unit of the cost center, e.g. pieces, hours or kilograms
         text: String
     });
 
     let schema = new mongoose.Schema(schemaDefinition, { id: false, toJSON: { getters: true } });
     schema.path("cost_center").index(true);
-    schema.path("corresponding_ledger_transaction").index(true);
     schema.path("is_budget").index(true);
     return schema;
 })();

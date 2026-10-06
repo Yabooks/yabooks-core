@@ -1,4 +1,4 @@
-const { LedgerAccount } = require("../models/account.js");
+const { LedgerAccount } = require("../models/account.js"), { Document } = require("../models/document.js");
 
 module.exports = function(api)
 {
@@ -300,6 +300,9 @@ module.exports = function(api)
      *                 success:
      *                   type: boolean
      *                   example: true
+     *       409:
+     *         description: >-
+     *           The ledger account has been booked on and cannot be deleted
      */
     api.delete("/api/v1/ledger-accounts/:id", async (req, res, next) =>
     {
@@ -307,7 +310,9 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "delete", "accounts", await req.permissions.businessOf(LedgerAccount, req.params.id), res);
 
-            // TODO do not allow deleting an account which has ever been booked on
+            // accounts which have ever been booked on have to be kept
+            if(await Document.exists({ "ledger_transactions.account": new req.ObjectId(req.params.id) }))
+                return res.status(409).send({ error: "conflict", details: "the ledger account has been booked on" });
 
             await LedgerAccount.deleteOne({ _id: req.params.id });
             res.send({ success: true });

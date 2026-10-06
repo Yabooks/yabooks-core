@@ -10,6 +10,7 @@ const CostCenter = mongoose.model("CostCenter", (function()
         business: { type: mongoose.Schema.Types.ObjectId, ref: "Business", required: true },
         display_name: String,
         display_number: String,
+        unit: String, // unit quantities are recorded in on cost transactions, e.g. pcs, h, kg; none if only values are recorded
         data: mongoose.Schema.Types.Mixed
     });
 
@@ -22,7 +23,6 @@ const CostCenter = mongoose.model("CostCenter", (function()
 // article schema
 const Article = CostCenter.discriminator("Article",
 {
-    unit: String,
     kn8_code: String, // https://www.statistik.at/fileadmin/pages/1135/WVZ_2024__KN2-_bis_KN8-Codes_mit_Warentext_DE.pdf
     hts_code: String, // https://hts.usitc.gov/
     cpa_code: String, // https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Glossary:Statistical_classification_of_products_by_activity_(CPA)

@@ -30,6 +30,10 @@
                     <span class="icon">&#x1F4D2;</span>
                     <label>{{ $filters.translate("documents.editor.alternate-ledgers") }}</label>
                 </button>
+                <button class="menuitem" :class="{ selected: tab === 'costs' }" @click="selectTab('costs')">
+                    <span class="icon">&#x1F3F7;&#xFE0F;</span>
+                    <label>{{ $filters.translate("documents.editor.costs") }}</label>
+                </button>
                 <button class="menuitem" :class="{ selected: tab === 'links' }" @click="selectTab('links')">
                     <span class="icon">&#x1F517;</span>
                     <label>{{ $filters.translate("documents.editor.links") }}</label>
@@ -38,10 +42,6 @@
                     <span class="icon">&#x1F4AC;</span>
                     <label>{{ $filters.translate("documents.editor.comments") }}</label>
                 </button>
-                <!--<button class="menuitem" :class="{ selected: tab === 'costs' }" @click="selectTab('costs')">
-                    <span class="icon">&#x1F4B5;</span>
-                    <label>Costs</label>
-                </button>-->
                 <button class="menuitem" @click="save()" :disabled="!doc._id">
                     <span class="icon">&#x1F4BE;</span>
                     <label>{{ $filters.translate("documents.editor.save") }}</label>
@@ -72,7 +72,7 @@
                         <comments-tab :doc="doc"></comments-tab>
                     </div>
                     <div class="tab" v-if="tab === 'costs'">
-                        <!-- TODO -->
+                        <costs-tab :doc="doc" :options="options"></costs-tab>
                     </div>
                     <div class="tab" v-if="tab === 'inventory'">
                         <!-- TODO -->
@@ -91,6 +91,7 @@
         <script type="text/javascript" src="tabs/ledger.js"></script>
         <script type="text/javascript" src="tabs/links.js"></script>
         <script type="text/javascript" src="tabs/comments.js"></script>
+        <script type="text/javascript" src="tabs/costs.js"></script>
         <script type="text/javascript" src="app.js"></script>
     </body>
 </html>

@@ -36,11 +36,77 @@ main
 {
     display: block;
     min-height: 100%;
-    padding: 24px 16px 96px 16px;
+    padding: 0 16px 96px 16px;
     box-sizing: border-box;
 }
 
-#accounts
+/* ---------- tab bar, styled like the one in the documents editor and balances ---------- */
+
+nav.menubar
+{
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    box-sizing: border-box;
+    width: calc(100% + 32px);
+    margin: 0 -16px 24px -16px;
+    min-height: 75px;
+    padding: 8px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(235, 228, 219, .6);
+    backdrop-filter: blur(12px);
+}
+
+nav.menubar .menuitem
+{
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-family: inherit;
+    transition: background 0.2s ease, filter 0.2s ease;
+}
+
+nav.menubar .menuitem:not(.selected)
+{
+    filter: grayscale();
+}
+
+nav.menubar .menuitem:hover
+{
+    filter: none;
+    background: rgba(255, 255, 255, .3);
+}
+
+nav.menubar .menuitem .icon
+{
+    font-size: 32px;
+}
+
+nav.menubar .menuitem label
+{
+    display: block;
+    cursor: inherit;
+}
+
+.note
+{
+    margin: 0;
+    padding: 10px 14px;
+    border-left: 3px solid var(--primary-color);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, .85);
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.list
 {
     max-width: 900px;
     margin: 0 auto;
@@ -105,6 +171,22 @@ main
     min-width: 0;
     font-weight: 500;
     font-size: 1em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* small badge next to the name, e.g. the default cost center of an account or the unit of a cost center */
+.container > div:not(.editor) > span.chip
+{
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(249, 143, 94, 0.12);
+    color: var(--primary-color-dark);
+    font-size: 0.8em;
+    font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -194,6 +276,26 @@ main
     font-family: inherit;
     font-size: 14px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* labeled field, e.g. default cost center or validity dates */
+.editor .field
+{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.editor .field > span
+{
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.editor .field.wide
+{
+    grid-column: 1 / -1;
 }
 
 .editor input[type="text"]::placeholder
@@ -351,8 +453,8 @@ main
 #newButton
 {
     position: fixed;
-    right: 24px;
-    bottom: 24px;
+    right: 20px;
+    bottom: 20px;
     width: 56px;
     height: 56px;
     display: flex;
@@ -362,7 +464,10 @@ main
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
     color: white;
-    font-size: 22px;
+    font-family: inherit;
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 1;
     cursor: pointer;
     box-shadow: 0 4px 16px rgba(249, 143, 94, 0.4);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -392,7 +497,13 @@ main
 {
     main
     {
-        padding: 20px 12px 96px 12px;
+        padding: 0 12px 96px 12px;
+    }
+
+    nav.menubar
+    {
+        width: calc(100% + 24px);
+        margin: 0 -12px 20px -12px;
     }
 }
 
@@ -402,7 +513,13 @@ main
 {
     main
     {
-        padding: 16px 8px 88px 8px;
+        padding: 0 8px 88px 8px;
+    }
+
+    nav.menubar
+    {
+        width: calc(100% + 16px);
+        margin: 0 -8px 16px -8px;
     }
 
     .container

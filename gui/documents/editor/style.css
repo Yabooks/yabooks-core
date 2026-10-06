@@ -460,6 +460,56 @@ main #tabs
     text-align: right;
 }
 
+/* Cost records: quantity in the unit of the cost center, budget flag */
+.tab .item table.records th.quantity, .tab .item table.records td.quantity
+{
+    width: 120px;
+}
+
+.tab .item table.records td.quantity .with-unit
+{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tab .item table.records td.quantity input
+{
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.tab .item table.records td.quantity .unit
+{
+    min-width: 24px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: left;
+}
+
+.tab .item table.records th.budget, .tab .item table.records td.budget
+{
+    width: 60px;
+    text-align: center;
+}
+
+.tab .item table.records tr.budget td
+{
+    background: rgba(249, 143, 94, 0.06);
+}
+
+.tab .item table.records td.cost-center
+{
+    width: 30%;
+}
+
+.tab .item table.records tr.no-cost-center td:not(.cost-center)
+{
+    color: var(--text-secondary);
+}
+
 .tab .item p.note
 {
     margin: 0 0 12px 0;

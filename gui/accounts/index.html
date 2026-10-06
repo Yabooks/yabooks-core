@@ -10,19 +10,33 @@
     </head>
     <body>
         <main>
-            <div id="accounts">
+            <nav class="menubar">
+                <button class="menuitem" :class="{ selected: tab === 'accounts' }" @click="selectTab('accounts')">
+                    <span class="icon">&#x1F4D6;</span>
+                    <label>{{ $filters.translate("accounts.tabs.ledger-accounts") }}</label>
+                </button>
+                <button class="menuitem" :class="{ selected: tab === 'cost-centers' }" @click="selectTab('cost-centers')">
+                    <span class="icon">&#x1F3F7;&#xFE0F;</span>
+                    <label>{{ $filters.translate("accounts.tabs.cost-centers") }}</label>
+                </button>
+            </nav>
+
+            <div id="accounts" class="list" v-if="tab === 'accounts'">
                 <div v-for="account in accounts" class="container" draggable="true">
                     <div v-if="!account.editing && !account.deleted">
                         <span>{{ account.display_number }}</span>
                         <span>{{ account.display_name }}</span>
+                        <span v-if="costCenterOf(account)" class="chip" :title="$filters.translate('accounts.default-cost-center')">
+                            &#x1F3F7;&#xFE0F; {{ describeCostCenter(costCenterOf(account)) }}
+                        </span>
                         <span class="buttons">
-                            <button @click="editAccount(account)">&#x270F;&#xFE0F;</button>
+                            <button @click="edit(account)">&#x270F;&#xFE0F;</button>
                         </span>
                     </div>
                     <div v-else-if="!account.deleted" class="editor">
-                        <input type="text" placeholder="Account Number" v-model="account.display_number" />
-                        <input type="text" placeholder="Account Name" v-model="account.display_name" />
-                        <select v-model="account.type">
+                        <input type="text" :placeholder="$filters.translate('accounts.account-number')" v-model="account.display_number" />
+                        <input type="text" :placeholder="$filters.translate('accounts.account-name')" v-model="account.display_name" />
+                        <select v-model="account.type" @change="onAccountTypeChanged(account)">
                             <option value="assets">{{ $filters.translate("accounts.types.assets") }}</option>
                             <option value="liabilities">{{ $filters.translate("accounts.types.liabilities") }}</option>
                             <option value="equity">{{ $filters.translate("accounts.types.equity") }}</option>
@@ -35,23 +49,71 @@
                             <input type="checkbox" v-model="account.track_open_items" />
                             {{ $filters.translate("accounts.track_open_items") }}
                         </label>
-                        <input type="date" placeholder="valid only from" v-model="account.valid_from" />
-                        <input type="date" placeholder="valid only until" v-model="account.valid_to" />
+                        <div v-if="hasCostCenter(account)" class="field wide">
+                            <span>{{ $filters.translate("accounts.default-cost-center") }}</span>
+                            <select v-model="account.default_cost_center">
+                                <option :value="null">{{ $filters.translate("accounts.no-cost-center") }}</option>
+                                <option v-for="center in costCenters.filter(c => c._id && !c.deleted)" :value="center._id">
+                                    {{ describeCostCenter(center) }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <span>{{ $filters.translate("accounts.valid-from") }}</span>
+                            <input type="date" v-model="account.valid_from" />
+                        </div>
+                        <div class="field">
+                            <span>{{ $filters.translate("accounts.valid-to") }}</span>
+                            <input type="date" v-model="account.valid_to" />
+                        </div>
                         <span class="buttons">
-                            <button @click="saveChanges(account)">&#x1F4BE;</button>
+                            <button @click="saveAccount(account)">&#x1F4BE;</button>
                             <button @click="cancelEditing(account)">&#x274C;</button>
                             <button @click="deleteAccount(account)">&#x1F5D1;&#xFE0F;</button>
                         </span>
                     </div>
                 </div>
-                <a name="newAccount" />
+                <a name="newAccount"></a>
                 <div v-if="accounts.length === 0" class="message">
-                    no accounts available
+                    {{ $filters.translate("accounts.no-accounts") }}
                 </div>
-                <button @click="newAccount()" id="newButton">
-                    &#x2795;
-                </button>
             </div>
+
+            <div id="cost-centers" class="list" v-if="tab === 'cost-centers'">
+                <p class="note">{{ $filters.translate("accounts.cost-centers-note") }}</p>
+                <div v-for="center in costCenters" class="container">
+                    <div v-if="!center.editing && !center.deleted">
+                        <span>{{ center.display_number }}</span>
+                        <span>{{ center.display_name }}</span>
+                        <span v-if="center.unit" class="chip" :title="$filters.translate('accounts.unit')">{{ center.unit }}</span>
+                        <span class="buttons">
+                            <button @click="edit(center)">&#x270F;&#xFE0F;</button>
+                        </span>
+                    </div>
+                    <div v-else-if="!center.deleted" class="editor">
+                        <input type="text" :placeholder="$filters.translate('accounts.cost-center-number')" v-model="center.display_number" />
+                        <input type="text" :placeholder="$filters.translate('accounts.cost-center-name')" v-model="center.display_name" />
+                        <div class="field">
+                            <span>{{ $filters.translate("accounts.unit") }}</span>
+                            <input type="text" list="units" :placeholder="$filters.translate('accounts.unit-placeholder')" v-model="center.unit" />
+                        </div>
+                        <span class="buttons">
+                            <button @click="saveCostCenter(center)">&#x1F4BE;</button>
+                            <button @click="cancelEditing(center)">&#x274C;</button>
+                            <button @click="deleteCostCenter(center)">&#x1F5D1;&#xFE0F;</button>
+                        </span>
+                    </div>
+                </div>
+                <a name="newCostCenter"></a>
+                <div v-if="costCenters.length === 0" class="message">
+                    {{ $filters.translate("accounts.no-cost-centers") }}
+                </div>
+                <datalist id="units">
+                    <option v-for="unit in units" :value="unit">{{ $filters.translate("accounts.units." + unit) }}</option>
+                </datalist>
+            </div>
+
+            <button @click="tab === 'accounts' ? newAccount() : newCostCenter()" id="newButton">+</button>
         </main>
         <script type="text/javascript" src="app.js"></script>
     </body>
