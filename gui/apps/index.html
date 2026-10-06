@@ -9,35 +9,152 @@
     </head>
     <body>
         <main>
-            <nav>
-                <a class="button" href="#" @click="openMarket(); return false">
-                    {{ $filters.translate("apps-registry.go-to-market") }}
-                </a>
-                <a class="button" href="#" @click="newApiKey(); return false">
-                    {{ $filters.translate("apps-registry.create-api-key") }}
-                </a>
-                <a class="button" href="/api/doc/" target="_blank">
-                    {{ $filters.translate("apps-registry.api-documentation") }}
-                </a>
-            </nav>
-            <div v-for="app in apps" class="container">
-                <div class="app">
-                    <img :src="app.icon || 'icon.png'" class="icon" />
-                    <div class="description">
-                        <h2>{{ app.name }}</h2>
-                        <h3>{{ app.bundle_id }}</h3>
-                        <span>
-                            {{ $filters.translate("apps-registry.registered-at") }}
-                            {{ formatDateFromId(app._id) }}
-                        </span>
-                        <button @click="unregister(app)">
-                            {{ $filters.translate("apps-registry.unregister") }}
+            <header>
+                <img class="logo" src="icon.png" alt="" />
+                <div class="title">
+                    <h1>{{ $filters.translate("apps-registry.title") }}</h1>
+                    <p>{{ $filters.translate("apps-registry.subtitle") }}</p>
+                </div>
+                <nav>
+                    <a class="button" href="/api/doc/" target="_blank">
+                        <icon name="code"></icon> {{ $filters.translate("apps-registry.api-documentation") }}
+                    </a>
+                    <button @click="openMarket()">
+                        <icon name="market"></icon> {{ $filters.translate("apps-registry.go-to-market") }}
+                    </button>
+                    <button class="primary" v-if="mayInstallAny" @click="openInstall()">
+                        <icon name="install"></icon> {{ $filters.translate("apps-registry.install-app") }}
+                    </button>
+                </nav>
+            </header>
+
+            <div class="grid">
+                <div v-for="app in apps" class="card" :key="app._id">
+                    <div class="app">
+                        <img :src="app.icon || 'icon.png'" class="icon" alt="" />
+                        <div class="description">
+                            <h2>{{ $filters.translate(app.translated_names ?? [], null, app.name) }}</h2>
+                            <h3 v-if="app.bundle_id">{{ app.bundle_id }}</h3>
+                            <p v-if="app.description">{{ app.description }}</p>
+                            <span class="meta">
+                                <span class="badge" :class="{ installed: app.installed }">
+                                    {{ $filters.translate(app.installed ? "apps-registry.type-installed" : "apps-registry.type-external") }}
+                                </span>
+                                {{ $filters.translate("apps-registry.registered-at") }} {{ formatDateFromId(app._id) }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="actions" v-if="may('permissions', 'read') || may('apps', 'delete')">
+                        <a class="button" v-if="may('permissions', 'read')" :href="`/settings/#apps/${app._id}`">
+                            <icon name="permissions"></icon> {{ $filters.translate("apps-registry.permissions") }}
+                        </a>
+                        <button class="danger" v-if="may('apps', 'delete')" @click="unregister(app)">
+                            <icon name="trash"></icon> {{ $filters.translate("apps-registry.unregister") }}
                         </button>
                     </div>
                 </div>
             </div>
-            <div v-if="apps?.length == 0">
+            <div class="empty" v-if="apps?.length == 0">
                 {{ $filters.translate("apps-registry.no-apps-registered") }}
+            </div>
+
+            <!-- dialog to install a new app -->
+            <div class="backdrop" v-if="install" @click.self="closeInstall()">
+                <div class="dialog" role="dialog" aria-modal="true">
+                    <div class="dialog-header">
+                        <h2>{{ $filters.translate("apps-registry.install-dialog-title") }}</h2>
+                        <button class="close" :title="$filters.translate('apps-registry.cancel')" @click="closeInstall()"><icon name="close"></icon></button>
+                    </div>
+
+                    <p class="notice error" v-if="!mayInstallAny">{{ $filters.translate("apps-registry.not-authorized") }}</p>
+
+                    <template v-else>
+                        <div class="methods">
+                            <button v-for="method in methods" :key="method.code" class="method" :class="{ selected: install.method === method.code }"
+                                :disabled="!method.allowed" @click="install.method = method.code">
+                                <span class="method-icon"><icon :name="method.code"></icon></span>
+                                <b>{{ $filters.translate(`apps-registry.method.${method.code}`) }}</b>
+                                <span>{{ $filters.translate(`apps-registry.method.${method.code}.hint`) }}</span>
+                            </button>
+                        </div>
+
+                        <div class="fields">
+                            <template v-if="install.method === 'subscription'">
+                                <label for="install-subscription">{{ $filters.translate("apps-registry.subscription-code") }}</label>
+                                <input id="install-subscription" class="mono" v-model.trim="install.subscription_key" placeholder="XXXX-XXXX-XXXX-XXXX" />
+                            </template>
+
+                            <template v-if="install.method === 'api-key'">
+                                <label for="install-name">{{ $filters.translate("apps-registry.new-app-name") }}</label>
+                                <input id="install-name" v-model.trim="install.name" />
+                            </template>
+
+                            <template v-if="install.method === 'package'">
+                                <label for="install-package">{{ $filters.translate("apps-registry.package") }}</label>
+                                <label class="dropzone" :class="{ dragging: install.dragging, chosen: install.file }"
+                                    @dragover.prevent="install.dragging = true" @dragleave="install.dragging = false" @drop.prevent="dropFile($event)">
+                                    <input id="install-package" type="file" accept=".zip,application/zip" @change="install.file = $event.target.files[0]" />
+                                    <icon :name="install.file ? 'check' : 'upload'"></icon>
+                                    <span v-if="install.file"><b>{{ install.file.name }}</b> · {{ formatSize(install.file.size) }}</span>
+                                    <span v-else>{{ $filters.translate("apps-registry.package-hint") }}</span>
+                                </label>
+                            </template>
+
+                            <label for="install-role">{{ $filters.translate("apps-registry.role") }}</label>
+                            <div class="role">
+                                <select id="install-role" v-model="install.role">
+                                    <option value="" disabled>{{ $filters.translate("apps-registry.choose-role") }}</option>
+                                    <option v-for="role in roles" :value="role._id">
+                                        {{ role.built_in ? $filters.translate("apps-registry.administrator") : role.name }}
+                                    </option>
+                                </select>
+                                <select id="install-scope" v-model="install.scope" :title="$filters.translate('apps-registry.scope')">
+                                    <option value="business::*">{{ $filters.translate("apps-registry.scope.all-businesses") }}</option>
+                                    <option v-for="business in businesses" :value="'business::' + business._id">{{ business.name }}</option>
+                                    <option value="*">{{ $filters.translate("apps-registry.scope.everything") }}</option>
+                                </select>
+                            </div>
+                            <span></span>
+                            <p class="hint">{{ $filters.translate("apps-registry.role-hint") }}</p>
+                        </div>
+
+                        <p class="notice error" v-if="install.error">{{ install.error }}</p>
+                    </template>
+
+                    <div class="dialog-footer">
+                        <button @click="closeInstall()">{{ $filters.translate("apps-registry.cancel") }}</button>
+                        <button class="primary" v-if="mayInstallAny" :disabled="!installReady || install.busy" @click="submitInstall()">
+                            <icon :name="install.method === 'api-key' ? 'api-key' : 'install'"></icon>
+                            {{ $filters.translate(install.busy ? "apps-registry.installing" : install.method === "api-key" ? "apps-registry.generate-key" : "apps-registry.install") }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- dialog showing a newly generated api key once -->
+            <div class="backdrop" v-if="credentials">
+                <div class="dialog" role="dialog" aria-modal="true">
+                    <div class="dialog-header">
+                        <h2>{{ $filters.translate("apps-registry.api-key-created") }}</h2>
+                    </div>
+                    <p class="notice warn">{{ $filters.translate("apps-registry.api-key-warning") }}</p>
+                    <div class="credentials">
+                        <label for="credentials-id">{{ $filters.translate("apps-registry.app-id") }}</label>
+                        <div class="copy">
+                            <input id="credentials-id" class="mono" readonly :value="credentials._id" @focus="$event.target.select()" />
+                            <button @click="copy('id', credentials._id)"><icon :name="copied === 'id' ? 'check' : 'copy'"></icon> {{ $filters.translate(copied === "id" ? "apps-registry.copied" : "apps-registry.copy") }}</button>
+                        </div>
+                        <label for="credentials-secret">{{ $filters.translate("apps-registry.api-key") }}</label>
+                        <div class="copy">
+                            <input id="credentials-secret" class="mono" readonly :value="credentials.secret" @focus="$event.target.select()" />
+                            <button @click="copy('secret', credentials.secret)"><icon :name="copied === 'secret' ? 'check' : 'copy'"></icon> {{ $filters.translate(copied === "secret" ? "apps-registry.copied" : "apps-registry.copy") }}</button>
+                        </div>
+                    </div>
+                    <div class="dialog-footer">
+                        <span></span>
+                        <button class="primary" @click="credentials = null">{{ $filters.translate("apps-registry.done") }}</button>
+                    </div>
+                </div>
             </div>
         </main>
         <script type="text/javascript" src="app.js"></script>

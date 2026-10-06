@@ -54,6 +54,9 @@ app.on("window-all-closed", () =>
         const dataPath = path.join(os.homedir(), ".yabooks-desktop", "data");
         fs.mkdirSync(dataPath, { recursive: true });
 
+        // the app bundle may be read-only, so apps are installed in the user's home directory as well
+        process.env.installed_apps_dir ||= path.join(os.homedir(), ".yabooks-desktop", "installed_apps");
+
         // fire up mongo database service locally
         const mongoServer = await MongoMemoryServer.create({
             instance: {

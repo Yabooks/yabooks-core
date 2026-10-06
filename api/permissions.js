@@ -1,10 +1,7 @@
 const { Role } = require("../models/role.js"), { User, Session } = require("../models/user.js"), { App } = require("../models/app.js");
 const { Business } = require("../models/business.js");
 const { ADMIN_ROLE, subjectOfUser, subjectOfApp, subjectOfRole } = require("../services/casbin.js");
-const { getCatalog, validatePolicy, evaluate, hasOtherActiveAdministrator } = require("../services/permissions.js");
-
-// scopes a role can be assigned in: everything, all businesses, or one business
-const roleScopeRegex = /^(\*|business::\*|business::[0-9a-f]{24})$/;
+const { getCatalog, validatePolicy, evaluate, hasOtherActiveAdministrator, roleScopeRegex } = require("../services/permissions.js");
 
 // subjects whose access can be managed, by url segment
 const kinds = {

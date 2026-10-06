@@ -117,7 +117,8 @@ const app = Vue.createApp(
 
             // open the tab from the url, or the first visible one
             const tabs = this.menu.flatMap(group => group.tabs).filter(tab => tab.visible).map(tab => tab.code);
-            const tabFromUrl = () => tabs.includes(location.hash.substring(1)) ? location.hash.substring(1) : tabs[0] ?? null;
+            // the hash may address a record within the tab, e.g. #apps/<app id> to open the permissions of an app
+            const tabFromUrl = () => tabs.includes(location.hash.substring(1).split("/")[0]) ? location.hash.substring(1).split("/")[0] : tabs[0] ?? null;
             this.selectedTab = tabFromUrl();
             window.addEventListener("hashchange", () => this.selectedTab = tabFromUrl());
             this.loaded = true;

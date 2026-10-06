@@ -6,3 +6,4 @@ yabooks-linux
 yabooks-macos
 yabooks-win.exe
 .env
+installed_apps/

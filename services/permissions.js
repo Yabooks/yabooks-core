@@ -12,13 +12,16 @@ const coreCatalog = [
     { scope: "system", object: "tax-codes", actions: [ "read", "write", "delete" ] },
     { scope: "system", object: "translations", actions: [ "write", "delete" ] },
     { scope: "system", object: "yacob", actions: [ "use" ] },
-    { scope: "system", object: "apps", actions: [ "write", "delete" ] }, // listing apps stays open, as the home screen launches them
+    { scope: "system", object: "apps", actions: [ "write", "install", "delete" ] }, // listing apps stays open, as the home screen launches them; install runs app packages locally
     { scope: "system", object: "users", actions: [ "read", "write" ] },
     { scope: "system", object: "permissions", actions: [ "read", "write" ] },
     { scope: "system", object: "settings", actions: [ "read", "write" ] },
     { scope: "system", object: "logs", actions: [ "read" ] },
     { scope: "system", object: "jobs", actions: [ "read", "write" ] }
 ];
+
+// scopes a role can be assigned in: everything, all businesses, or one business
+const roleScopeRegex = /^(\*|business::\*|business::[0-9a-f]{24})$/;
 
 // object name of an area declared by an app, namespaced to avoid collisions with core areas and other apps
 const appObject = (app, object) => `app/${app.bundle_id || app._id}/${object}`;
@@ -105,4 +108,35 @@ async function hasOtherActiveAdministrator(enforcer, user_id)
     return await User.countDocuments({ _id: { $in: ids }, active: { $ne: false } }) > 0;
 }
 
-module.exports = { coreCatalog, getCatalog, validatePolicy, evaluate, appObject, hasOtherActiveAdministrator };
+/**
+ * validates the role a requester wants to assign to a new subject (e.g. an app being installed) and returns the casbin
+ * grouping rule for it; throws an error with a status code if the assignment is invalid or not permitted
+ * @param {{ role: string, scope?: string }} assignment scope defaults to all businesses
+ */
+async function roleAssignmentRule(enforcer, req, subject, { role, scope = "business::*" } = {})
+{
+    const { Role } = require("../models/role.js"), { ADMIN_ROLE, subjectOfRole } = require("./casbin.js");
+    const fail = (statusCode, message) => { throw Object.assign(new Error(message), { statusCode }); };
+
+    if(!role)
+        fail(400, "a role needs to be assigned");
+    if(!roleScopeRegex.test(scope))
+        fail(400, `invalid scope ${scope}`);
+    if(role !== "admin" && !(/^[0-9a-f]{24}$/.test(role) && await Role.exists({ _id: role })))
+        fail(400, `unknown role ${role}`);
+
+    // only administrators may grant the administrator role
+    if(subjectOfRole(role) === ADMIN_ROLE)
+    {
+        let administrator = false;
+        for(let requester of await enforcer.subjectsOf(req))
+            administrator ||= await enforcer.isAdministrator(requester);
+
+        if(!administrator)
+            fail(403, "only administrators may grant the administrator role");
+    }
+
+    return [ subject, subjectOfRole(role), scope ];
+}
+
+module.exports = { coreCatalog, getCatalog, validatePolicy, evaluate, appObject, hasOtherActiveAdministrator, roleScopeRegex, roleAssignmentRule };

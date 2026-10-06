@@ -15,7 +15,7 @@ const AppsTab = (
                     <th>{{ $filters.translate("settings.access.exceptions") }}</th>
                 </tr></thead>
                 <tbody>
-                    <tr v-for="app in $settings.apps" :key="app._id" class="clickable" :class="{ selected: selected?._id === app._id }" @click="selected = app">
+                    <tr v-for="app in $settings.apps" :key="app._id" class="clickable" :class="{ selected: selected?._id === app._id }" @click="select(app)">
                         <td>{{ $settings.appName(app._id) }}<br /><span class="secondary mono">{{ app.bundle_id }}</span></td>
                         <td>
                             <span class="chip" v-for="assignment in access[app._id]?.roles">
@@ -28,7 +28,7 @@ const AppsTab = (
             </table>
             <p class="empty" v-if="!$settings.apps.length">{{ $filters.translate("settings.apps.empty") }}</p>
 
-            <access-drawer v-if="selected" kind="apps" :subject="selected" @close="selected = null" @saved="saved()"></access-drawer>
+            <access-drawer v-if="selected" kind="apps" :subject="selected" @close="select(null)" @saved="saved()"></access-drawer>
         </div>
     `,
 
@@ -42,11 +42,19 @@ const AppsTab = (
 
     async created()
     {
+        // open the drawer of the app addressed in the url, e.g. by the app marketplace via #apps/<app id>
+        this.selected = this.$settings.apps.find(app => `apps/${app._id}` === location.hash.substring(1)) ?? null;
         await this.reload();
     },
 
     methods:
     {
+        select(app)
+        {
+            this.selected = app;
+            history.replaceState(null, null, app ? `#apps/${app._id}` : "#apps");
+        },
+
         async reload()
         {
             try
@@ -60,7 +68,7 @@ const AppsTab = (
 
         async saved()
         {
-            this.selected = null;
+            this.select(null);
             await this.reload();
             await this.$settings.loadAccessData();
         }
