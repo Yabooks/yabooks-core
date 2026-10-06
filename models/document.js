@@ -25,6 +25,15 @@ const toCalendarDay = (date) =>
     return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
 
+// date query parameter (e.g. from or until) as calendar day, comparable with posting dates as stored; responds with 400 if invalid
+const calendarDayParameter = (value, name) =>
+{
+    const day = typeof value === "string" ? toCalendarDay(value) : null;
+    if(!(day instanceof Date) || isNaN(day))
+        throw Object.assign(new Error(`${name} must be a date (YYYY-MM-DD)`), { statusCode: 400 });
+    return day;
+};
+
 // calendar day as "YYYY-MM-DD"
 const formatCalendarDay = (date) => date instanceof Date && !isNaN(date) ? date.toISOString().slice(0, 10) : date ?? null;
 
@@ -434,4 +443,4 @@ Document.bulkWrite = async function()
     throw new PeriodLockError("bulk writes of documents are not supported, as they would bypass the period lock");
 };
 
-module.exports = { Document, DocumentVersion, DocumentLink, LedgerTransaction };
+module.exports = { Document, DocumentVersion, DocumentLink, LedgerTransaction, calendarDayParameter };

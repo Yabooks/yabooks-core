@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { LedgerAccount } = require("../models/account.js"), { CostCenter, Article, Store } = require("../models/costcenter.js");
-const { Document } = require("../models/document.js"), { Business } = require("../models/business.js"), { TaxCode } = require("../models/taxcode.js");
+const { Document, calendarDayParameter } = require("../models/document.js"), { Business } = require("../models/business.js"), { TaxCode } = require("../models/taxcode.js");
 
 module.exports = function(api)
 {
@@ -113,11 +113,11 @@ module.exports = function(api)
 
             let date_conditions = [];
             if(req.query.from) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $gte: new Date(req.query.from) } });
+                date_conditions.push({ "ledger_transactions.posting_date": { $gte: calendarDayParameter(req.query.from, "from") } });
                 delete req.query.from;
             }
             if(req.query.until) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $lte: new Date(req.query.until) } });
+                date_conditions.push({ "ledger_transactions.posting_date": { $lte: calendarDayParameter(req.query.until, "until") } });
                 delete req.query.until;
             }
 
@@ -331,11 +331,11 @@ module.exports = function(api)
 
             let date_conditions = [];
             if(req.query.from) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $gte: new Date(req.query.from) } });
+                date_conditions.push({ "ledger_transactions.posting_date": { $gte: calendarDayParameter(req.query.from, "from") } });
                 delete req.query.from;
             }
             if(req.query.until) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $lte: new Date(req.query.until) } });
+                date_conditions.push({ "ledger_transactions.posting_date": { $lte: calendarDayParameter(req.query.until, "until") } });
                 delete req.query.until;
             }
 
@@ -613,11 +613,11 @@ module.exports = function(api)
 
             let date_conditions = [];
             if(req.query.from) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $gte: new Date(req.query.from) } });
+                date_conditions.push({ "ledger_transactions.posting_date": { $gte: calendarDayParameter(req.query.from, "from") } });
                 delete req.query.from;
             }
             if(req.query.until) {
-                date_conditions.push({ "ledger_transactions.posting_date": { $lte: new Date(req.query.until) } });
+                date_conditions.push({ "ledger_transactions.posting_date": { $lte: calendarDayParameter(req.query.until, "until") } });
                 delete req.query.until;
             }
 
