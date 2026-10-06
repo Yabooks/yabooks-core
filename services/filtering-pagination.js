@@ -1,19 +1,25 @@
 const isoDateRegex = /(\d{4}-[01]\d-[0-3]\d)|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+)|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d)|(\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d)/;
 const mongoose = require("mongoose");
+const { isSecretPath, filterOperators, assertSafeExpression, badRequest } = require("./sanitize.js");
 
 module.exports = async function(req, res, next)
 {
     // extract pagination information from request
     req.pagination = (
     {
-        skip: parseInt(req.query.skip) || 0,
-        limit: parseInt(req.query.limit) || 100
+        skip: Math.max(parseInt(req.query.skip) || 0, 0),
+        limit: Math.max(parseInt(req.query.limit) || 100, 1)
     });
 
     // convert query parameter into mongo filter
     const parameterToFilter = (key) =>
     {
         let name = key.indexOf("base_") === 0 ? key.substring("base_".length) : key;
+        const value = String(req.query[key]); // repeated parameters (?a=1&a=2) are not supported
+
+        // filters on credentials would allow to read them out, as base filters apply before any projection
+        if(name.startsWith("$") || isSecretPath(name.split("__")[0].replace(/\*$/, "")))
+            throw badRequest(`field ${name} may not be filtered on`);
 
         const guessType = (value) =>
         {
@@ -31,7 +37,7 @@ module.exports = async function(req, res, next)
                 return new Date(value);
 
             // detect mongo object id
-            if(/[0-9a-f]{24}/.test(value))
+            if(/^[0-9a-f]{24}$/.test(value))
                 return new mongoose.Types.ObjectId(value);
 
             // string otherwise
@@ -42,23 +48,27 @@ module.exports = async function(req, res, next)
         {
             let filter = {};
             name = name.substring(0, name.length - 1);
-            filter[name] = { $regex: new RegExp("^" + req.query[key].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) };
+            filter[name] = { $regex: new RegExp("^" + value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) };
             return filter;
         }
 
         else if(name.indexOf("__") > -1) // e.g. ?date__gte=2022-10-10 --> { date: { $gte: "2022-10-10" } }
         {
             let filter = {};
+            const operator = key.split("__")[1];
+            if(!filterOperators.includes(operator))
+                throw badRequest(`filter operator ${operator} is not supported`);
+
             name = name.split("__")[0];
             filter[name] = {};
-            filter[name]["$" + key.split("__")[1]] = guessType(req.query[key]);
+            filter[name]["$" + operator] = guessType(value);
             return filter;
         }
 
         else // e.g. ?type=ER --> { "type": "ER" }
         {
             let filter = {};
-            filter[name] = guessType(req.query[key]);
+            filter[name] = guessType(value);
             return filter;
         }
     };
@@ -79,6 +89,10 @@ module.exports = async function(req, res, next)
         if(req.filters.length > 0)
             pipeline.push({ $match: { $and: [ ...req.filters ] } });
 
+        for(let sort of [ req.query.sort_asc, req.query.sort_desc ])
+            if(sort && (typeof sort !== "string" || sort.startsWith("$") || isSecretPath(sort)))
+                throw badRequest("invalid sort field");
+
         if(req.query.sort_asc)
         {
             let sort = { $sort: {} };
@@ -96,28 +110,41 @@ module.exports = async function(req, res, next)
         if(req.query.q) // ?q={}
         {
             // revive extended JSON dates and object IDs, e.g. { "date": { "$gte": { "$date": "2024-01-01T00:00" } } }
-            let query = JSON.parse(req.query.q, (_, value) =>
+            let query;
+            try
             {
-                if(value && typeof value === "object" && Object.keys(value).length === 1)
+                query = JSON.parse(String(req.query.q), (_, value) =>
                 {
-                    if(typeof value.$date === "string")
-                        return new Date(value.$date);
+                    if(value && typeof value === "object" && Object.keys(value).length === 1)
+                    {
+                        if(typeof value.$date === "string")
+                            return new Date(value.$date);
 
-                    if(typeof value.$oid === "string" && mongoose.Types.ObjectId.isValid(value.$oid))
-                        return new mongoose.Types.ObjectId(value.$oid);
-                }
-                return value;
-            });
+                        if(typeof value.$oid === "string" && mongoose.Types.ObjectId.isValid(value.$oid))
+                            return new mongoose.Types.ObjectId(value.$oid);
+                    }
+                    return value;
+                });
+            }
+            catch(x) { throw badRequest("q must be a JSON object"); }
+
+            // the filter must neither run javascript in the database nor be able to read out credentials
+            assertSafeExpression(query);
             pipeline.push({ $match: query });
         }
 
-        let result = await model.aggregate([ ...pipeline, ...[
-            { $group: { _id: null, total: { $sum: 1 }, data: { $push: "$$ROOT" } } },
-            { $project: { _id: 0, data: { $slice: [ "$data", req.pagination.skip, req.pagination.limit ] }, total: 1 } },
-            { $set: { skip: req.pagination.skip, limit: req.pagination.limit } }
-        ]]);
+        // only the requested page is collected, so that large collections stay within the memory and document size limits
+        let result = await model.aggregate([ ...pipeline, { $facet: {
+            data: [ { $skip: req.pagination.skip }, { $limit: req.pagination.limit } ],
+            total: [ { $count: "total" } ]
+        } } ]).allowDiskUse(true);
 
-        return result[0] || { skip: req.pagination.skip, limit: req.pagination.limit, data: [], total: 0 };
+        return {
+            skip: req.pagination.skip,
+            limit: req.pagination.limit,
+            data: result[0]?.data ?? [],
+            total: result[0]?.total[0]?.total ?? 0
+        };
     };
 
     next();

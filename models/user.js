@@ -88,13 +88,11 @@ const User = mongoose.model("User", (function()
             if(!this.authenticator_key)
                 throw "user does not have authenticator configured";
 
-            const token = authenticator.generateToken(this.authenticator_key);
             return authenticator.verifyToken(this.authenticator_key, `${authenticator_token}`)?.delta === 0;
         }
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false, methods });
-    schema.path("email").index(true);
     schema.path("individual").index(true);
     registerAuditLog(schema, "User", { redact: [ "password_hash", "authenticator_key", "external_auth_info" ] });
     return schema;
@@ -106,12 +104,29 @@ const Session = mongoose.model("Session", (function()
     const schemaDefinition = (
     {
         user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-        data: mongoose.Schema.Types.Mixed
+        data: mongoose.Schema.Types.Mixed,
+        expires_at: Date // removed by mongodb once the session's token has expired
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
     schema.path("user").index(true);
+    schema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
     registerAuditLog(schema, "Session");
+    return schema;
+})());
+
+// one-time code handing a signed-in user over to another device (e.g. a tablet as second screen) without the session
+// token ever showing up in a url or qr code: redeeming it signs the other device in with a session of its own
+const SessionHandoff = mongoose.model("SessionHandoff", (function()
+{
+    const schema = new mongoose.Schema(
+    {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        path: { type: String, required: true, match: /^\/(?![\/\\])/ }, // page of this site to open after signing in
+        expires_at: { type: Date, required: true, default: () => new Date(Date.now() + 5 * 60 * 1000) }
+    }, { id: false });
+
+    schema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
     return schema;
 })());
 
@@ -119,4 +134,4 @@ const Session = mongoose.model("Session", (function()
 User.updateMany({ preferred_language: { $in: [ null, "" ] } }, { preferred_language: "en" }).catch(x =>
     require("../services/logger.js").Logger.log("error", "could not set default language of users", x?.message || x));
 
-module.exports = { User, Session };
+module.exports = { User, Session, SessionHandoff };

@@ -1,13 +1,24 @@
 const { App } = require("../models/app.js"), jwt = require("jsonwebtoken"), { subjectOfApp } = require("../services/casbin.js");
 const { roleAssignmentRule } = require("../services/permissions.js"), installer = require("../services/app-installer.js");
-const fs = require("node:fs"), path = require("node:path"), multer = require("multer");
+const fs = require("node:fs"), path = require("node:path"), multer = require("multer"), { isSafeLink } = require("../services/sanitize.js");
 const appToAppTokenSecret = App.appToAppTokenSecret;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 512 * 1024 * 1024 } });
 
 // details of an app that may be set when registering it or by the app itself; installation details and secrets are
 // excluded, as they would allow running arbitrary commands on the server
 const editableFields = [ "bundle_id", "name", "translated_names", "description", "icon", "link", "api", "redirect_uris", "webhooks", "permissions" ];
-const pickEditable = (body) => Object.fromEntries(editableFields.filter(field => body?.[field] !== undefined).map(field => [ field, body[field] ]));
+const pickEditable = (body) =>
+{
+    const fields = Object.fromEntries(editableFields.filter(field => body?.[field] !== undefined).map(field => [ field, body[field] ]));
+
+    // the link is navigated to from the home screen, webhooks are called by the core: neither may be anything but http(s)
+    if(fields.link && !isSafeLink(fields.link))
+        throw Object.assign(new Error("link must be a http(s) url or a path of this site"), { statusCode: 400 });
+    if(Array.isArray(fields.webhooks) && fields.webhooks.some(webhook => !/^https?:\/\//i.test(String(webhook?.url ?? ""))))
+        throw Object.assign(new Error("webhook urls must be http(s) urls"), { statusCode: 400 });
+
+    return fields;
+};
 
 // public details of an app as returned after installing it
 const publicDetails = (app) => ({ _id: app._id, bundle_id: app.bundle_id, name: app.name, description: app.description, icon: app.icon, link: app.link });
@@ -393,16 +404,17 @@ module.exports = function(api)
     {
         try
         {
-            let app = await App.findOne({ $or: [ { _id: req.params.id }, { bundle_id: req.params.id } ] },
-                { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, license_key: false, market_subscription_key: false });
-
-            // if request is from one app about another, include a JWT token to authenticate potential app to app communication
-            if(req?.auth?.app_id && req.auth.app_id != req.params.id)
-                app.apiToken = await jwt.sign({ iss: "yabooks-core", sub: req.auth.app_id, aud: req.params.id }, appToAppTokenSecret);
+            let app = await App.findOne({ $or: [ ...(/^[0-9a-f]{24}$/.test(req.params.id) ? [ { _id: req.params.id } ] : []), { bundle_id: String(req.params.id) } ] },
+                { secret: false, redirect_uris: false, install_path: false, auto_start_command: false, pid: false, license_key: false, market_subscription_key: false }).lean();
 
             if(!app)
-                res.status(404).send({ error: "not found" });
-            else res.send(app);
+                return res.status(404).send({ error: "not found" });
+
+            // if request is from one app about another, include a short-lived token to authenticate app to app communication
+            if(req?.auth?.app_id && String(req.auth.app_id) !== String(app._id))
+                app.apiToken = jwt.sign({ iss: "yabooks-core", sub: String(req.auth.app_id), aud: String(app._id) }, appToAppTokenSecret, { expiresIn: "1h" });
+
+            res.send(app);
         }
         catch(x) { next(x) }
     });
@@ -459,7 +471,10 @@ module.exports = function(api)
     {
         try
         {
-            let data = await jwt.verify(req.params.token, appToAppTokenSecret, { audience: req.auth.app_id, subject: req.params.id });
+            if(!req.auth?.app_id)
+                return res.status(403).json({ success: false, error: "only apps may verify app to app tokens" });
+
+            let data = jwt.verify(req.params.token, appToAppTokenSecret, { audience: String(req.auth.app_id), subject: req.params.id, algorithms: [ "HS256" ] });
             res.json(data);
         }
         catch(x)

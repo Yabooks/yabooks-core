@@ -1,6 +1,23 @@
 const jwt = require("jsonwebtoken");
-const { App, OAuthCode } = require("../models/app.js"), { User, Session } = require("../models/user.js");
+const { App, OAuthCode } = require("../models/app.js"), { User, Session, SessionHandoff } = require("../models/user.js");
 const { Logger } = require("../services/logger.js"), { Settings } = require("../services/settings.js");
+const { createFailureLimiter } = require("../services/rate-limit.js"), crypto = require("node:crypto");
+
+// failed sign-in attempts allowed within 15 minutes per account and ip address (not per account alone, so that nobody
+// can lock others out of their accounts), and per ip address
+const failuresPerAccount = createFailureLimiter(10, 15 * 60 * 1000);
+const failuresPerIp = createFailureLimiter(100, 15 * 60 * 1000);
+
+// compares secrets in constant time, so that response times do not tell how much of a guess was right
+const sameSecret = (a, b) => typeof a === "string" && typeof b === "string" &&
+    crypto.timingSafeEqual(crypto.createHash("sha256").update(a).digest(), crypto.createHash("sha256").update(b).digest());
+
+// milliseconds of a duration like "30d", as used for the session duration
+const durationMs = (duration) =>
+{
+    const [ , amount, unit ] = /^(\d+)([smhdwy])$/.exec(duration) ?? [ null, 30, "d" ];
+    return amount * { s: 1, m: 60, h: 3600, d: 86400, w: 604800, y: 31557600 }[unit] * 1000;
+};
 
 module.exports = function(api)
 {
@@ -127,7 +144,7 @@ module.exports = function(api)
                 state: req.query.state
             };
 
-            res.redirect("/login/?context_token=" + jwt.sign(context, api.jwt_secret, { algorithm: "HS256" }));
+            res.redirect("/login/?context_token=" + jwt.sign(context, api.jwt_secret, { algorithm: "HS256", expiresIn: "15m" }));
         }
         catch(x) { next(x) }
     });
@@ -175,51 +192,96 @@ module.exports = function(api)
      *         description: >-
      *           Authentication type of the user is not supported
      */
+    // redeems a one-time handoff code (see POST /api/v1/session/handoff): signs the device in with a session of its own,
+    // valid for 12 hours, and opens the page the code was created for
+    api.get("/session-handoff/:code", async (req, res, next) =>
+    {
+        try
+        {
+            const handoff = /^[0-9a-f]{24}$/.test(req.params.code) &&
+                await SessionHandoff.findOneAndDelete({ _id: req.params.code, expires_at: { $gt: new Date() } });
+            const user = handoff && await User.findOne({ _id: handoff.user, active: { $ne: false } }, "preferred_language");
+
+            if(!user)
+                return res.status(401).send("this code is invalid or has expired, please create a new one");
+
+            const duration = 12 * 60 * 60;
+            const session = new Session({ user: user._id, data: { language: user.preferred_language }, expires_at: new Date(Date.now() + duration * 1000) });
+            await session.save();
+
+            const user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: duration });
+            const secure = req.protocol === "https" || process.env.base_url?.includes("https://");
+            res.cookie("user_token", user_token, { httpOnly: true, path: "/", secure: secure || undefined, sameSite: "lax" }).redirect(handoff.path);
+        }
+        catch(x) { next(x) }
+    });
+
     // endpoint for front-end to log user in
     api.post("/api/v1/session", async (req, res, next) =>
     {
         try
         {
-            let email = req.body.email;
-            let password = req.body.password;
-            let authenticator_token = req.body.authenticator_token;
+            // credentials must be plain values, objects like { "$ne": "" } would turn the lookup into a query
+            let email = req.body?.email;
+            let password = req.body?.password;
+            let authenticator_token = req.body?.authenticator_token;
 
             if(!email)
                 return res.status(401).send({ error: "unauthorized", error_description: "no credentials provided" });
 
+            if(typeof email !== "string" || (password !== undefined && typeof password !== "string") ||
+                (authenticator_token !== undefined && ![ "string", "number" ].includes(typeof authenticator_token)))
+                return res.status(400).send({ error: "bad request", error_description: "credentials must be strings" });
+
+            // slow down guessing of passwords and authenticator codes
+            const ipKey = req.ip, accountKey = `${email.trim().toLowerCase()}|${ipKey}`;
+            const blockedFor = Math.max(failuresPerAccount.blockedFor(accountKey), failuresPerIp.blockedFor(ipKey));
+            if(blockedFor)
+                return res.status(429).set("Retry-After", String(blockedFor))
+                    .send({ error: "too many requests", error_description: "too many failed sign-in attempts, try again later" });
+
             const user = await User.findOne({ email });
-            const msg_unauthorized = { error: "unauthorized", error_description: "invalid user credentials provided" };
+            const unauthorized = () =>
+            {
+                failuresPerAccount.fail(accountKey);
+                failuresPerIp.fail(ipKey);
+                return res.status(401).send({ error: "unauthorized", error_description: "invalid user credentials provided" });
+            };
 
             if(!user || !user?.auth_type)
-                return res.status(401).send(msg_unauthorized);
+                return unauthorized();
 
             if(user.auth_type === "password" || user.auth_type === "password-authenticator")
                 if(!password || !await user.verifyPassword(password))
-                    return res.status(401).send(msg_unauthorized);
-            
-            if(user.auth_type === "authenticator" || user.auth_type === "password-authenticator")
-                if(!authenticator_token)
-                    return res.status(412).send({ error: "authenticator token mising" });
-                else if(!user.verifyAuthenticatorToken(authenticator_token))
-                    return res.status(401).send(msg_unauthorized);
-            
+                    return unauthorized();
+
             if(user.active === false)
                 return res.status(403).send({ error: "forbidden", error_description: "user is deactivated" });
+
+            if(user.auth_type === "authenticator" || user.auth_type === "password-authenticator")
+                if(!authenticator_token)
+                    return res.status(412).send({ error: "authenticator token missing" });
+                else if(!user.verifyAuthenticatorToken(authenticator_token))
+                    return unauthorized();
 
             if(![ "authenticator", "password", "password-authenticator", ].includes(user.auth_type)) // TODO oauth, saml
                 return res.status(501).send({ error: "not implemented", error_description: `type ${user.auth_type}` });
 
-            let session = new Session({ user: user._id, data: { language: user.preferred_language } });
+            failuresPerAccount.reset(accountKey);
+
+            // sessions are removed by the database once their token has expired
+            const duration = Settings.get("session_duration");
+            let session = new Session({ user: user._id, data: { language: user.preferred_language }, expires_at: new Date(Date.now() + durationMs(duration)) });
             await session.save();
 
-            let user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: Settings.get("session_duration") });
+            let user_token = jwt.sign({ session_id: session._id }, api.jwt_secret, { algorithm: "HS256", expiresIn: duration });
             let secure_cookie_only = req.protocol === "https" || process.env.base_url?.includes("https://");
 
             res.cookie("user_token", user_token, {
                 httpOnly: true,
                 path: "/",
                 secure: secure_cookie_only || undefined,
-                sameSite: secure_cookie_only ? "none" : undefined // chrome allows samesite=none only in combination with secure
+                sameSite: "lax" // not sent along with requests other sites trigger in the background
             }).send({ user_token });
         }
         catch(x) { next(x) }
@@ -262,18 +324,31 @@ module.exports = function(api)
     {
         try
         {
-            let session = await Session.findOne({ _id: jwt.verify(req.query.user_token, api.jwt_secret, { algorithm: "HS256" }).session_id });
-            let context = jwt.verify(req.query.context_token, api.jwt_secret, { algorithm: "HS256" });
+            // the user is identified by the session cookie, so that the session token never shows up in urls
+            let session = await Session.findOne({ _id: jwt.verify(String(req.cookies?.user_token), api.jwt_secret, { algorithms: [ "HS256" ] }).session_id });
+            let context = jwt.verify(String(req.query.context_token), api.jwt_secret, { algorithms: [ "HS256" ] });
+
+            if(!session)
+                throw new Error("not signed in");
+
+            // the redirect uri was checked when the flow was initialized, but the app may have changed its uris since
+            let app = await App.findOne({ _id: context.client_id }, "redirect_uris");
+            if(!app?.redirect_uris?.includes(context.redirect_uri))
+                throw new Error("redirect_uri is not allowed for this client");
 
             let code = new OAuthCode({ session: session._id, app_id: context.client_id });
             await code.save();
 
-            res.redirect(context.redirect_uri + "?code=" + code._id + "&state=" + encodeURIComponent(context.state));
+            const target = new URL(context.redirect_uri);
+            target.searchParams.set("code", String(code._id));
+            if(context.state !== undefined)
+                target.searchParams.set("state", context.state);
+            res.redirect(target.toString());
         }
         catch(x)
         {
             Logger.log("error", "could not finalize oauth flow", x?.message || x);
-            res.status(400).send({ error: "bad request", details: x?.message || x });
+            res.status(400).send({ error: "bad request", details: "the sign-in could not be passed on to the app" });
         }
     });
 
@@ -319,11 +394,19 @@ module.exports = function(api)
     {
         try
         {
-            let code = await OAuthCode.findOne({ _id: req.query.code || req.body.code, expires_at: { $gt: new Date() } });
-            let app = await App.findOne({ _id: code.app_id });
+            const code_id = String(req.body?.code ?? req.query.code ?? "");
+            if(!/^[0-9a-f]{24}$/.test(code_id))
+                throw "invalid code";
 
-            if(app.secret !== req.body.client_secret)
-                return void res.status(401).send({ error: "unauthorized", error_description: "provided client secret is incorrect" });
+            let code = await OAuthCode.findOne({ _id: code_id, expires_at: { $gt: new Date() } });
+            let app = code && await App.findOne({ _id: code.app_id });
+
+            if(!app || !sameSecret(app.secret, req.body?.client_secret))
+                return void res.status(401).send({ error: "unauthorized", error_description: "provided code or client secret is incorrect" });
+
+            // a code can be exchanged only once
+            if(!await OAuthCode.findOneAndDelete({ _id: code._id }))
+                throw "code already used";
 
             let app_session = { session_id: code.session, app_id: code.app_id };
             let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: Settings.get("session_duration") });
@@ -377,8 +460,10 @@ module.exports = function(api)
     {
         try
         {
-            let app = await App.findOne({ _id: req.params.id, secret: req.body.secret });
-            if(!app) throw "401 unauthorized app";
+            // the secret must be compared, never used as query input: { "$ne": "" } would match any app
+            let app = /^[0-9a-f]{24}$/.test(req.params.id) && await App.findOne({ _id: req.params.id }, "secret");
+            if(!app || !sameSecret(app.secret, req.body?.secret))
+                return void res.status(401).send({ error: "unauthorized", error_description: "unknown app or incorrect secret" });
 
             let app_session = { session_id: null, app_id: app._id };
             let token = jwt.sign(app_session, api.jwt_secret, { algorithm: "HS256", expiresIn: Settings.get("session_duration") });

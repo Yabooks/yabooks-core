@@ -1,7 +1,24 @@
 const { Notification } = require("../models/notification.js");
 const { Session } = require("../models/user.js");
 const { addListener, push } = require("../services/notifications.js");
-const QRCode = require("qrcode");
+const QRCode = require("qrcode"), { isSafeLink, omit } = require("../services/sanitize.js"), { isCrossSite } = require("../services/csrf.js");
+
+// the user of the request's session, if any
+const userOf = async (req) => req.auth?.session_id ? (await Session.findOne({ _id: req.auth.session_id }, "user").lean())?.user : undefined;
+
+// filter for the notifications a request may access: the own user's ones, and for apps the ones owned by or addressed to them
+const accessibleBy = async (req) =>
+{
+    const user = await userOf(req), conditions = [];
+
+    if(user)
+        conditions.push({ user });
+
+    if(req.auth?.app_id)
+        conditions.push({ owned_by: req.auth.app_id }, { app: req.auth.app_id });
+
+    return conditions.length ? { $or: conditions } : { _id: null };
+};
 
 module.exports = function(api)
 {
@@ -17,6 +34,10 @@ module.exports = function(api)
     {
         try
         {
+            // the handshake carries the session cookie, so it must not be initiated by another site
+            if(isCrossSite(req))
+                throw "cross-site websocket connection refused";
+
             let session = await Session.findOne({ _id: req.auth?.session_id });
 
             if(!session)
@@ -81,8 +102,21 @@ module.exports = function(api)
     {
         try
         {
+            // users may only notify themselves, e.g. to hand a document over to their second screen; apps may notify anyone
+            const body = omit(req.body, "_id", "__v", "owned_by", "read");
+            if(!req.auth?.app_id)
+            {
+                const user = await userOf(req);
+                if(!user || body.app || String(body.user) !== String(user))
+                    return res.status(403).send({ error: "permission denied", details: "users may only create notifications for themselves" });
+            }
+
+            // links are opened when a notification is clicked, so they must not run scripts (javascript: urls)
+            if(body.link !== undefined && body.link !== null && body.link !== "" && !isSafeLink(body.link))
+                return res.status(400).send({ error: "bad request", details: "link must be a http(s) url or a path of this site" });
+
             // store notification in database
-            let msg = new Notification(req.body);
+            let msg = new Notification({ ...body, owned_by: req.auth?.app_id || undefined });
             await msg.validate();
             await msg.save();
 
@@ -137,13 +171,8 @@ module.exports = function(api)
     {
         try
         {
-            let filters = { $or: [] };
-
-            if(req.auth?.session_id)
-                filters.$or.push({ user: (await Session.findOne({ _id: req.auth.session_id }))?.user })
-
-            if(req.auth.app_id)
-                filters.$or.push({ owned_by: req.auth.app_id }, { app: req.auth.app_id }); // tasks owned by and notifications addressed to the app
+            // the own user's notifications, and tasks owned by and notifications addressed to the app
+            let filters = await accessibleBy(req);
 
             if(req.query.read === "false")
                 filters.read = null;
@@ -185,7 +214,7 @@ module.exports = function(api)
     {
         try
         {
-            let msg = await Notification.findOne({ _id: req.params.id });
+            let msg = await Notification.findOne({ _id: req.params.id, ...await accessibleBy(req) });
             if(!msg)
                 res.status(404).send({ error: "not found" });
             else res.send(msg);
@@ -216,7 +245,7 @@ module.exports = function(api)
     {
         try
         {
-            await Notification.updateOne({ _id: req.params.id }, { read: new Date() });
+            await Notification.updateOne({ _id: req.params.id, ...await accessibleBy(req) }, { read: new Date() });
             await res.status(204).send();
         }
         catch(x) { next(x) }
@@ -245,7 +274,7 @@ module.exports = function(api)
     {
         try
         {
-            await Notification.updateOne({ _id: req.params.id }, { read: null });
+            await Notification.updateOne({ _id: req.params.id, ...await accessibleBy(req) }, { read: null });
             await res.status(204).send();
         }
         catch(x) { next(x) }
@@ -273,7 +302,7 @@ module.exports = function(api)
     {
         try
         {
-            await Notification.findOneAndDelete({ _id: req.params.id });
+            await Notification.findOneAndDelete({ _id: req.params.id, ...await accessibleBy(req) });
             await res.status(204).send();
         }
         catch(x) { next(x) }

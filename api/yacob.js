@@ -1,5 +1,6 @@
 const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
+// uploads are analyzed by the model and kept in memory meanwhile, so their size is limited
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024, files: 1, fields: 20, fieldSize: 5 * 1024 * 1024 } });
 
 const { generateText, stepCountIs, experimental_createMCPClient: createMCPClient, tool, jsonSchema } = require("ai");
 const { getOpenApiTools } = require("../services/mcp.js");
@@ -23,8 +24,8 @@ async function getMcpTools(api_key)
 
 function getModel(requestedModel)
 {
-    const claude_api_key = process.env.yacob_claude_api_key;
-    const openai_api_key = process.env.yacob_openai_api_key;
+    const claude_api_key = process.env.yacob_claude_api_key || process.env.ANTHROPIC_API_KEY;
+    const openai_api_key = process.env.yacob_openai_api_key || process.env.OPENAI_API_KEY;
 
     if(claude_api_key)
         return createAnthropic({ apiKey: claude_api_key })(requestedModel ?? "claude-sonnet-4-6");
@@ -147,12 +148,19 @@ module.exports = function(api)
      *       501:
      *         description: YaCob is not configured (missing API key)
      */
-    api.post("/api/v1/ask-yacob", upload.any(), async (req, res, next) =>
+    // the permission is checked before an upload is received
+    const mayUseYacob = async (req, res, next) =>
+    {
+        try { await req.permissions.requirePermission(req, "use", "yacob", null, res); }
+        catch(x) { return x === "handled" ? undefined : next(x); }
+        next();
+    };
+
+    api.post("/api/v1/ask-yacob", mayUseYacob, (req, res, next) => upload.any()(req, res, err =>
+        err ? next(Object.assign(err, { statusCode: err.code === "LIMIT_FILE_SIZE" ? 413 : 400 })) : next()), async (req, res, next) =>
     {
         try
         {
-            await req.permissions.requirePermission(req, "use", "yacob", null, res);
-
             const model = getModel(req.body.model);
 
             if(!model)

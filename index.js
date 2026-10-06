@@ -3,16 +3,44 @@ const bodyParser = require("body-parser"), cookieParser = require("cookie-parser
 const swaggerUi = require("swagger-ui-express"), swaggerjsdoc = require("swagger-jsdoc");
 require("dotenv").config();
 
+const config = require("./services/config.js");
+
 // start web server and serve web gui
 const app = express();
 require("express-ws")(app);
+app.disable("x-powered-by");
+
+// behind a reverse proxy, client ip addresses (e.g. for limiting sign-in attempts) are taken from x-forwarded-for
+if(process.env.TRUST_PROXY || process.env.trust_proxy)
+    app.set("trust proxy", /^\d+$/.test(process.env.TRUST_PROXY || process.env.trust_proxy) ?
+        Number(process.env.TRUST_PROXY || process.env.trust_proxy) : process.env.TRUST_PROXY || process.env.trust_proxy);
+
+// security headers: no framing by other sites, no content type sniffing, no referrers leaking urls to other sites
+app.use((req, res, next) =>
+{
+    res.set({
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "same-origin"
+    });
+
+    // api responses are data, never pages: content served from there (e.g. uploaded svg pictures) must not run scripts
+    if(req.path.startsWith("/api/v1/"))
+        res.set("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+
+    next();
+});
+
 app.use(express.static("./gui"));
 app.use("/js/axios", express.static("./node_modules/axios/dist"));
 app.use("/js/chart.js", express.static("./node_modules/chart.js/dist"));
 app.use("/js/vue", express.static("./node_modules/vue/dist"));
-app.get("/js/vue/vue.js", (_, res) => res.redirect(`vue.global${process.env.NODE_ENV === 'development' ? ".prod" : ""}.js`));
+app.use("/js/marked", express.static("./node_modules/marked/lib"));
+app.get("/js/vue/vue.js", (_, res) => res.redirect(`vue.global${process.env.NODE_ENV === "development" ? "" : ".prod"}.js`));
 app.use("/js/yabooks", express.static("./node_modules/yabooks-app/public"));
-app.listen(process.env.port || 0, function() { process.env.port = this.address().port; });
+if(config.port())
+    process.env.port = String(config.port()); // known right away, e.g. for the api documentation below
+app.listen(config.port(), config.host(), function() { process.env.port = this.address().port; });
 
 // inject express middlewares
 const rawBodySaver = (req, res, buf, encoding) => { if(buf && buf.length) req.rawBody = buf };
@@ -33,7 +61,7 @@ app.get("/manuals/:page", async (req, res, next) =>
 {
     try
     {
-        if(req.params.page.includes(".."))
+        if(!/^[\w.-]+$/.test(req.params.page) || req.params.page.includes(".."))
             throw new Error("no such file");
 
         const { marked: renderMarkdown } = await import("marked");
@@ -46,7 +74,7 @@ app.get("/manuals/:page", async (req, res, next) =>
     {
         if(x?.message?.includes("no such file"))
             res.status(404).send("help page does not exist");
-        else res(next);
+        else next(x);
     }
 });
 
@@ -116,16 +144,21 @@ app.use("/api/*", async (req, res, next) =>
 });
 
 // all other routes require to be authenticated
-app.jwt_secret = process.env.secret || require("crypto").randomBytes(32);
+app.jwt_secret = config.jwtSecret;
 app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err, req, res, next) =>
 {
+    // other errors (e.g. a malformed request body) occurred before the token could be checked, so the request must not
+    // proceed as if it was authenticated
+    if(err && err.status !== 401)
+        return next(err);
+
     try
     {
         if(err && err.status === 401)
         {
             // if no valid jwt bearer token is provided, but a user token cookie is, try to parse that one
             if(req.cookies && req.cookies.user_token)
-                req.auth = require("jsonwebtoken").verify(req.cookies.user_token, app.jwt_secret, { algorith: "HS256" });
+                req.auth = require("jsonwebtoken").verify(req.cookies.user_token, app.jwt_secret, { algorithms: [ "HS256" ] });
 
             // neither jwt bearer token, nor user token cookie
             else throw "neither a valid jwt bearer token, nor a valid jwt user token cookie has been provided";
@@ -146,6 +179,10 @@ app.use("/api/*", jwt({ secret: app.jwt_secret, algorithms: [ "HS256" ] }), (err
     next();
 });
 
+// requests authenticated by the session cookie must come from this site, as browsers send cookies along with requests
+// that other sites trigger (cross-site request forgery); requests with a bearer token are not affected
+app.use("/api/*", require("./services/csrf.js").middleware);
+
 // establish the acting app/user for the remainder of the request, so e.g. audit log entries can attribute data changes
 app.use("/api/*", require("./services/audit-context.js").middleware);
 
@@ -156,6 +193,11 @@ app.use("/api/*", (req, res, next) =>
         return void res.status(401).send({ error: "unauthorized" });
     next();
 });
+
+// create the indexes declared by the models (including unique constraints and the expiry of logs, sessions and codes);
+// existing indexes are kept, failures (e.g. duplicates preventing a unique index) are logged but do not stop the server
+require("./services/indexes.js").createIndexes().catch(err =>
+    require("./services/logger.js").Logger.log("error", "could not create indexes", err?.message || err));
 
 // load system settings stored in the database
 require("./services/settings.js").Settings.load().catch(err =>

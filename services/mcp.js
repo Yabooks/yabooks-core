@@ -93,21 +93,35 @@ function cleanSpec(node, depth = 0)
     return out;
 }
 
+// cleaned specs loaded from urls or files: spec -> { loadedAt, spec }
+const specCache = new Map();
+const SPEC_CACHE_MS = 10 * 60 * 1000;
+
+async function cachedSpec(source)
+{
+    const cached = specCache.get(source);
+    if(cached && Date.now() - cached.loadedAt < SPEC_CACHE_MS)
+        return cached.spec;
+
+    const rawSpec = source.startsWith("http")
+        ? await fetch(source).then(r => r.json())
+        : JSON.parse(require("fs").readFileSync(source, "utf8"));
+
+    const spec = cleanSpec(rawSpec);
+    specCache.set(source, { loadedAt: Date.now(), spec });
+    return spec;
+}
+
 async function getOpenApiTools(api)
 {
     // openapi-mcp-generator is ESM-only — load via dynamic import (cached by Node)
     const { getToolsFromOpenApi } = await import("openapi-mcp-generator");
 
-    // load and clean the spec before the generator processes it
-    const rawSpec = typeof api.spec === "string" && api.spec.startsWith("http")
-        ? await fetch(api.spec).then(r => r.json())
-        : require("fs").existsSync(api.spec)
-            ? JSON.parse(require("fs").readFileSync(api.spec, "utf8"))
-            : api.spec;
+    // load and clean the spec before the generator processes it; specs loaded from urls or files are cached for a while,
+    // as they are needed for every request
+    const cleanedSpec = typeof api.spec === "string" ? await cachedSpec(api.spec) : cleanSpec(api.spec);
 
-    const cleanedSpec = cleanSpec(rawSpec);
-
-    const defs = await getToolsFromOpenApi(cleanedSpec, {
+    const defs = await getToolsFromOpenApi(structuredClone(cleanedSpec), { // the generator may alter the spec it is given
         dereference: true,
         ...(api.baseUrl && { baseUrl: api.baseUrl }),
         ...(api.exclude && { excludeOperationIds: api.exclude }),

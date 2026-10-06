@@ -5,7 +5,15 @@ const listeners = {};
 module.exports.addListener = function(user_id, ws)
 {
     (listeners[user_id] ??= []).push(ws);
-    ws.on("close", () => listeners[user_id] = listeners[user_id]?.filter(listener => listener !== ws));
+
+    ws.on("close", () =>
+    {
+        listeners[user_id] = listeners[user_id]?.filter(listener => listener !== ws);
+        if(!listeners[user_id]?.length)
+            delete listeners[user_id]; // users without open connections are forgotten
+    });
+
+    ws.on("error", () => ws.terminate());
 };
 
 /** pushes a stored notification to all open websocket connections of its user */

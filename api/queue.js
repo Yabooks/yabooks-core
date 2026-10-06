@@ -62,6 +62,10 @@ module.exports = function(api)
             const priority = req.query.priority === undefined ? 5 : Number(req.query.priority);
             const max_retries = req.query.max_retries === undefined ? 3 : Number(req.query.max_retries);
 
+            // apps hand work to each other through queues; users need the permission to write jobs to do so
+            if(!req.auth?.app_id)
+                await req.permissions.requirePermission(req, "write", "jobs", null, res);
+
             if(!/^[\w.-]+$/.test(req.params.queuename))
                 return res.status(400).json({ error: "queue name may only contain letters, digits, '_', '-' and '.'" });
 
