@@ -320,7 +320,7 @@
     <input type="file" id="file" hidden accept="image/*,.pdf,.txt,.md,.csv,.json">
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<script src="/js/marked/marked.umd.js"></script>
 <script>
 (function()
 {
@@ -339,7 +339,23 @@
     const messagesEl = $("messages"), chatEl = $("chat"), inputEl = $("input"),
           sendEl = $("send"), fileEl = $("file"), hintEl = $("hint");
 
-    marked.setOptions({ breaks: true, gfm: true });
+    // answers of the model may contain anything a document or an uploaded file made it write, so raw html is shown as
+    // text and links are only rendered if they are http(s) urls, never scripts (javascript: urls)
+    const isWebUrl = url => /^https?:\/\//i.test(String(url ?? "").trim());
+
+    marked.use({
+        breaks: true,
+        gfm: true,
+        renderer: {
+            html: ({ text }) => esc(text),
+            link({ href, title, tokens })
+            {
+                const label = this.parser.parseInline(tokens);
+                return isWebUrl(href) ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"${title ? ` title="${esc(title)}"` : ""}>${label}</a>` : label;
+            },
+            image: ({ href, text }) => isWebUrl(href) ? `<img src="${esc(href)}" alt="${esc(text)}">` : esc(text)
+        }
+    });
 
     const md = text => marked.parse(text ?? "");
 

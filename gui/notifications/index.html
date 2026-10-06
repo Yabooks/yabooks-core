@@ -24,7 +24,7 @@
                         {{ notification.text }}
                     </div>
                     <a class="link" v-if="notification.link" @click="hideNotificationsModal()"
-                        :href="notification.link" :target="isLocalLink(notification.link) ? 'main' : '_blank'">
+                        :href="safeLink(notification.link)" :target="isLocalLink(notification.link) ? 'main' : '_blank'" rel="noopener">
                         {{ $filters.translate("home.notifications.open") }}
                     </a>
                     <button class="taskIcon" v-if="isTask(notification)" :title="$filters.translate('home.notifications.task')">

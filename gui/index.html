@@ -42,6 +42,20 @@
             </div>
         </main>
         <script type="text/javascript">
+            // websocket delivering notifications in real time, and the delay before reconnecting after it was closed
+            let notifier = null, reconnectDelay = 1000;
+
+            // whether a link points to a page of this site
+            const isLocalLink = (link) =>
+            {
+                try
+                {
+                    const url = new URL(link, self.location.href);
+                    return url.host === self.location.host && url.protocol === self.location.protocol;
+                }
+                catch(x) { return false; }
+            };
+
             let app = Vue.createApp(
             {
                 data()
@@ -60,14 +74,7 @@
                 async mounted()
                 {
                     await loadTranslations({ "code*": "start." });
-                    frames.main.location = this.getDefaultMainUrl();
-
-                    // load count of currently unread notifications to show counter badge
-                    const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
-                    this.notifications = counter.data.total;
-
-                    // connect to web socket to subscribe to incoming notifications
-                    this.reconnectWebsocket();
+                    frames.main.location = await this.getDefaultMainUrl();
 
                     // ask if application may show system notifications
                     if("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied")
@@ -83,23 +90,63 @@
 
                 methods:
                 {
-                    getDefaultMainUrl()
+                    async getDefaultMainUrl()
                     {
-                        if(self.location.hash)
-                        {
-                            let url = self.location.hash.substring(1);
-                            if(url.substring(0, 1) !== "/")
-                                url = "https://" + url;
+                        if(!self.location.hash)
+                            return "/login/";
+
+                        let url = self.location.hash.substring(1);
+                        if(/^\/(?![\/\\])/.test(url))
                             return url;
+
+                        // pages of other sites are only shown if they belong to an installed app, so that links to this
+                        // site cannot show arbitrary pages within it
+                        try
+                        {
+                            url = new URL("https://" + url);
+                            const apps = (await axios.get("/api/v1/apps?limit=1000")).data.data;
+                            if(apps.some(app => { try { return new URL(app.link, self.location.href).host === url.host; } catch(x) { return false; } }))
+                                return url.href;
                         }
-                        else return "/login/";
+                        catch(x) {}
+
+                        return "/login/";
                     },
 
-                    reconnectWebsocket()
+                    // loads the count of unread notifications for the badge and connects to the notification websocket
+                    async subscribeNotifications()
                     {
-                        const notifier = new WebSocket(location.protocol.split("http").join("ws") +
+                        try
+                        {
+                            const counter = await axios.get("/api/v1/notifications?limit=0&read=false&type=user_notification");
+                            this.notifications = counter.data.total;
+                        }
+                        catch(x) { console.error(x); }
+
+                        this.connectWebsocket();
+                    },
+
+                    connectWebsocket()
+                    {
+                        if(notifier || !this.loggedIn)
+                            return;
+
+                        notifier = new WebSocket(location.protocol.split("http").join("ws") +
                             "//" + location.host + "/api/v1/notifications/ws");
-                        notifier.onclose = (_) => setTimeout(this.reconnectWebsocket, 1000);
+
+                        notifier.onopen = (_) => reconnectDelay = 1000;
+
+                        // reconnect while signed in, waiting longer after each failed attempt
+                        notifier.onclose = (_) =>
+                        {
+                            notifier = null;
+                            if(!this.loggedIn)
+                                return;
+
+                            setTimeout(this.connectWebsocket, reconnectDelay);
+                            reconnectDelay = Math.min(reconnectDelay * 2, 60000);
+                        };
+
                         notifier.onmessage = async (event) =>
                         {
                             const msg = JSON.parse(event.data);
@@ -119,7 +166,14 @@
                             if("Notification" in window && Notification.permission === "granted")
                             {
                                 let notification = new Notification(msg.title);
-                                notification.onclick = (_) => self.location = msg.link;
+                                notification.onclick = (_) =>
+                                {
+                                    // only pages of this site open within the app, other links (never scripts) open separately
+                                    if(msg.link && isLocalLink(msg.link))
+                                        frames.main.location = msg.link;
+                                    else if(/^https?:\/\//i.test(msg.link ?? ""))
+                                        window.open(msg.link, "_blank", "noopener");
+                                };
                             }
                         };
                     },
@@ -164,7 +218,11 @@
                             let oldSelectedBusinessId = this.selectedBusinessId;
 
                             let session = await loadSession();
+                            const wasLoggedIn = !!this.loggedIn;
                             this.loggedIn = session?.user;
+
+                            if(this.loggedIn && !wasLoggedIn)
+                                this.subscribeNotifications();
                             this.selectedBusinessId = await getSelectedBusinessId();
 
                             if(this.selectedBusinessId)
@@ -201,6 +259,8 @@
 
                     async logout()
                     {
+                        this.loggedIn = false;
+                        notifier?.close();
                         await axios.delete("/api/v1/session");
                         self.location = "/";
                     }

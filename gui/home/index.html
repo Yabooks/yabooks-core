@@ -73,7 +73,14 @@
                 {
                     navigate(app)
                     {
-                        self.location = app.link;
+                        // app links are set by the apps themselves, so only http(s) urls are followed, never scripts
+                        try
+                        {
+                            const url = new URL(app.link, self.location.href);
+                            if([ "http:", "https:" ].includes(url.protocol))
+                                self.location = url.href;
+                        }
+                        catch(x) { console.error(x); }
                     },
 
                     onIconLoad(event) // trigger the appear effect only once the icon is actually ready to paint
