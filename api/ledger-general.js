@@ -54,7 +54,7 @@ const { Business } = require("../models/business.js"), { Identity } = require(".
  *             offset_accounts:
  *               type: array
  *               description: >-
- *                 accounts of the same document's ledger transactions with the opposite amount sign, largest summed amount first
+ *                 accounts of the same document's ledger transactions with the same posting date and the opposite amount sign, largest summed amount first
  *               items:
  *                 type: object
  *                 properties:
@@ -182,13 +182,14 @@ const accrualStages = (business, alternateLedgerFilter) => (
     { $unset: "all_accruals" }
 ]);
 
-// enriches ledger transactions with offset_accounts: the accounts of the same document's ledger transactions with the opposite amount
-// sign, ordered by their summed absolute amount, largest first; requires the document's ledger transactions in document_ledger_transactions
-// (set before unwinding), which is removed afterwards; inLedger decides per ledger transaction ($$this) whether it belongs to the ledger
+// enriches ledger transactions with offset_accounts: the accounts of the same document's ledger transactions with the same posting date
+// and the opposite amount sign (each posting date balances on its own, e.g. accruals dated differently), ordered by their summed absolute
+// amount, largest first; requires the document's ledger transactions in document_ledger_transactions (set before unwinding), which is
+// removed afterwards; inLedger decides per ledger transaction ($$this) whether it belongs to the ledger
 const offsetAccountStages = (inLedger) => (
 [
     { $set: { offset_ledger_transactions: { $filter: { input: "$document_ledger_transactions", cond: { $and: [
-        inLedger, { $lt: [ { $multiply: [ "$$this.amount", "$amount" ] }, 0 ] }
+        inLedger, { $eq: [ "$$this.posting_date", "$posting_date" ] }, { $lt: [ { $multiply: [ "$$this.amount", "$amount" ] }, 0 ] }
     ] } } } } },
     { $set: { offset_accounts: { $map: { input: { $setUnion: [ "$offset_ledger_transactions.account" ] }, as: "offset_account", in: {
         account: "$$offset_account",
@@ -244,7 +245,7 @@ module.exports = function(api)
      *   get:
      *     summary: Get general ledger entries of a business
      *     description: >-
-     *       Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
+     *       Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the same posting date and the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
      *     tags:
      *       - general-ledger
      *     parameters:
@@ -313,7 +314,7 @@ module.exports = function(api)
      *   get:
      *     summary: Get general ledger entries of a business for an alternate ledger
      *     description: >-
-     *       Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
+     *       Each entry is enriched with open_item_relations and open_amount. open_item_relations lists the open item allocations between this and other ledger transactions ({ ledger_transaction, type, amount, allocated_by_this, posting_date of the other ledger transaction }). By convention, the ledger transaction holding an allocation is the payment, discount, transfer or cancelation of the ledger transaction it references, so allocated_by_this = true means this entry settles the other one, false means it is settled by the other one (paid, discounted, transferred or canceled). open_amount is the remaining open amount, null if the account does not track open items. accrued_by lists the ledger transactions that are accruals of this entry: the ledger transaction holding accrual_of is the accrual of the (accrued) ledger transaction referenced there. offset_accounts lists the accounts of the same document's ledger transactions with the same posting date and the opposite amount sign ({ _id, display_number, display_name, amount = summed absolute amount }), largest amount first.
      *     tags:
      *       - general-ledger
      *     parameters:
