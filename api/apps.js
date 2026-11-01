@@ -543,6 +543,8 @@ module.exports = function(api)
      *     summary: Remove an app
      *     description: >-
      *       Stops the app if it runs locally and deletes its installed files. Requires the permission to delete apps.
+     *       Afterwards, the app's documents that are not assigned to a business (i.e. its app configuration) are
+     *       deleted in the background; failing to do so does not affect the removal of the app.
      *     tags:
      *       - apps
      *     parameters:
@@ -593,6 +595,10 @@ module.exports = function(api)
             await req.permissions.removeFilteredGroupingPolicy(0, subjectOfApp(req.params.id));
             await req.permissions.removeFilteredPolicy(0, subjectOfApp(req.params.id));
             res.send({ success: true });
+
+            // the app's configuration (its documents without business) is inaccessible now; it is deleted in the
+            // background, and as this is best effort, failures are only logged and never affect the app's removal
+            App.deleteDocumentsOfDeletedApp(app._id);
         }
         catch(x) { next(x) }
     });

@@ -238,6 +238,46 @@ App.stopApp = async function(app_id)
     require("../services/logger.js").Logger.log("info", "stopped app", app_id);
 };
 
+// deletes the documents of a deleted app that are not assigned to a business (i.e. its app configuration), as nothing
+// can access them anymore; documents of businesses are business data and are kept; never throws, failures are logged
+App.deleteDocumentsOfDeletedApp = async function(app_id)
+{
+    const { Document, DocumentVersion, DocumentLink } = require("./document.js"), { Comment } = require("./comment.js");
+    const { Logger } = require("../services/logger.js");
+
+    // removes a document together with everything that only exists because of it: its binary on disk, archived
+    // versions, links and comments; the individual steps are best effort once the record itself is gone
+    const deleteDocumentCompletely = async (id) =>
+    {
+        await Document.deleteOne({ _id: id });
+
+        await Document.deleteFromDisk(id).catch(x =>
+        {
+            if(x?.code != "ENOENT")
+                Logger.log("error", `could not delete binary of document ${id}`, x?.message || x);
+        });
+        await DocumentVersion.deleteMany({ document: id }).catch(x => Logger.log("error", `could not delete versions of document ${id}`, x?.message || x));
+        await DocumentLink.deleteMany({ $or: [ { from: id }, { to: id } ] }).catch(() => {});
+        await Comment.deleteMany({ referenced_entity: "Document", referenced_id: id }).catch(() => {});
+    };
+
+    try
+    {
+        // only clean up after the app is really gone, otherwise its configuration would be lost while it still exists
+        if(await App.exists({ _id: app_id }))
+            return Logger.log("warn", `not deleting documents of app ${app_id}, as it still exists`);
+
+        const documents = await Document.find({ owned_by: app_id, business: null }, "_id").lean();
+        for(const { _id } of documents)
+            try { await deleteDocumentCompletely(_id); }
+            catch(x) { Logger.log("error", `could not delete document ${_id} of deleted app ${app_id}`, x?.message || x); }
+
+        if(documents.length)
+            Logger.log("info", `deleted ${documents.length} document(s) without business of deleted app ${app_id}`);
+    }
+    catch(x) { Logger.log("error", `could not delete documents of deleted app ${app_id}`, x?.message || x); }
+};
+
 // apps run in their own process groups, so they need to be stopped explicitly when the core shuts down
 const stopAllApps = () =>
 {
