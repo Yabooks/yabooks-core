@@ -28,7 +28,7 @@ const App = mongoose.model("App", (function()
 
     const schemaDefinition = (
     {
-        bundle_id: { type: String, unique: true },
+        bundle_id: { type: String, index: { unique: true, sparse: true } }, // apps registered without a bundle id have none
         secret: { type: String, required: true, default: () => require("crypto").randomBytes(48).toString("hex") },
         name: { type: String, required: true },
         translated_names: [ translationSchema ],
@@ -47,7 +47,6 @@ const App = mongoose.model("App", (function()
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
-    schema.path("bundle_id").index(true);
     schema.path("pid").index(true);
     registerAuditLog(schema, "App", { redact: [ "secret", "license_key", "market_subscription_key" ] });
     return schema;
@@ -64,13 +63,13 @@ const OAuthCode = mongoose.model("OAuthCode", (function()
     });
 
     const schema = new mongoose.Schema(schemaDefinition, { id: false, autoIndex: false });
-    schema.path("expires_at").index(true);
+    schema.index({ expires_at: 1 }, { expireAfterSeconds: 0 }); // expired codes are removed by mongodb
     registerAuditLog(schema, "OAuthCode");
     return schema;
 })());
 
 // secret used to sign tokens that authenticate core and apps towards other apps (verifiable via /api/v1/apps/:id/verify-token/:token)
-App.appToAppTokenSecret = process.env.secret || require("crypto").randomBytes(32);
+App.appToAppTokenSecret = require("../services/config.js").appToAppTokenSecret;
 
 // returns all apps with a webhook registered for the specified event as [ { app_id, url } ], ordered by app id
 App.findWebhooks = async function(event)

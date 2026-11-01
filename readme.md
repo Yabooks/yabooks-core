@@ -22,14 +22,25 @@ cd yabooks-core
 The server is configured through environment variables (loaded via `dotenv`). Create a `.env` file in the project root:
 
 ```env
-# Port the server listens on
+# Port the server listens on (a random free port if not set)
 PORT=3000
 
-# MongoDB connection string
+# Optional: network interface to listen on, e.g. 127.0.0.1 to only accept local connections (default: all interfaces)
+HOST=
+
+# MongoDB connection string (alternatively: mongo_user, mongo_pass, mongo_host and mongo_port)
 MONGODB_URI=mongodb://localhost:27017/yabooks
 
-# Secret used to sign/verify JWTs
+# Secret used to sign/verify JWTs; without it, a random one is used and everybody is signed out on every restart
 JWT_SECRET=change-this-to-a-long-random-string
+
+# Optional: public url the server is reached at, e.g. https://books.example.com; required behind a reverse proxy that
+# changes the Host header, as requests from other sites authenticated by the session cookie are refused
+base_url=
+
+# Optional: set behind a reverse proxy (e.g. to 1 for one proxy), so that client ip addresses are taken from the
+# X-Forwarded-For header, e.g. for limiting failed sign-in attempts per ip address
+TRUST_PROXY=
 
 # Optional: directory that apps installed from packages or the marketplace are extracted to (default: ./installed_apps)
 installed_apps_dir=

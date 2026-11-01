@@ -109,6 +109,54 @@ async function hasOtherActiveAdministrator(enforcer, user_id)
 }
 
 /**
+ * the permissions a role assignment grants, as [ { scope, object, action } ] in the scopes they apply to: roles assigned
+ * for everything ("*") grant system areas and business areas of all businesses, roles assigned for businesses grant
+ * business areas of these businesses only
+ */
+async function roleGrants(enforcer, catalog, role_id, scope)
+{
+    const { subjectOfRole } = require("./casbin.js");
+    const grants = [];
+
+    for(let [ , , object, action, effect ] of await enforcer.getFilteredPolicy(0, subjectOfRole(role_id)))
+    {
+        const entry = catalog.find(entry => entry.object === object);
+        if(effect !== "allow" || !entry)
+            continue;
+
+        if(entry.scope === "system" && scope === "*")
+            grants.push({ scope: "system", object, action });
+        else if(entry.scope === "business")
+            grants.push({ scope: scope === "*" ? "business::*" : scope, object, action });
+    }
+
+    return grants;
+}
+
+/**
+ * throws an error with status 403 unless the requester holds all the given permissions ([ { scope, object, action } ])
+ * itself, so that nobody can grant more than they may do; administrators may grant anything
+ */
+async function assertMayGrant(enforcer, req, grants)
+{
+    const requesters = await enforcer.subjectsOf(req);
+
+    for(let requester of requesters)
+        if(await enforcer.isAdministrator(requester))
+            return;
+
+    for(let { scope, object, action } of grants)
+    {
+        let holds = false;
+        for(let requester of requesters)
+            holds ||= await enforcer.enforce(requester, scope, object, action);
+
+        if(!holds)
+            throw Object.assign(new Error(`permissions can only be granted by someone holding them: ${action} ${object} (${scope})`), { statusCode: 403 });
+    }
+}
+
+/**
  * validates the role a requester wants to assign to a new subject (e.g. an app being installed) and returns the casbin
  * grouping rule for it; throws an error with a status code if the assignment is invalid or not permitted
  * @param {{ role: string, scope?: string }} assignment scope defaults to all businesses
@@ -135,8 +183,9 @@ async function roleAssignmentRule(enforcer, req, subject, { role, scope = "busin
         if(!administrator)
             fail(403, "only administrators may grant the administrator role");
     }
+    else await assertMayGrant(enforcer, req, await roleGrants(enforcer, await getCatalog(), role, scope));
 
     return [ subject, subjectOfRole(role), scope ];
 }
 
-module.exports = { coreCatalog, getCatalog, validatePolicy, evaluate, appObject, hasOtherActiveAdministrator, roleScopeRegex, roleAssignmentRule };
+module.exports = { coreCatalog, getCatalog, validatePolicy, evaluate, appObject, hasOtherActiveAdministrator, roleScopeRegex, roleAssignmentRule, roleGrants, assertMayGrant };

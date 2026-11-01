@@ -127,8 +127,8 @@ const GeneralTab = (
 
         openUri()
         {
-            if(this.doc.uri)
-                window.open(this.doc.uri, "_blank");
+            if(/^https?:\/\//i.test(this.doc.uri ?? "")) // never scripts (javascript: urls)
+                window.open(this.doc.uri, "_blank", "noopener");
         }
     }
 });

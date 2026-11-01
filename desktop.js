@@ -1,6 +1,9 @@
-const { app, BrowserWindow, dialog } = require("electron");
+const { app, BrowserWindow, dialog, shell } = require("electron");
 const { MongoMemoryServer } = require("mongodb-memory-server"), bcrypt = require("bcrypt");
-const { URL } = require("node:url"), os = require("node:os"), fs = require("node:fs"), path = require("node:path");
+const { URL } = require("node:url"), os = require("node:os"), fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
+
+// the core only listens on the loopback interface, so that it cannot be reached from the network
+process.env.host ||= "127.0.0.1";
 
 // assure correct working directory within packaged electron app
 process.chdir(__dirname);
@@ -15,12 +18,31 @@ app.whenReady().then(function() // do not replace with arrow function
         title: "YaBooks",
         autoHideMenuBar: true,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
+            // pages must not be able to access node, otherwise any script injected into them could control the computer
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true
         }
     });
 
     mainWindow.setMenu(null);
+
+    // the window only shows the core; other sites (e.g. from links) open in the user's browser
+    const isCore = (url) => dbReady && new URL(url).origin === new URL(dbReady).origin;
+    const openExternally = (url) => { if(/^https?:\/\//i.test(url)) shell.openExternal(url); };
+    mainWindow.webContents.on("will-navigate", (event, url) =>
+    {
+        if(!isCore(url) && !url.startsWith("file:"))
+        {
+            event.preventDefault();
+            openExternally(url);
+        }
+    });
+    mainWindow.webContents.setWindowOpenHandler(({ url }) =>
+    {
+        openExternally(url);
+        return { action: "deny" };
+    });
     mainWindow.on("closed", _ => mainWindow = null);
 
     if(dbReady) mainWindow.loadURL(dbReady);
@@ -90,14 +112,16 @@ app.on("window-all-closed", () =>
                 break;
             else await new Promise(resolve => setTimeout(resolve, 500));
         
-        // create user for single user mode
+        // create user for single user mode; its password is a new random one on every start, as it is only used by the
+        // window to sign in automatically, and must not be known to anyone else
         const { User } = require("./models/user.js");
-        let pw = "yabooks", single_user = new User({
+        let pw = crypto.randomBytes(32).toString("hex"), single_user = new User({
             email: "single-user@yabooks.local",
             password_hash: await bcrypt.hash(pw, 10)
         });
         if(!await User.findOne({ email: single_user.email }))
             await single_user.save();
+        else await User.updateOne({ email: single_user.email }, { $set: { password_hash: single_user.password_hash, auth_type: "password", active: true } });
 
         // the single user may do everything; ensured at every start, so that installations created before permissions
         // were enforced keep full access
@@ -111,7 +135,7 @@ app.on("window-all-closed", () =>
         // activate single user mode
         mainWindow.webContents.on('did-finish-load', async () =>
             await mainWindow.webContents.executeJavaScript(`
-                document.app.activateSingleUserMode("${single_user.email}", "${pw}");
+                document.app.activateSingleUserMode(${JSON.stringify(single_user.email)}, ${JSON.stringify(pw)});
             `, true)
         );
     }
