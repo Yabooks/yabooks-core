@@ -483,6 +483,183 @@ module.exports = function(api)
 
     /**
      * @openapi
+     * /api/v1/documents/{id}/versions:
+     *   get:
+     *     summary: List the archived versions of a document
+     *     description: >-
+     *       Returns the meta data of the previous versions of the document's binary content, newest first. The current
+     *       version is not included; it is available via /api/v1/documents/{id}/binary.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Archived versions, without their binary content
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   _id: { type: string }
+     *                   createdAt:
+     *                     type: string
+     *                     format: date-time
+     *                     description: When the version was archived, i.e. replaced by a newer one
+     *                   mime_type: { type: string }
+     *                   size:
+     *                     type: integer
+     *                     description: Size of the binary content in bytes
+     *                   invalidated_by:
+     *                     type: object
+     *                     description: User who replaced the version; missing if it was replaced by an app
+     *                     properties:
+     *                       _id: { type: string }
+     *                       email: { type: string }
+     */
+    api.get("/api/v1/documents/:id/versions", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
+            if(!req.ObjectId.isValid(req.params.id))
+                return res.send([]);
+
+            const versions = await DocumentVersion.aggregate([
+                { $match: { document: new req.ObjectId(req.params.id) } },
+                { $sort: { createdAt: -1, _id: -1 } },
+                { $project: { createdAt: 1, mime_type: 1, invalidated_by: 1, size: { $ifNull: [ { $binarySize: "$bytes" }, 0 ] } } }
+            ]);
+
+            await DocumentVersion.populate(versions, { path: "invalidated_by", select: "email" });
+            res.send(versions);
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/versions/{version}/binary:
+     *   get:
+     *     summary: Download an archived version of a document
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *       - in: path
+     *         name: version
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the archived version
+     *     responses:
+     *       200:
+     *         description: >-
+     *           The archived binary content, with its mime type as content type
+     *         content:
+     *           application/octet-stream:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       404:
+     *         description: >-
+     *           Document or version not found
+     */
+    api.get("/api/v1/documents/:id/versions/:version/binary", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "read", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
+            const version = req.ObjectId.isValid(req.params.version)
+                ? await DocumentVersion.findOne({ _id: req.params.version, document: req.params.id }).lean() : null;
+            if(!version)
+                return res.status(404).send({ error: "not found" });
+
+            // versions archived before their mime type was recorded fall back to the one of the document
+            const doc = await Document.findOne({ _id: req.params.id }, [ "name", "mime_type" ]).lean();
+
+            res.header("content-type", version.mime_type || doc?.mime_type || "application/octet-stream")
+                .header("content-disposition", `attachment; filename="${doc?.name ?? version._id}"`)
+                .send(version.bytes?.buffer ?? version.bytes ?? Buffer.alloc(0));
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
+     * /api/v1/documents/{id}/versions/{version}:
+     *   delete:
+     *     summary: Delete an archived version of a document
+     *     description: >-
+     *       Permanently deletes a previous version of the document's binary content. The current version cannot be deleted this way.
+     *     tags:
+     *       - documents
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the document
+     *       - in: path
+     *         name: version
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: >-
+     *           ID of the archived version
+     *     responses:
+     *       200:
+     *         description: >-
+     *           Version deleted
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *       404:
+     *         description: >-
+     *           Version not found
+     */
+    api.delete("/api/v1/documents/:id/versions/:version", async (req, res, next) =>
+    {
+        try
+        {
+            await req.permissions.requirePermission(req, "delete", "documents", await req.permissions.businessOf(Document, req.params.id), res);
+
+            const result = req.ObjectId.isValid(req.params.version)
+                ? await DocumentVersion.deleteOne({ _id: req.params.version, document: req.params.id }) : null;
+            if(!result?.deletedCount)
+                return res.status(404).send({ error: "not found" });
+
+            res.send({ success: true });
+        }
+        catch(x) { next(x) }
+    });
+
+    /**
+     * @openapi
      * /api/v1/documents/{id}/thumbnail:
      *   get:
      *     summary: Get the thumbnail of a document

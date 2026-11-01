@@ -365,6 +365,7 @@ const DocumentVersion = mongoose.model("DocumentVersion", (function()
     {
         document: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
         invalidated_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was updated by an app
+        mime_type: String, // mime type of the document at the time of archiving; missing on versions archived before it was recorded
         bytes: Buffer
     });
 
@@ -411,11 +412,13 @@ Document.readCurrentVersion = async function(id)
     return await fs.readFile(Document.getStorageLocation(id));
 };
 
-Document.archiveCurrentVersion = async function(id, invalidated_by)
+Document.archiveCurrentVersion = async function(id, invalidated_by = require("../services/audit-context.js").getActor().user_id)
 {
     try
     {
-        let version = new DocumentVersion({ document: id, bytes: await Document.readCurrentVersion(id), invalidated_by });
+        const bytes = await Document.readCurrentVersion(id);
+        const mime_type = (await Document.findOne({ _id: id }, "mime_type").lean())?.mime_type;
+        let version = new DocumentVersion({ document: id, mime_type, bytes, invalidated_by });
         await version.save();
         return version._id;
     }
