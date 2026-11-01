@@ -197,6 +197,7 @@ module.exports = function(api)
                     tax: { $cond: { if: { $eq: [ "$tax_complete", true ] }, then: "$tax", else: null } },
                     tax_base: { $cond: { if: { $eq: [ "$tax_base_complete", true ] }, then: "$tax_base", else: null } },
                     tax_code: "$_id.tax_code",
+                    tax_sub_code: "$_id.tax_sub_code",
                     tax_percent: "$_id.tax_percent" } },
                 { $project: { _id: 0, tax_complete: 0, tax_base_complete: 0 } }
             ]));
