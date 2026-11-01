@@ -26,11 +26,17 @@ const loadTranslations = async (filters = {}) =>
     // the API paginates (100 records by default), which would silently drop translations of larger modules
     filters = { limit: 10000, ...filters };
 
-    let data = await axios.get("/api/v1/translations?" +
-        Object.keys(filters).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(filters[key])}`).join("&"));
+    try
+    {
+        let data = await axios.get("/api/v1/translations?" +
+            Object.keys(filters).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(filters[key])}`).join("&"));
 
-    window.translations.push(...data.data.data);
-    window.translationsLoaded = true;
+        window.translations.push(...data.data.data);
+    }
+    finally // never leave skeleton placeholders forever, show fallbacks if translations could not be loaded
+    {
+        window.translationsLoaded = true;
+    }
 };
 
 const beep = () => // play a sound to gain the user's attention
