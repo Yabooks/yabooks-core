@@ -31,6 +31,13 @@ let app = Vue.createApp(
             return notification.type === "user_task";
         },
 
+        // links are only followed if they are http(s) urls or pages of this site, never scripts (javascript: urls)
+        safeLink(url)
+        {
+            try { return [ "http:", "https:" ].includes(new URL(url, self.location.href).protocol) ? url : undefined; }
+            catch(x) { return undefined; }
+        },
+
         isLocalLink(url)
         {
             try

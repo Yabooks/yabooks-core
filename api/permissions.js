@@ -1,7 +1,7 @@
 const { Role } = require("../models/role.js"), { User, Session } = require("../models/user.js"), { App } = require("../models/app.js");
 const { Business } = require("../models/business.js");
 const { ADMIN_ROLE, subjectOfUser, subjectOfApp, subjectOfRole } = require("../services/casbin.js");
-const { getCatalog, validatePolicy, evaluate, hasOtherActiveAdministrator, roleScopeRegex } = require("../services/permissions.js");
+const { getCatalog, validatePolicy, evaluate, hasOtherActiveAdministrator, roleScopeRegex, roleGrants, assertMayGrant } = require("../services/permissions.js");
 
 // subjects whose access can be managed, by url segment
 const kinds = {
@@ -44,6 +44,11 @@ const toRolePolicies = (catalog, role_id, permissions) =>
         return [ subjectOfRole(role_id), "*", permission.object, permission.action, permission.effect ];
     }));
 };
+
+// the permissions role policies grant once the role is assigned for everything, which those defining them must hold
+const grantsOfRolePolicies = (catalog, policies) => policies
+    .filter(([ , , , , effect ]) => effect === "allow")
+    .map(([ , , object, action ]) => ({ scope: catalog.find(entry => entry.object === object)?.scope === "system" ? "system" : "business::*", object, action }));
 
 // id of the user of the request's session, if any
 const ownUserId = async (req) => req.auth?.session_id ? (await Session.findOne({ _id: req.auth.session_id }, "user").lean())?.user : undefined;
@@ -315,7 +320,8 @@ module.exports = function(api)
             await req.permissions.requirePermission(req, "write", "permissions", null, res);
 
             const role = new Role({ name: req.body?.name, description: req.body?.description });
-            const policies = toRolePolicies(await getCatalog(), role._id, req.body?.permissions ?? []);
+            const catalog = await getCatalog(), policies = toRolePolicies(catalog, role._id, req.body?.permissions ?? []);
+            await assertMayGrant(req.permissions, req, grantsOfRolePolicies(catalog, policies));
 
             await role.save();
             if(policies.length)
@@ -381,7 +387,12 @@ module.exports = function(api)
 
             if(req.body?.permissions !== undefined)
             {
-                const policies = toRolePolicies(await getCatalog(), role._id, req.body.permissions);
+                const catalog = await getCatalog(), policies = toRolePolicies(catalog, role._id, req.body.permissions);
+
+                // permissions added to a role are granted to everyone holding it
+                const existing = new Set((await req.permissions.getFilteredPolicy(0, subjectOfRole(role._id))).map(rule => rule.join("\n")));
+                await assertMayGrant(req.permissions, req, grantsOfRolePolicies(catalog, policies.filter(rule => !existing.has(rule.join("\n")))));
+
                 await req.permissions.removeFilteredPolicy(0, subjectOfRole(role._id));
                 if(policies.length)
                     await req.permissions.addPolicies(policies);
@@ -602,6 +613,17 @@ module.exports = function(api)
                 if(req.params.kind === "users" && wasAdmin && !staysAdmin && !await hasOtherActiveAdministrator(req.permissions, req.params.id))
                     return res.status(409).send({ error: "conflict", details: "the last active administrator cannot lose the administrator role" });
             }
+
+            // newly granted roles and exceptions may only grant what the requester may do itself
+            const beforeRules = new Set(before.map(rule => rule.join("\n")));
+            const beforePolicies = new Set((await req.permissions.getFilteredPolicy(0, subject)).map(rule => rule.join("\n")));
+            const grants = [];
+            for(let [ , role, scope ] of groupingRules.filter(rule => !beforeRules.has(rule.join("\n")) && rule[1] !== ADMIN_ROLE))
+                grants.push(...await roleGrants(req.permissions, catalog, role.replace(/^role::/, ""), scope));
+            for(let [ , scope, object, action, effect ] of policies.filter(rule => !beforePolicies.has(rule.join("\n"))))
+                if(effect === "allow")
+                    grants.push({ scope, object, action });
+            await assertMayGrant(req.permissions, req, grants);
 
             await req.permissions.removeFilteredGroupingPolicy(0, subject);
             await req.permissions.removeFilteredPolicy(0, subject);

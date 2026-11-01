@@ -30,7 +30,6 @@ const app = Vue.createApp(
         if(reqParams.get("second_screen"))
         {
             this.isSecondScreen = true;
-            document.cookie = `user_token=${reqParams.get("auth")}; path=/api/v1/documents`;
 
             document.title = "YaBooks Second Screen";
             document.body.style.background = "#f2f2f2";
@@ -154,9 +153,12 @@ const app = Vue.createApp(
 
                 const session = await loadSession();
 
+                // the second screen signs in with a one-time code, so that the session token never shows up in the link
+                const handoff = await axios.post("/api/v1/session/handoff", { path: `${self.location.pathname}${self.location.search}&second_screen=true` });
+
                 // send app notification to second screen about which document should be opened in editor
                 let notification = await axios.post("/api/v1/notifications?optical_code=true", {
-                    link: `${self.location.href}&second_screen=true&auth=${encodeURIComponent(session.user_token)}`, // TODO security
+                    link: handoff.data.url,
                     title: "open second screen",
                     type: "app_notification",
                     user: session.user

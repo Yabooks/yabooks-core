@@ -26,7 +26,7 @@
     "@ai-sdk/openai": "^3.0.70",
     "@fragaria/address-formatter": "^5.0.0",
     "@napi-rs/canvas": "^0.1.93",
-    "adm-zip": "^0.5.18",
+    "adm-zip": "^0.6.1",
     "ai": "^6.0.202",
     "authenticator": "^1.1.5",
     "axios": "^1.2.2",

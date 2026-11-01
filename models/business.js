@@ -50,6 +50,11 @@ const Business = mongoose.model("Business", (function()
 
             let file = path.join(process.env.persistent_data_dir ?? "./data", "business_" + this._id);
             await fs.writeFile(file, binary);
+        },
+
+        async deleteLogo()
+        {
+            await fs.rm(path.join(process.env.persistent_data_dir ?? "./data", "business_" + this._id), { force: true });
         }
     });
 

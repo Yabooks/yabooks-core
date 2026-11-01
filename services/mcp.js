@@ -93,21 +93,57 @@ function cleanSpec(node, depth = 0)
     return out;
 }
 
+// cleaned specs loaded from urls or files: spec -> { loadedAt, spec }
+const specCache = new Map();
+const SPEC_CACHE_MS = 10 * 60 * 1000;
+
+async function cachedSpec(source)
+{
+    const cached = specCache.get(source);
+    if(cached && Date.now() - cached.loadedAt < SPEC_CACHE_MS)
+        return cached.spec;
+
+    const rawSpec = source.startsWith("http")
+        ? await fetch(source).then(r => r.json())
+        : JSON.parse(require("fs").readFileSync(source, "utf8"));
+
+    const spec = cleanSpec(rawSpec);
+    specCache.set(source, { loadedAt: Date.now(), spec });
+    return spec;
+}
+
+// YaBooks list endpoints accept arbitrary filter/pagination query parameters
+// (field=value, field*=prefix, field__gte=..., sort_asc, skip, limit, q={...})
+// that are not declared in the spec — expose them to the model as a free-form
+// `filters` object on GET operations, appended to the query string on execution
+function addFilterParam(def)
+{
+    if(def.method.toUpperCase() !== "GET") return;
+
+    const schema = def.inputSchema?.jsonSchema ?? def.inputSchema;
+    if(!schema || schema.properties?.filters) return;
+
+    schema.type ??= "object";
+    schema.properties ??= {};
+    schema.properties.filters = {
+        type: "object",
+        description: "Optional extra query parameters for filtering, sorting and pagination, "
+            + "e.g. {\"full_name*\": \"Ac\", \"date__gte\": \"2024-01-01\", \"sort_desc\": \"date\", \"limit\": 50, \"q\": \"{\\\"type\\\":\\\"revenues\\\"}\"}",
+        additionalProperties: { type: [ "string", "number", "boolean" ] }
+    };
+    def.acceptsFilters = true;
+}
+
 async function getOpenApiTools(api)
 {
     // openapi-mcp-generator is ESM-only — load via dynamic import (cached by Node)
     const { getToolsFromOpenApi } = await import("openapi-mcp-generator");
 
-    // load and clean the spec before the generator processes it
-    const rawSpec = typeof api.spec === "string" && api.spec.startsWith("http")
-        ? await fetch(api.spec).then(r => r.json())
-        : require("fs").existsSync(api.spec)
-            ? JSON.parse(require("fs").readFileSync(api.spec, "utf8"))
-            : api.spec;
+    // load and clean the spec before the generator processes it; specs loaded from urls or files are cached for a while,
+    // as they are needed for every request
+    const cleanedSpec = typeof api.spec === "string" ? await cachedSpec(api.spec) : cleanSpec(api.spec);
 
-    const cleanedSpec = cleanSpec(rawSpec);
-
-    const defs = await getToolsFromOpenApi(cleanedSpec, {
+    const defs = await getToolsFromOpenApi(structuredClone(cleanedSpec), { // the generator may alter the spec it is given
         dereference: true,
         ...(api.baseUrl && { baseUrl: api.baseUrl }),
         ...(api.exclude && { excludeOperationIds: api.exclude }),
@@ -119,6 +155,7 @@ async function getOpenApiTools(api)
     for(const def of defs)
     {
         stripAuthParams(def, api);
+        addFilterParam(def);
 
         try { jsonSchema(def.inputSchema?.jsonSchema ?? def.inputSchema); }
         catch(e)
@@ -170,6 +207,12 @@ async function executeOperation(api, def, args)
 
         used.add(p.name);
     }
+
+    // free-form filters (see addFilterParam)
+    if(def.acceptsFilters && args?.filters && typeof args.filters === "object")
+        for(const [ key, value ] of Object.entries(args.filters))
+            if(value !== undefined && value !== null)
+                query.append(key, typeof value === "object" ? JSON.stringify(value) : value);
 
     // request body: explicit requestBody arg, or all remaining args
     let body;

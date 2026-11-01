@@ -46,6 +46,11 @@ const Identity = mongoose.model("Identity", (function()
 
             let file = path.join(process.env.persistent_data_dir ?? "./data", this.kind + "_" + this._id);
             await fs.writeFile(file, binary);
+        },
+
+        async deletePicture()
+        {
+            await fs.rm(path.join(process.env.persistent_data_dir ?? "./data", this.kind + "_" + this._id), { force: true });
         }
     });
 

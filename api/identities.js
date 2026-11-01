@@ -1,3 +1,4 @@
+const { sendPicture, isPicture } = require("../services/files.js");
 const mongoose = require("mongoose");
 const { Identity, Individual, Organization, Relationship } = require("../models/identity.js");
 
@@ -245,7 +246,7 @@ module.exports = function(api)
             else
             {
                 let picture = await identity.getPicture();
-                res.set("Content-Type", `image/${picture.length > 400 ? "jpeg" : "svg+xml"}`).send(picture);
+                sendPicture(res, picture);
             }
         }
         catch(x) { next(x) }
@@ -303,6 +304,9 @@ module.exports = function(api)
 
                 if(!picture)
                     return res.json({ success: false, error: "no picture provided" });
+
+                if(!isPicture(picture))
+                    return res.status(415).json({ success: false, error: "picture must be a png, jpeg, gif, webp or svg image" });
 
                 await identity.setPicture(picture);
                 res.json({ success: true });
@@ -448,7 +452,13 @@ module.exports = function(api)
         {
             await req.permissions.requirePermission(req, "delete", "identities", null, res);
 
+            const identity = await Identity.findOne({ _id: req.params.id }, "kind");
             await Identity.deleteOne({ _id: req.params.id });
+
+            // the picture of a deleted identity is personal data that must not be kept
+            if(identity)
+                await identity.deletePicture().catch(() => null);
+
             res.send({ success: true });
         }
         catch(x) { next(x) }
@@ -600,6 +610,9 @@ module.exports = function(api)
         try
         {
             await req.permissions.requirePermission(req, "write", "identities", null, res);
+
+            if(typeof req.body?.key !== "string" || !/^[\w-]+$/.test(req.body.key))
+                return res.status(400).send({ error: "bad request", details: "key may only contain letters, digits, '_' and '-'" });
 
             let identity = await Identity.findOneAndUpdate(
                 { _id: req.params.id },

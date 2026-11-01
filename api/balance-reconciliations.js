@@ -1,3 +1,4 @@
+const { omit } = require("../services/sanitize.js");
 const { AccountReconciliation } = require("../models/account-reconciliation.js");
 const { LedgerAccount } = require("../models/account.js");
 const { getActor } = require("../services/audit-context.js");
@@ -93,7 +94,7 @@ module.exports = function(api)
 
             const actor = getActor();
             let entry = new AccountReconciliation({
-                ...req.body,
+                ...omit(req.body, "_id", "__v"),
                 business: account.business,
                 account: req.params.id,
                 user: actor.user_id,

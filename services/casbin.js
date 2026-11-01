@@ -29,11 +29,7 @@ async function createEnforcer()
 {
     const adapter = await MongoAdapter.newAdapter(
     {
-        uri: "mongodb://" +
-            process.env.mongo_user + ":" +
-            process.env.mongo_pass + "@" +
-            process.env.mongo_host + ":" +
-            process.env.mongo_port + "/",
+        uri: require("./config.js").mongoUri(),
         collection: "casbin",
     });
 

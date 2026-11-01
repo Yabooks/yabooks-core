@@ -26,33 +26,10 @@ let app = Vue.createApp(
 
             // check if user is already logged in using an existing cookie
             let session = await axios.get("/api/v1/session");
-            if(session.data.user_token)
-                return this.proceed(session.data.user_token);
+            if(session.data.signed_in)
+                return this.proceed();
         }
         catch(x) {}
-
-        try
-        {
-            // otherwise ask parent window for user's token to work with the same session
-            window.addEventListener("message", (event) =>
-            {
-                if(event.source === window.top && event.data?.user_token)
-                {
-                    console.info("received user token from top window");
-                    return this.proceed(event.data.user_token);
-                }
-            });
-
-            if(window !== window.top)
-            {
-                console.info("asking top window for a user token");
-                window.top.postMessage("what_is_user_session_token", "*");
-            }
-        }
-        catch(x)
-        {
-            console.error(x);
-        }
     },
 
     methods:
@@ -73,9 +50,9 @@ let app = Vue.createApp(
                     authenticator_token: this.authenticator_token || undefined
                 });
 
-                // successful authentication
+                // successful authentication, the session cookie has been set
                 if(res.data.user_token)
-                    this.proceed(res.data.user_token);
+                    this.proceed();
 
                 // unsuccessful authentication
                 else throw false;
@@ -108,14 +85,14 @@ let app = Vue.createApp(
             }
         },
 
-        proceed: async function(user_token)
+        proceed: async function()
         {
-            // if user was redirected here for oauth, proceed with oauth flow
+            // if user was redirected here for oauth, proceed with oauth flow; the session is identified by its cookie
             if(this.params.context_token)
-                self.location = "/oauth/code?context_token=" + this.params.context_token + "&user_token=" + user_token;
+                self.location = "/oauth/code?context_token=" + encodeURIComponent(this.params.context_token);
 
-            // if user was redirected here from some specific page, go back there
-            else if(this.params.redir)
+            // if user was redirected here from some specific page of this site, go back there
+            else if(this.params.redir && /^\/(?![\/\\])/.test(this.params.redir))
                 self.location = this.params.redir;
 
             // if no context was provided, redirect to home page
