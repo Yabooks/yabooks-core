@@ -17,7 +17,7 @@
                 <a :href="(loggedIn ? '/home/' : '/login/')" style="font-weight: bold">
                     {{ $filters.translate("start.home") }}
                 </a>
-                <a @click="logout" v-if="!isInSingleUserMode">
+                <a @click="logout" v-if="loggedIn && !isInSingleUserMode">
                     {{ $filters.translate("start.logout") }}
                 </a>
                 <a @click="openModal('/notifications/')" v-if="loggedIn">
