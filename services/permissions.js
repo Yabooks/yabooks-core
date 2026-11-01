@@ -17,7 +17,8 @@ const coreCatalog = [
     { scope: "system", object: "permissions", actions: [ "read", "write" ] },
     { scope: "system", object: "settings", actions: [ "read", "write" ] },
     { scope: "system", object: "logs", actions: [ "read" ] },
-    { scope: "system", object: "jobs", actions: [ "read", "write" ] }
+    { scope: "system", object: "jobs", actions: [ "read", "write" ] },
+    { scope: "system", object: "dumps", actions: [ "dump-all" ] } // full backups of the database and data directory, i.e. all data of all businesses
 ];
 
 // scopes a role can be assigned in: everything, all businesses, or one business
