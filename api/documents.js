@@ -385,6 +385,14 @@ module.exports = function(api)
                     await req.permissions.requirePermission(req, "record", "general-ledger", body.business ?? "*", res);
             }
 
+            // update validators only check the updated paths, so the ledger transactions of a draft being posted are checked here
+            if(req.body?.posted === true && !doc.posted && req.body?.ledger_transactions === undefined)
+            {
+                const draft = await Document.findOne({ _id: req.params.id }, "posted ledger_transactions");
+                draft.posted = true;
+                await draft.validate([ "ledger_transactions" ]);
+            }
+
             await Document.updateOne({ _id: req.params.id }, { $set: body }, { runValidators: true });
             res.send({ success: true });
 
