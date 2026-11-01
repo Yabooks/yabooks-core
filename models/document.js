@@ -365,7 +365,7 @@ const DocumentVersion = mongoose.model("DocumentVersion", (function()
     {
         document: { type: mongoose.Schema.Types.ObjectId, ref: "Document", required: true },
         invalidated_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // may be null if document was updated by an app
-        mime_type: String, // mime type of the document at the time of archiving; missing on versions archived before it was recorded
+        mime_type: String, // mime type of the document at the time of archiving
         bytes: Buffer
     });
 
