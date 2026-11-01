@@ -79,9 +79,11 @@ module.exports = async function(req, res, next)
     // prepare method for aggregation pipeline stages for filtering, sorting and pagination
     req.paginatedAggregatePipelineWithFilters = async (model, pipeline = []) =>
     {
+        // parameters consumed by a route handler are set to undefined there (e.g. ?from= of balances), they are no filters
         const keywords = [ "skip", "limit", "sort_asc", "sort_desc", "q" ];
-        req.base_filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") === 0).map(parameterToFilter);
-        req.filters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && key.indexOf("base_") !== 0).map(parameterToFilter);
+        const parameters = Object.keys(req.query).filter(key => keywords.indexOf(key) < 0 && req.query[key] !== undefined);
+        req.base_filters = parameters.filter(key => key.indexOf("base_") === 0).map(parameterToFilter);
+        req.filters = parameters.filter(key => key.indexOf("base_") !== 0).map(parameterToFilter);
 
         if(req.base_filters.length > 0)
             pipeline.unshift({ $match: { $and: [ ...req.base_filters ] } });
