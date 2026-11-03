@@ -1,6 +1,10 @@
 [
     { "code": "start.home", "language": "en", "text": "Home" },
     { "code": "start.home", "language": "de", "text": "Start" },
+    { "code": "start.help", "language": "en", "text": "Help" },
+    { "code": "start.help", "language": "de", "text": "Hilfe" },
+    { "code": "start.help.link", "language": "en", "text": "/manuals/index.en" },
+    { "code": "start.help.link", "language": "de", "text": "/manuals/index.de" },
     { "code": "start.logout", "language": "en", "text": "Logout" },
     { "code": "start.logout", "language": "de", "text": "Ausloggen" },
     { "code": "start.notifications", "language": "en", "text": "Notifications" },

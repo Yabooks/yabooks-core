@@ -56,26 +56,20 @@ app.use(cookieParser());
 // authentication routes
 require("./api/auth.js")(app);
 
-// render markdown help pages
+// render markdown help pages, including their screenshots
+app.use("/manuals/screenshots", express.static("./assets/manuals/screenshots"));
+app.get("/manuals/", (req, res) => res.redirect(`/manuals/index.${req.acceptsLanguages("en", "de") || "en"}`));
 app.get("/manuals/:page", async (req, res, next) =>
 {
     try
     {
-        if(!/^[\w.-]+$/.test(req.params.page) || req.params.page.includes(".."))
-            throw new Error("no such file");
+        const html = await require("./services/manuals.js").renderManualPage(req.params.page);
+        if(html === null)
+            return res.status(404).send("help page does not exist");
 
-        const { marked: renderMarkdown } = await import("marked");
-        let md = require("node:fs").readFileSync(`./assets/manuals/${req.params.page}.md`, "utf8");
-        res.send(`<!DOCTYPE html><html>
-            <head><title>YaBooks</title><link rel="stylesheet" href="/_generic/help_page.css" /></head>
-            <body><main>${renderMarkdown(md)}</main></body>`);
+        res.send(html);
     }
-    catch(x)
-    {
-        if(x?.message?.includes("no such file"))
-            res.status(404).send("help page does not exist");
-        else next(x);
-    }
+    catch(x) { next(x); }
 });
 
 // api swagger documentation
