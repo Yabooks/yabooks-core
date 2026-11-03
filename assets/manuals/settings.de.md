@@ -16,13 +16,13 @@ Das Menü links ist in **System** (Allgemein, Steuercodes, Protokolle, Aufträge
 | **Protokollierungsstufe** | Wie ausführlich das [Systemprotokoll](#protokolle) ist: von *error* (nur Fehler) bis *debug* (alles). |
 | **Protokolle aufbewahren (Tage)** | Ältere Protokolleinträge werden automatisch gelöscht. |
 
-Mit *Durch die Umgebungsvariable … festgelegt* gekennzeichnete Einstellungen werden am Server konfiguriert und können hier nicht geändert werden. Klicken Sie nach Änderungen auf **Speichern**.
+Mit *Durch die Umgebungsvariable … festgelegt* gekennzeichnete Einstellungen werden am Server konfiguriert und können hier nicht geändert werden. Klicke nach Änderungen auf **Speichern**.
 
 **Systeminformationen** zeigen Version, laufende Instanz, Basis-URL, Datenbank, Datenverzeichnis, ob Schlüssel der KI-Anbieter gesetzt sind (nötig für [YaCob AI](yacob.de)) und die API-Nutzung im laufenden Monat.
 
 ## Steuercodes
 
-Hier legen Sie die für alle Unternehmen geltenden Steuercodes an, bearbeiten und löschen sie. Klicken Sie auf **+ Neuer Steuercode** oder eine Zeile zum Bearbeiten; das Suchfeld findet Codes nach Code, Beschreibung oder Schlagwort.
+Hier legst du die für alle Unternehmen geltenden Steuercodes an, bearbeitest und löschst sie. Klicke auf **+ Neuer Steuercode** oder eine Zeile zum Bearbeiten; das Suchfeld findet Codes nach Code, Beschreibung oder Schlagwort.
 Die Felder und ihre Bedeutung sind auf der Seite [Steuern](taxes.de#steuercodes) erklärt.
 
 ## Protokolle
@@ -58,12 +58,12 @@ Die Liste zeigt alle Benutzer mit Anmeldeverfahren, Rollen, letzter Anmeldung un
 
 ### Benutzer anlegen
 
-1. Klicken Sie auf **+ Neuer Benutzer**.
-2. Geben Sie **E-Mail**, ein **Anfangspasswort** und die **Sprache** ein.
-3. Klicken Sie auf **Benutzer anlegen**.
-4. Weisen Sie Rollen zu, siehe [Zugriff zuweisen](#zugriff-zuweisen).
+1. Klicke auf **+ Neuer Benutzer**.
+2. Gib **E-Mail**, ein **Anfangspasswort** und die **Sprache** ein.
+3. Klicke auf **Benutzer anlegen**.
+4. Weise Rollen zu, siehe [Zugriff zuweisen](#zugriff-zuweisen).
 
-Teilen Sie das Anfangspasswort über einen sicheren Kanal mit und bitten Sie darum, es im [Profil](getting-started.de#ihr-profil) zu ändern.
+Teile das Anfangspasswort über einen sicheren Kanal mit und bitte darum, es im [Profil](getting-started.de#dein-profil) zu ändern.
 
 ### Benutzer verwalten
 
@@ -77,8 +77,8 @@ Ein Klick auf einen Benutzer öffnet rechts das Detailfenster:
 
 Im Detailfenster eines Benutzers (oder einer App):
 
-* **Rollen**: Wählen Sie eine Rolle und wo sie gilt – ein **Unternehmen**, **alle Unternehmen** oder **alles** (inklusive Verwaltungsbereichen) – und klicken Sie auf **Hinzufügen**.
-* **Ausnahmen**: Erlauben oder verbieten Sie eine einzelne Aktion in einem einzelnen Bereich, z. B. *verbieten* von *Löschen* bei *Dokumente*, ohne eine neue Rolle anzulegen.
+* **Rollen**: Wähle eine Rolle und wo sie gilt – ein **Unternehmen**, **alle Unternehmen** oder **alles** (inklusive Verwaltungsbereichen) – und klicke auf **Hinzufügen**.
+* **Ausnahmen**: Erlaube oder verbiete eine einzelne Aktion in einem einzelnen Bereich, z. B. *verbieten* von *Löschen* bei *Dokumente*, ohne eine neue Rolle anzulegen.
 * **Effektive Berechtigungen anzeigen** listet, was der Benutzer tatsächlich darf – aus allen Rollen und Ausnahmen kombiniert (nur gespeicherter Stand).
 
 ## Rollen
@@ -88,7 +88,7 @@ Im Detailfenster eines Benutzers (oder einer App):
 Eine Rolle legt fest, **was** getan werden darf; **wo** sie gilt, wird bei der Zuweisung an einen Benutzer oder eine App gewählt.
 
 * **Administrator** ist eingebaut und darf alles. Diese Rolle kann weder geändert noch gelöscht werden.
-* Klicken Sie auf **+ Neue Rolle** und geben Sie Name und Beschreibung ein.
+* Klicke auf **+ Neue Rolle** und gib Name und Beschreibung ein.
 * Die Matrix listet alle Bereiche – *Unternehmensdaten* wie Dokumente, Hauptbuch & Salden, Sachkonten, Kostenstellen, Unternehmensprofil; *gemeinsame Daten und Verwaltung* wie Personen & Organisationen, Steuercodes, Benutzer, Einstellungen, Protokolle und vollständige Sicherungen; sowie die Bereiche installierter Apps.
 * Ein Klick auf eine Zelle wechselt zwischen *nicht gewährt*, *erlaubt* ✓ und *verboten* ✕. Neben **Lesen**, **Schreiben** und **Löschen** haben manche Bereiche **weitere Aktionen**, z. B. *verbuchen*, *Periode sperren* und *Periode entsperren* beim Hauptbuch oder *verwenden* bei YaCob KI.
 * Eine **verbotene** Berechtigung hat Vorrang vor Berechtigungen aus anderen Rollen.
@@ -113,5 +113,5 @@ Apps handeln entweder mit eigenen Berechtigungen oder – wenn ein angemeldeter 
 ## Verwandte Themen
 
 * [Apps](apps.de)
-* [Ihr Profil](getting-started.de#ihr-profil)
+* [Dein Profil](getting-started.de#dein-profil)
 * [Steuern](taxes.de)

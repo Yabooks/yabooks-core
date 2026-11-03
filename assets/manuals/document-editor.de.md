@@ -1,6 +1,6 @@
 # Beleg-Editor
 
-Der Beleg-Editor zeigt einen Beleg neben all seinen Daten. Sie öffnen ihn mit ✏️ in der [Belegliste](documents.de), aus dem [Hauptbuch](general-ledger.de) oder aus der [Schnellbuchungsfunktion](quick-recorder.de).
+Der Beleg-Editor zeigt einen Beleg neben all seinen Daten. Du öffnest ihn mit ✏️ in der [Belegliste](documents.de), aus dem [Hauptbuch](general-ledger.de) oder aus der [Schnellbuchungsfunktion](quick-recorder.de).
 
 ![Der Beleg-Editor mit dem Reiter Hauptbuch](screenshots/de/document-ledger.jpg "Links die Vorschau der Datei, rechts der gewählte Reiter")
 
@@ -26,7 +26,7 @@ Die Werkzeugleiste unter der Vorschau bietet:
 
 * ✏️ 🖊️ 🖋️ 🖌️ 🖍️ **Zeichnen** und den **Radierer** 🗑️, um den Beleg zu kommentieren oder zu unterschreiben (bei unterstützten Dateitypen).
 * **−** / **+** zum Verkleinern und Vergrößern.
-* 📲 **Auf Tablet öffnen** zeigt den Beleg auf einem zweiten Bildschirm, z. B. einem Tablet zum Unterschreiben. Ein bereits als zweiter Bildschirm geöffnetes Tablet öffnet ihn sofort; andernfalls wird ein Code angezeigt, den Sie mit dem Tablet scannen – es wird ohne Passworteingabe angemeldet.
+* 📲 **Auf Tablet öffnen** zeigt den Beleg auf einem zweiten Bildschirm, z. B. einem Tablet zum Unterschreiben. Ein bereits als zweiter Bildschirm geöffnetes Tablet öffnet ihn sofort; andernfalls wird ein Code angezeigt, den du mit dem Tablet scannst – es wird ohne Passworteingabe angemeldet.
 * 📩 **Datei herunterladen**.
 
 ## Allgemein
@@ -38,14 +38,14 @@ Die Werkzeugleiste unter der Vorschau bietet:
 | **Gebucht?** | Angehakt: Die Buchungen zählen in den [Salden](balances.de). Nicht angehakt: Der Beleg ist ein Entwurf. Ein gebuchter Beleg muss ausgeglichen sein, siehe [Hauptbuch](#hauptbuch). |
 | **Belegdatum** | Datum des Belegs, z. B. das Rechnungsdatum. |
 | **Belegart** | Kürzel wie `AR` oder `ER`, siehe [Belegarten](documents.de#belegarten). |
-| **Interne Belegnummer** | Ihre fortlaufende Nummer innerhalb der Belegart. |
+| **Interne Belegnummer** | Deine fortlaufende Nummer innerhalb der Belegart. |
 | **Externe Rechnungsnummer** | Die Nummer auf dem Beleg, z. B. die Rechnungsnummer des Lieferanten. |
 | **Belegname** | Ein sprechender Name. |
 | **Datei** | Der Dateityp der angehängten Datei. **hochladen** fügt eine Datei hinzu, **ersetzen** ersetzt sie – die bisherige Datei bleibt als [Version](#versionen) erhalten. |
 | **Link** | Eine optionale Webadresse zum Beleg, z. B. in einem Webshop. **öffnen** öffnet sie. |
 | **Klassifizierung** | Vertraulichkeit: *offiziell*, *eingeschränkt* (Standard), *vertraulich*, *geheim* oder *streng geheim*. |
 | **Schlagwörter** | Freie Stichwörter zum Suchen und Filtern. |
-| **Geschäftspartner** | Kunde, Lieferant oder andere Person bzw. Organisation, zu der der Beleg gehört. Tippen Sie einen Namen, um zu suchen. |
+| **Geschäftspartner** | Kunde, Lieferant oder andere Person bzw. Organisation, zu der der Beleg gehört. Tippe einen Namen, um zu suchen. |
 
 ## Hauptbuch
 
@@ -57,11 +57,11 @@ Der Reiter Hauptbuch enthält die Hauptbuchbuchungen des Belegs. Jede Zeile ist 
 | **Konto** | Das [Sachkonto](accounts.de). Nummer oder Bezeichnung eintippen, um zu suchen. |
 | **Text** | Buchungstext, z. B. *Einkauf Büromaterial*. |
 | **Betrag** | **Positive Beträge stehen im Soll, negative im Haben.** |
-| **Steuercode** | [Steuercode](taxes.de) und Steuersatz. Haken Sie das Kästchen an, wenn diese Zeile die **Bemessungsgrundlage** ist (der Nettobetrag, von dem die Steuer berechnet wird); lassen Sie es bei der Zeile mit dem **Steuerbetrag** selbst leer. |
+| **Steuercode** | [Steuercode](taxes.de) und Steuersatz. Hake das Kästchen an, wenn diese Zeile die **Bemessungsgrundlage** ist (der Nettobetrag, von dem die Steuer berechnet wird); lass es bei der Zeile mit dem **Steuerbetrag** selbst leer. |
 | … | [Weitere Buchungseinstellungen](#weitere-buchungseinstellungen) der Zeile. |
 | 🗑️ | Entfernt die Zeile. |
 
-Mit **+** fügen Sie eine Zeile hinzu. Die neue Zeile übernimmt Datum und Text der vorherigen und schlägt den Betrag vor, der zum Ausgleich noch fehlt.
+Mit **+** fügst du eine Zeile hinzu. Die neue Zeile übernimmt Datum und Text der vorherigen und schlägt den Betrag vor, der zum Ausgleich noch fehlt.
 
 ### Ausgleich von Soll und Haben
 
@@ -86,7 +86,7 @@ Ein Klick auf … am Zeilenende öffnet weitere Einstellungen:
 
 | Einstellung | Bedeutung |
 | --- | --- |
-| **Verweise** (oben) | Zeigt, ob die Zeile *Zahlung*, *Skonto*, *Umbuchung*, *Storno* oder *Abgrenzung* einer anderen Buchung ist. Mit ✕ entfernen Sie einen solchen Verweis. Siehe [Offene Posten](general-ledger.de#offene-posten). |
+| **Verweise** (oben) | Zeigt, ob die Zeile *Zahlung*, *Skonto*, *Umbuchung*, *Storno* oder *Abgrenzung* einer anderen Buchung ist. Mit ✕ entfernst du einen solchen Verweis. Siehe [Offene Posten](general-ledger.de#offene-posten). |
 | **Fälligkeitsdatum** | Wann ein offener Posten fällig ist, z. B. das Zahlungsziel einer Rechnung. |
 | **Kostenstelle** | Eine von der Standard-Kostenstelle des Kontos abweichende Kostenstelle. |
 | **Geschäftspartner** | Ein abweichender Geschäftspartner dieser Zeile, z. B. auf einem Kontoauszug mit Zahlungen mehrerer Kunden. |
@@ -101,15 +101,15 @@ Ein Klick auf … am Zeilenende öffnet weitere Einstellungen:
 Alternative Bücher enthalten **zusätzliche** Buchungen für andere Bilanzen, z. B. wenn die Steuerbilanz eine andere Abschreibung als die Unternehmensbilanz verwendet oder ein Aufwand steuerlich nicht abzugsfähig ist.
 Im jeweiligen Buch werden diese Buchungen zu den Hauptbuchbuchungen des Belegs addiert.
 
-* Registrieren Sie zuerst die Namen der Bücher (z. B. `Steuer`) in den [Einstellungen des Unternehmens](people.de#unternehmen). Sonst können keine Zeilen hinzugefügt werden.
-* Wählen Sie für jede Zeile das **Buch**. Jedes Buch muss je Buchungsdatum für sich ausgeglichen sein.
+* Registriere zuerst die Namen der Bücher (z. B. `Steuer`) in den [Einstellungen des Unternehmens](people.de#unternehmen). Sonst können keine Zeilen hinzugefügt werden.
+* Wähle für jede Zeile das **Buch**. Jedes Buch muss je Buchungsdatum für sich ausgeglichen sein.
 * In alternativen Büchern können keine Steuercodes verwendet werden.
 
 ## Kosten
 
 ![Reiter Kosten](screenshots/de/document-costs.jpg)
 
-**Kostenstellen der Hauptbuchbuchungen:** Buchungen auf Ertrags- und Aufwandskonten werden auf die Standard-Kostenstelle ihres Kontos gebucht. Hier wählen Sie für einzelne Zeilen eine andere Kostenstelle.
+**Kostenstellen der Hauptbuchbuchungen:** Buchungen auf Ertrags- und Aufwandskonten werden auf die Standard-Kostenstelle ihres Kontos gebucht. Hier wählst du für einzelne Zeilen eine andere Kostenstelle.
 
 **Zusätzliche Kostenbuchungen** erfassen Kosten, Erlöse oder Mengen auf Kostenstellen ohne Auswirkung auf das Hauptbuch, z. B. 24 für einen Kunden geleistete Stunden, produzierte Stück oder Budgetwerte:
 
@@ -128,12 +128,12 @@ Im jeweiligen Buch werden diese Buchungen zu den Hauptbuchbuchungen des Belegs a
 
 Verknüpfungen verbinden Belege miteinander, z. B. eine Gutschrift mit der korrigierten Rechnung oder einen Lieferschein mit der Bestellung.
 
-1. Klicken Sie auf **Verknüpfung hinzufügen**.
-2. Suchen Sie den anderen Beleg nach Name, Art oder Referenz.
-3. Geben Sie die **Beziehung** ein, z. B. `Gutschrift zu`. Bereits verwendete Beziehungen werden vorgeschlagen.
-4. Wählen Sie optional ein **Symbol**, kehren Sie mit **Richtung umkehren** bei Bedarf die Richtung um und klicken Sie auf **verknüpfen**.
+1. Klicke auf **Verknüpfung hinzufügen**.
+2. Suche den anderen Beleg nach Name, Art oder Referenz.
+3. Gib die **Beziehung** ein, z. B. `Gutschrift zu`. Bereits verwendete Beziehungen werden vorgeschlagen.
+4. Wähle optional ein **Symbol**, kehre mit **Richtung umkehren** bei Bedarf die Richtung um und klicke auf **verknüpfen**.
 
-Verknüpfungen werden sofort gespeichert. Mit ✕ entfernen Sie eine Verknüpfung.
+Verknüpfungen werden sofort gespeichert. Mit ✕ entfernst du eine Verknüpfung.
 
 ## Versionen
 
@@ -146,19 +146,19 @@ Versionen können heruntergeladen oder gelöscht werden; dies wirkt sofort.
 
 ![Reiter Kommentare](screenshots/de/document-comments.jpg)
 
-Besprechen Sie einen Beleg direkt dort, wo er gespeichert ist, z. B. um eine Kollegin um die Freigabe einer Rechnung zu bitten.
+Besprich einen Beleg direkt dort, wo er gespeichert ist, z. B. um eine Kollegin um die Freigabe einer Rechnung zu bitten.
 
-* Schreiben Sie einen Kommentar und klicken Sie auf **Senden**.
-* Tippen Sie `@`, um jemanden zu erwähnen. Erwähnte Benutzer erhalten eine [Benachrichtigung](getting-started.de#benachrichtigungen) mit einem Link zum Beleg.
-* Mit ✕ löschen Sie einen Ihrer eigenen Kommentare.
+* Schreibe einen Kommentar und klicke auf **Senden**.
+* Tippe `@`, um jemanden zu erwähnen. Erwähnte Benutzer erhalten eine [Benachrichtigung](getting-started.de#benachrichtigungen) mit einem Link zum Beleg.
+* Mit ✕ löschst du einen deiner eigenen Kommentare.
 
 ## Einen Beleg buchen
 
-1. Prüfen Sie, dass alle Zeilen ein Buchungsdatum und ein Konto haben und keine Warnung ⚠️ **Differenz** angezeigt wird.
-2. Haken Sie im Reiter **Allgemein** das Feld **Gebucht?** an.
-3. Klicken Sie auf **💾 Speichern**.
+1. Prüfe, dass alle Zeilen ein Buchungsdatum und ein Konto haben und keine Warnung ⚠️ **Differenz** angezeigt wird.
+2. Hake im Reiter **Allgemein** das Feld **Gebucht?** an.
+3. Klicke auf **💾 Speichern**.
 
-Gebuchte Belege können weiterhin geändert werden, solange ihre Buchungsdaten nicht in einem [gesperrten Zeitraum](people.de#unternehmen) liegen. Um einen gebuchten Beleg in einem gesperrten Zeitraum zu korrigieren, [stornieren](general-ledger.de#stornieren) Sie die Buchung stattdessen in einem offenen Zeitraum.
+Gebuchte Belege können weiterhin geändert werden, solange ihre Buchungsdaten nicht in einem [gesperrten Zeitraum](people.de#unternehmen) liegen. Um einen gebuchten Beleg in einem gesperrten Zeitraum zu korrigieren, [storniere](general-ledger.de#stornieren) die Buchung stattdessen in einem offenen Zeitraum.
 
 ## Verwandte Themen
 

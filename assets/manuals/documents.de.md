@@ -1,6 +1,6 @@
 # Belege
 
-**Dokumente** listet alle Belege des [ausgewählten Unternehmens](getting-started.de#ein-unternehmen-auswahlen): Rechnungen, Quittungen, Kontoauszüge, Verträge, Schreiben – jede Datei, die Sie aufbewahren möchten.
+**Dokumente** listet alle Belege des [ausgewählten Unternehmens](getting-started.de#ein-unternehmen-auswahlen): Rechnungen, Quittungen, Kontoauszüge, Verträge, Schreiben – jede Datei, die du aufbewahren möchtest.
 Ein Beleg kann auch ohne Datei existieren, z. B. für eine manuelle Umbuchung.
 
 In YaBooks sind **Buchungen immer in einem Beleg gespeichert**. So lässt sich jede Buchung zu ihrer Quelle zurückverfolgen.
@@ -36,11 +36,11 @@ Beim Hinunterscrollen werden automatisch weitere Belege geladen.
 
 ## Belege hochladen
 
-* Klicken Sie auf die runde **+**-Schaltfläche (*Dokumente hochladen*) rechts unten und wählen Sie eine oder mehrere Dateien aus, oder
-* ziehen Sie Dateien von Ihrem Computer auf die **+**-Schaltfläche.
+* Klicke auf die runde **+**-Schaltfläche (*Dokumente hochladen*) rechts unten und wähle eine oder mehrere Dateien aus, oder
+* ziehe Dateien von deinem Computer auf die **+**-Schaltfläche.
 
 Jede Datei wird zu einem neuen Belegentwurf. PDFs und Bilder erhalten eine Vorschau.
-Öffnen Sie den Beleg danach, um Details und Buchungen zu ergänzen, oder erfassen Sie ihn mit der [Schnellbuchungsfunktion](quick-recorder.de), indem Sie die Datei auf deren Eingabefeld ziehen.
+Öffne den Beleg danach, um Details und Buchungen zu ergänzen, oder erfasse ihn mit der [Schnellbuchungsfunktion](quick-recorder.de), indem du die Datei auf deren Eingabefeld ziehst.
 
 > 💡 **Tipp:** Apps, z. B. für Scanner oder E-Mail-Import, können Belege automatisch hinzufügen.
 
@@ -48,9 +48,9 @@ Jede Datei wird zu einem neuen Belegentwurf. PDFs und Bilder erhalten eine Vorsc
 
 Die Filterleiste oben durchsucht alle Belege des Unternehmens.
 
-1. Wählen Sie ein **Feld**, z. B. *Belegart*, *Name*, *Volltext* (von Apps erkannter Text, z. B. per OCR), *Schlagwörter*, *Gebucht*, *Datum*, *Interne Referenz* oder *Externe Referenz*.
-2. Wählen Sie einen **Operator**: *gleich*, *ungleich*, *kleiner als*, *größer als*, … oder *enthält* (ohne Beachtung der Groß-/Kleinschreibung).
-3. Geben Sie den **Wert** ein und klicken Sie auf **suchen**.
+1. Wähle ein **Feld**, z. B. *Belegart*, *Name*, *Volltext* (von Apps erkannter Text, z. B. per OCR), *Schlagwörter*, *Gebucht*, *Datum*, *Interne Referenz* oder *Externe Referenz*.
+2. Wähle einen **Operator**: *gleich*, *ungleich*, *kleiner als*, *größer als*, … oder *enthält* (ohne Beachtung der Groß-/Kleinschreibung).
+3. Gib den **Wert** ein und klicke auf **suchen**.
 
 Mehrere Bedingungen kombinieren:
 
@@ -71,7 +71,7 @@ Der Filter ist Teil der Seitenadresse; Neuladen oder Zurückgehen im Browser beh
 
 ## Belegarten
 
-Die **Belegart** ist ein frei wählbares Kürzel. Verwenden Sie sie zusammen mit der internen Belegnummer einheitlich, um Ihre Belege zu nummerieren, zum Beispiel:
+Die **Belegart** ist ein frei wählbares Kürzel. Verwende sie zusammen mit der internen Belegnummer einheitlich, um deine Belege zu nummerieren, zum Beispiel:
 
 | Belegart | Verwendet für |
 | --- | --- |

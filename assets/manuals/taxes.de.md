@@ -11,7 +11,7 @@ Steuercodes gelten für alle Unternehmen und werden unter **Einstellungen → St
 
 | Feld | Bedeutung |
 | --- | --- |
-| **Code** | Eindeutige Kennung. Beginnen Sie mit dem zweistelligen Ländercode, z. B. `AT-V20`; die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bevorzugt Codes des Sitzlandes und im Hauptbuch wird die Länderflagge angezeigt. |
+| **Code** | Eindeutige Kennung. Beginne mit dem zweistelligen Ländercode, z. B. `AT-V20`; die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bevorzugt Codes des Sitzlandes und im Hauptbuch wird die Länderflagge angezeigt. |
 | **Beschreibung** | z. B. *Umsatzsteuer 20 %*. |
 | **Art** | Siehe unten. |
 | **Sätze (%)** | Die Steuersätze, mit denen der Code verwendet werden kann, durch Beistriche getrennt, z. B. `20, 10`. |
@@ -52,22 +52,22 @@ Es gibt zwei Wege, dies zu erfassen:
 * In der [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer): `2026-01-12=Büromaterial=5700,.2/3300=123,45` – Steuercode und Steuerzeile werden automatisch ergänzt.
 * Im [Beleg-Editor](document-editor.de#hauptbuch): Steuercode in jeder Zeile wählen und das Kästchen *Bemessungsgrundlage* setzen.
 
-Bei Reverse Charge erfassen Sie sowohl eine Umsatzsteuer- als auch eine Vorsteuerzeile mit demselben Code.
+Bei Reverse Charge erfasst du sowohl eine Umsatzsteuer- als auch eine Vorsteuerzeile mit demselben Code.
 
 ## Steuerkonten einrichten
 
-1. Legen Sie die benötigten Steuercodes an (oder installieren Sie eine App, die die Steuercodes Ihres Landes bereitstellt).
-2. Legen Sie ein Fremdkapitalkonto für die Umsatzsteuer an (z. B. *3500 Umsatzsteuer*) und taggen Sie es mit allen Umsatzsteuercodes, z. B. `AT-V20`, `AT-V10`.
-3. Legen Sie ein Vermögenskonto für die Vorsteuer an (z. B. *2500 Vorsteuer*) und taggen Sie es mit allen Vorsteuercodes, z. B. `AT-VS20`.
-4. Setzen Sie optional einen [bevorzugten Steuercode](accounts.de#bevorzugter-steuercode) bei Erlös- und Aufwandskonten.
+1. Lege die benötigten Steuercodes an (oder installiere eine App, die die Steuercodes deines Landes bereitstellt).
+2. Lege ein Fremdkapitalkonto für die Umsatzsteuer an (z. B. *3500 Umsatzsteuer*) und tagge es mit allen Umsatzsteuercodes, z. B. `AT-V20`, `AT-V10`.
+3. Lege ein Vermögenskonto für die Vorsteuer an (z. B. *2500 Vorsteuer*) und tagge es mit allen Vorsteuercodes, z. B. `AT-VS20`.
+4. Setze optional einen [bevorzugten Steuercode](accounts.de#bevorzugter-steuercode) bei Erlös- und Aufwandskonten.
 
 Wie Konten getaggt werden, steht unter [Tags](accounts.de#tags).
 
 ## Steuern prüfen
 
-* Filtern Sie im [Hauptbuch](general-ledger.de) die Steuerkonten und prüfen Sie, dass jede Zeile einen Steuercode trägt.
-* Stimmen Sie die Steuerkonten in den [Salden](balances.de#kontoabstimmung) mit Ihrer Umsatzsteuervoranmeldung ab.
-* Erfassen Sie bei innergemeinschaftlichen Lieferungen die UID-Nummer des Partners in den [weiteren Buchungseinstellungen](document-editor.de#weitere-buchungseinstellungen); sie wird für die Zusammenfassende Meldung benötigt.
+* Filtere im [Hauptbuch](general-ledger.de) die Steuerkonten und prüfe, dass jede Zeile einen Steuercode trägt.
+* Stimme die Steuerkonten in den [Salden](balances.de#kontoabstimmung) mit deiner Umsatzsteuervoranmeldung ab.
+* Erfasse bei innergemeinschaftlichen Lieferungen die UID-Nummer des Partners in den [weiteren Buchungseinstellungen](document-editor.de#weitere-buchungseinstellungen); sie wird für die Zusammenfassende Meldung benötigt.
 
 ## Verwandte Themen
 

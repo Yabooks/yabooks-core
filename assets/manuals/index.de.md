@@ -1,18 +1,18 @@
 # YaBooks Hilfe
 
 Willkommen in der YaBooks-Hilfe. YaBooks ist ein ERP-System, das Geschäftspartner, Belege und Bücher an einem Ort zusammenführt und sich durch Apps erweitern lässt.
-Diese Seiten erklären alle Kernfunktionen im Detail und zeigen Schritt für Schritt, wie Sie diese für typische Aufgaben einsetzen.
+Diese Seiten erklären alle Kernfunktionen im Detail und zeigen Schritt für Schritt, wie du sie für typische Aufgaben einsetzt.
 
 ![Der Startbildschirm von YaBooks mit der Hauptmenüleiste](screenshots/de/home.jpg "Der Startbildschirm: Jede Funktion ist nur einen Klick entfernt")
 
-> 💡 **Tipp:** Sie können diese Hilfe jederzeit über **Hilfe** in der Hauptmenüleiste öffnen. Über die Sprachauswahl rechts oben auf jeder Hilfeseite wechseln Sie die Sprache.
+> 💡 **Tipp:** Du kannst diese Hilfe jederzeit über **Hilfe** in der Hauptmenüleiste öffnen. Über die Sprachauswahl rechts oben auf jeder Hilfeseite wechselst du die Sprache.
 
 ## Erste Schritte
 
 | Thema | Inhalt |
 | --- | --- |
-| [Erste Schritte](getting-started.de) | Anmelden, Hauptmenüleiste, Startbildschirm, Auswahl des Unternehmens, Benachrichtigungen und Ihr Profil |
-| [Personen, Organisationen und Unternehmen](people.de) | Geschäftspartner verwalten und die Unternehmen einrichten, für die Sie Bücher führen |
+| [Erste Schritte](getting-started.de) | Anmelden, Hauptmenüleiste, Startbildschirm, Auswahl des Unternehmens, Benachrichtigungen und dein Profil |
+| [Personen, Organisationen und Unternehmen](people.de) | Geschäftspartner verwalten und die Unternehmen einrichten, für die du Bücher führst |
 
 ## Funktionen
 
@@ -27,25 +27,25 @@ Diese Seiten erklären alle Kernfunktionen im Detail und zeigen Schritt für Sch
 | [Steuern](taxes.de) | Steuercodes und wie Steuern erfasst werden |
 | [Einstellungen](settings.de) | Systemeinstellungen, Protokolle, Aufträge, Benutzer, Rollen und Berechtigungen |
 | [Apps](apps.de) | YaBooks mit Apps aus dem Marktplatz, Paketen oder externen Diensten erweitern |
-| [YaCob AI](yacob.de) | Dem KI-Assistenten Fragen zu Ihren Daten stellen und ihn für sich arbeiten lassen |
+| [YaCob AI](yacob.de) | Dem KI-Assistenten Fragen zu deinen Daten stellen und ihn für dich arbeiten lassen |
 
 ## Arbeitsabläufe
 
 Die Seiten zu Arbeitsabläufen kombinieren die obigen Funktionen zu Schritt-für-Schritt-Anleitungen für wiederkehrende Aufgaben:
 
-| Arbeitsablauf | Wann Sie ihn brauchen |
+| Arbeitsablauf | Wann du ihn brauchst |
 | --- | --- |
-| [Ein neues Unternehmen einrichten](workflow-setup.de) | Sie beginnen, die Bücher eines neuen Unternehmens zu führen |
-| [Laufende Buchhaltung und Monatsabschluss](workflow-monthly.de) | Sie erfassen Ausgangs- und Eingangsrechnungen sowie Zahlungen und schließen einen Monat ab |
-| [Jahresabschluss vor der Veröffentlichung prüfen](workflow-financial-statements.de) | Sie bereiten den Jahresabschluss vor, prüfen ihn und sperren das Geschäftsjahr |
+| [Ein neues Unternehmen einrichten](workflow-setup.de) | Du beginnst, die Bücher eines neuen Unternehmens zu führen |
+| [Laufende Buchhaltung und Monatsabschluss](workflow-monthly.de) | Du erfasst Ausgangs- und Eingangsrechnungen sowie Zahlungen und schließt einen Monat ab |
+| [Jahresabschluss vor der Veröffentlichung prüfen](workflow-financial-statements.de) | Du bereitest den Jahresabschluss vor, prüfst ihn und sperrst das Geschäftsjahr |
 
 ## Begriffe in dieser Hilfe
 
 | Begriff | Bedeutung |
 | --- | --- |
 | **Identität** | Eine Person (natürliche Person) oder Organisation unter *Personen*. |
-| **Unternehmen** | Eine Einheit, für die Sie Bücher führen. Jedes Unternehmen gehört einer Organisation oder Person. Alle Konten und Belege gehören zu genau einem Unternehmen. |
-| **Ausgewähltes Unternehmen** | Das Unternehmen, an dem Sie gerade arbeiten. Es wird als Logo rechts oben angezeigt. |
+| **Unternehmen** | Eine Einheit, für die du Bücher führst. Jedes Unternehmen gehört einer Organisation oder Person. Alle Konten und Belege gehören zu genau einem Unternehmen. |
+| **Ausgewähltes Unternehmen** | Das Unternehmen, an dem du gerade arbeitest. Es wird als Logo rechts oben angezeigt. |
 | **Beleg** | Jede Datei bzw. jeder Datensatz, z. B. Rechnung, Quittung, Kontoauszug oder Vertrag. Buchungen sind immer in einem Beleg gespeichert. |
 | **Buchung** | Eine Buchungszeile: Buchungsdatum, Konto und Betrag. Positive Beträge stehen im Soll, negative im Haben. |
 | **Gebucht** | Ein Beleg, dessen Buchungen in den Salden berücksichtigt werden. Entwürfe (ungebuchte Belege) zählen nicht. |

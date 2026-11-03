@@ -5,13 +5,13 @@ Während der Eingabe erkennt das System automatisch die einzelnen Bestandteile d
 ![Die Schnellbuchungsfunktion mit einem vollständigen Erfassungscode](screenshots/de/quick-recorder.jpg "Die erkannten Bestandteile werden unter dem Eingabefeld angezeigt")
 
 ## Schnellbuchungsfunktion öffnen
-Klicken Sie auf die runde **+**-Schaltfläche (*Quick Recorder*) rechts unten im [Hauptbuch](general-ledger.de) oder in den [Salden](balances.de).
+Klicke auf die runde **+**-Schaltfläche (*Quick Recorder*) rechts unten im [Hauptbuch](general-ledger.de) oder in den [Salden](balances.de).
 Gebucht wird immer für das [ausgewählte Unternehmen](getting-started.de#ein-unternehmen-auswahlen).
 
-1. Tippen Sie den Erfassungscode ein. Während der Eingabe werden die erkannten Bestandteile unter dem Eingabefeld aufgelistet.
+1. Tippe den Erfassungscode ein. Während der Eingabe werden die erkannten Bestandteile unter dem Eingabefeld aufgelistet.
    Das Feld wird **grün**, sobald die Eingabe vollständig ist, und **gelb**, solange Bestandteile fehlen oder ein Konto bzw. Steuercode nicht gefunden wird.
-2. Ziehen Sie optional eine Datei (z. B. das PDF der Rechnung) auf das Eingabefeld. Sie wird dem neuen Beleg angehängt.
-3. Drücken Sie <kbd>Enter</kbd>. Es wird ein gebuchter Beleg mit den Buchungszeilen angelegt.
+2. Ziehe optional eine Datei (z. B. das PDF der Rechnung) auf das Eingabefeld. Sie wird dem neuen Beleg angehängt.
+3. Drücke <kbd>Enter</kbd>. Es wird ein gebuchter Beleg mit den Buchungszeilen angelegt.
 
 Die zuletzt erfassten Belege werden unter *Kürzlich erfasste Belege* angezeigt. Ein Klick öffnet den Beleg im [Beleg-Editor](document-editor.de), z. B. um Geschäftspartner oder Fälligkeitsdatum zu ergänzen.
 

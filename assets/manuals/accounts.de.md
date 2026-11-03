@@ -1,7 +1,7 @@
 # Sachkonten und Kostenstellen
 
 **Konten** enthält den Kontenplan und die Kostenstellen des [ausgewählten Unternehmens](getting-started.de#ein-unternehmen-auswahlen).
-Mit den beiden Schaltflächen oben wechseln Sie zwischen **Sachkonten** und **Kostenstellen**.
+Mit den beiden Schaltflächen oben wechselst du zwischen **Sachkonten** und **Kostenstellen**.
 
 ## Sachkonten
 
@@ -22,9 +22,9 @@ Der Gewinn oder Verlust des Zeitraums (Erträge minus Aufwendungen) wird automat
 
 ### Konto anlegen und bearbeiten
 
-1. Klicken Sie auf die runde **+**-Schaltfläche rechts unten oder auf ✏️ neben einem bestehenden Konto.
-2. Füllen Sie die unten beschriebenen Felder aus.
-3. Klicken Sie auf 💾 zum Speichern, ❌ zum Verwerfen der Änderungen oder 🗑️ zum Löschen des Kontos.
+1. Klicke auf die runde **+**-Schaltfläche rechts unten oder auf ✏️ neben einem bestehenden Konto.
+2. Fülle die unten beschriebenen Felder aus.
+3. Klicke auf 💾 zum Speichern, ❌ zum Verwerfen der Änderungen oder 🗑️ zum Löschen des Kontos.
 
 ![Ein Sachkonto bearbeiten](screenshots/de/accounts-edit.jpg)
 
@@ -36,9 +36,9 @@ Der Gewinn oder Verlust des Zeitraums (Erträge minus Aufwendungen) wird automat
 | **Tags** | Schlüsselwörter mit besonderer Bedeutung, siehe [Tags](#tags). Tag eintippen und <kbd>Enter</kbd> drücken. |
 | **offene Posten verwalten** | Verfolgt, welche Buchungen dieses Kontos noch offen sind, z. B. unbezahlte Rechnungen auf Forderungs- und Verbindlichkeitenkonten. Siehe [Offene Posten](general-ledger.de#offene-posten). |
 | **Standard-Kostenstelle** | Nur bei Ertrags- und Aufwandskonten: die [Kostenstelle](#kostenstellen), der Buchungen dieses Kontos zugeordnet werden, sofern im Beleg keine andere gewählt wird. |
-| **gültig ab / gültig bis** | Der Zeitraum, in dem das Konto verwendet werden darf. Lassen Sie *gültig bis* bei aktiven Konten leer. |
+| **gültig ab / gültig bis** | Der Zeitraum, in dem das Konto verwendet werden darf. Lass *gültig bis* bei aktiven Konten leer. |
 
-> ⚠️ **Achtung:** Ein Konto, auf das bereits gebucht wurde, kann nicht gelöscht werden. Setzen Sie stattdessen ein *gültig bis*-Datum, damit es für neue Buchungen nicht mehr angeboten wird.
+> ⚠️ **Achtung:** Ein Konto, auf das bereits gebucht wurde, kann nicht gelöscht werden. Setze stattdessen ein *gültig bis*-Datum, damit es für neue Buchungen nicht mehr angeboten wird.
 
 ### Tags
 
@@ -46,14 +46,14 @@ Tags teilen YaBooks mit, wofür ein Konto verwendet wird:
 
 | Tag | Wirkung |
 | --- | --- |
-| Ein **Steuercode**, z. B. `AT-V20` | Das Konto erhält die Steuerbeträge dieses Steuercodes. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bucht die Steuer auf das Konto mit dem passenden Steuercode-Tag. Taggen Sie Ihr Umsatzsteuerkonto mit allen Umsatzsteuercodes und Ihr Vorsteuerkonto mit allen Vorsteuercodes. Siehe [Steuern](taxes.de). |
+| Ein **Steuercode**, z. B. `AT-V20` | Das Konto erhält die Steuerbeträge dieses Steuercodes. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bucht die Steuer auf das Konto mit dem passenden Steuercode-Tag. Tagge dein Umsatzsteuerkonto mit allen Umsatzsteuercodes und dein Vorsteuerkonto mit allen Vorsteuercodes. Siehe [Steuern](taxes.de). |
 | `accruals` | Das Konto kann beim [Abgrenzen einer Buchung](general-ledger.de#abgrenzen) über mehrere Monate als Abgrenzungskonto verwendet werden, z. B. *aktive Rechnungsabgrenzung* oder *passive Rechnungsabgrenzung*. |
 
 Apps können weitere Tags definieren.
 
 ### Bevorzugter Steuercode
 
-Konten können einen bevorzugten Steuercode haben, z. B. `AT-V20` bei einem Erlöskonto. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) wählt dann zuerst diesen Steuercode, wenn Sie für das Konto einen Steuersatz angeben. Der bevorzugte Steuercode wird üblicherweise von Apps gesetzt, die einen Kontenplan importieren, oder über die API.
+Konten können einen bevorzugten Steuercode haben, z. B. `AT-V20` bei einem Erlöskonto. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) wählt dann zuerst diesen Steuercode, wenn du für das Konto einen Steuersatz angibst. Der bevorzugte Steuercode wird üblicherweise von Apps gesetzt, die einen Kontenplan importieren, oder über die API.
 
 ## Kostenstellen
 
@@ -61,10 +61,10 @@ Konten können einen bevorzugten Steuercode haben, z. B. `AT-V20` bei einem Erl�
 
 Kostenstellen sammeln Kosten und Erlöse unabhängig vom Hauptbuch, z. B. je Abteilung, Projekt oder Produktlinie. Sie können auch Mengen wie geleistete Stunden oder produzierte Stück erfassen.
 
-1. Wechseln Sie zu **Kostenstellen** und klicken Sie auf **+**.
-2. Geben Sie **Kostenstellennummer** und **Kostenstellenbezeichnung** ein.
-3. Geben Sie optional die **Mengeneinheit** ein, z. B. `h` für Stunden, `pcs` für Stück oder `kg` für Kilogramm.
-4. Klicken Sie auf 💾.
+1. Wechsle zu **Kostenstellen** und klicke auf **+**.
+2. Gib **Kostenstellennummer** und **Kostenstellenbezeichnung** ein.
+3. Gib optional die **Mengeneinheit** ein, z. B. `h` für Stunden, `pcs` für Stück oder `kg` für Kilogramm.
+4. Klicke auf 💾.
 
 Kostenbuchungen entstehen auf zwei Wegen:
 
@@ -75,10 +75,10 @@ Eine Kostenstelle, die noch von einem Sachkonto oder Beleg verwendet wird, kann 
 
 ## Empfehlungen
 
-* Richten Sie den gesamten Kontenplan ein, **bevor** Sie die ersten Belege erfassen, siehe [Ein neues Unternehmen einrichten](workflow-setup.de).
-* Aktivieren Sie **offene Posten verwalten** für Forderungen, Verbindlichkeiten und Verrechnungskonten, damit Sie jederzeit sehen, welche Rechnungen unbezahlt sind.
-* Verwenden Sie gut sortierbare Kontonummern, z. B. den Einheitskontenrahmen Ihres Landes.
-* Verwenden Sie ein altes Konto nie für einen anderen Zweck; legen Sie ein neues an und begrenzen Sie das alte mit *gültig bis*.
+* Richte den gesamten Kontenplan ein, **bevor** du die ersten Belege erfasst, siehe [Ein neues Unternehmen einrichten](workflow-setup.de).
+* Aktiviere **offene Posten verwalten** für Forderungen, Verbindlichkeiten und Verrechnungskonten, damit du jederzeit siehst, welche Rechnungen unbezahlt sind.
+* Verwende gut sortierbare Kontonummern, z. B. den Einheitskontenrahmen deines Landes.
+* Verwende ein altes Konto nie für einen anderen Zweck; lege ein neues an und begrenze das alte mit *gültig bis*.
 
 ## Verwandte Themen
 

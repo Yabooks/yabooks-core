@@ -1,7 +1,7 @@
 # Hauptbuch
 
 Das Hauptbuch listet Buchungen des [ausgewählten Unternehmens](getting-started.de#ein-unternehmen-auswahlen), z. B. alle Buchungen eines Kontos oder eines Belegs.
-Sie öffnen es mit 📋 neben einem Konto in den [Salden](balances.de) oder mit 📑 neben einem Beleg in der [Belegliste](documents.de).
+Du öffnest es mit 📋 neben einem Konto in den [Salden](balances.de) oder mit 📑 neben einem Beleg in der [Belegliste](documents.de).
 
 ![Das Hauptbuch](screenshots/de/general-ledger.jpg)
 
@@ -12,7 +12,7 @@ Sie öffnen es mit 📋 neben einem Konto in den [Salden](balances.de) oder mit 
 | **Datum** | Buchungsdatum. |
 | **Beleg** | Art und Nummer bzw. externe Referenz des Belegs. Ein Klick zeigt alle Buchungen dieses Belegs; ✏️ öffnet ihn im [Beleg-Editor](document-editor.de). |
 | **Konto** | Kontonummer. Ein Klick zeigt alle Buchungen dieses Kontos. Bei Konten mit [Offene-Posten-Verwaltung](accounts.de) wird auch der Geschäftspartner angezeigt; ein Klick darauf zeigt nur dessen Buchungen auf diesem Konto. |
-| **Gegenkonto** | Das Konto auf der anderen Seite der Buchung. `+1` bedeutet weitere Gegenkonten; fahren Sie mit der Maus über die Spalte, um alle zu sehen. |
+| **Gegenkonto** | Das Konto auf der anderen Seite der Buchung. `+1` bedeutet weitere Gegenkonten; fahre mit der Maus über die Spalte, um alle zu sehen. |
 | **Text** | Buchungstext und [Etiketten](#etiketten). |
 | **Soll / Haben** | Der Betrag. |
 | **Steuer** | Steuercode und Steuersatz: ➡️ Umsatzsteuer, ⬅️ Vorsteuer, 🔄 Erwerbsteuer (Schuld und Vorsteuer), 💰 Steuerzahlung. 💸 kennzeichnet die Zeile mit dem Steuerbetrag selbst, die anderen sind Bemessungsgrundlage. |
@@ -48,7 +48,7 @@ Verweise entstehen
 
 Sie werden in den [weiteren Buchungseinstellungen](document-editor.de#weitere-buchungseinstellungen) des Beleg-Editors angezeigt und können dort entfernt werden.
 
-> 💡 **Tipp:** Um alle unbezahlten Rechnungen einer Kundin zu sehen, klicken Sie auf den Namen des Geschäftspartners neben dem Forderungskonto und achten Sie auf **offen**-Etiketten.
+> 💡 **Tipp:** Um alle unbezahlten Rechnungen einer Kundin zu sehen, klicke auf den Namen des Geschäftspartners neben dem Forderungskonto und achte auf **offen**-Etiketten.
 
 ## Aktionen
 
@@ -62,13 +62,13 @@ Alle Aktionen fügen dem **selben Beleg** neue Buchungen hinzu und buchen sie so
 
 **Stornieren** macht eine Buchung rückgängig, ohne sie zu löschen:
 
-1. Wählen Sie **Stornieren**.
-2. Geben Sie das **Buchungsdatum der Stornobuchung** ein. Vorgeschlagen wird das ursprüngliche Buchungsdatum bzw. der erste Tag nach dem gesperrten Zeitraum, falls das ursprüngliche Datum gesperrt ist.
-3. Klicken Sie auf **Buchen**.
+1. Wähle **Stornieren**.
+2. Gib das **Buchungsdatum der Stornobuchung** ein. Vorgeschlagen wird das ursprüngliche Buchungsdatum bzw. der erste Tag nach dem gesperrten Zeitraum, falls das ursprüngliche Datum gesperrt ist.
+3. Klicke auf **Buchen**.
 
 Alle Buchungszeilen des Belegs mit demselben Buchungsdatum (und Buch) werden storniert, sodass Soll und Haben ausgeglichen bleiben. Die ursprünglichen und die Stornobuchungen werden als **storniert** bzw. **Storno** markiert.
 
-Stornieren Sie, statt einen Beleg zu ändern oder zu löschen, wenn die ursprüngliche Buchung bereits gemeldet wurde (z. B. in einer Umsatzsteuervoranmeldung) oder in einem gesperrten Zeitraum liegt.
+Storniere, statt einen Beleg zu ändern oder zu löschen, wenn die ursprüngliche Buchung bereits gemeldet wurde (z. B. in einer Umsatzsteuervoranmeldung) oder in einem gesperrten Zeitraum liegt.
 
 ### Abgrenzen
 
@@ -76,10 +76,10 @@ Stornieren Sie, statt einen Beleg zu ändern oder zu löschen, wenn die ursprün
 
 ![Eine Buchung abgrenzen](screenshots/de/general-ledger-accrue.jpg)
 
-1. Wählen Sie **Abgrenzen**.
-2. Wählen Sie das **Abgrenzungskonto**. Angeboten werden nur Konten mit dem [Tag](accounts.de#tags) `accruals`, z. B. *Aktive Rechnungsabgrenzung*.
-3. Wählen Sie den ersten (**Von**) und letzten (**Bis**) Monat. Der Zeitraum muss mindestens zwei Monate umfassen.
-4. Klicken Sie auf **Buchen**.
+1. Wähle **Abgrenzen**.
+2. Wähle das **Abgrenzungskonto**. Angeboten werden nur Konten mit dem [Tag](accounts.de#tags) `accruals`, z. B. *Aktive Rechnungsabgrenzung*.
+3. Wähle den ersten (**Von**) und letzten (**Bis**) Monat. Der Zeitraum muss mindestens zwei Monate umfassen.
+4. Klicke auf **Buchen**.
 
 YaBooks bucht den gesamten Betrag am ursprünglichen Buchungsdatum auf das Abgrenzungskonto und anschließend für jeden Monat des Zeitraums einen Anteil zurück, jeweils zum Monatsletzten.
 Beispiel: 1.200,00 Lizenzgebühr von Februar bis Jänner → zwölf monatliche Aufwände von 100,00.
@@ -88,9 +88,9 @@ Beispiel: 1.200,00 Lizenzgebühr von Februar bis Jänner → zwölf monatliche A
 
 **Umbuchen** überträgt den Betrag einer Buchung auf ein anderes Konto, z. B. eine Kundenzahlung, die auf das falsche Forderungskonto gebucht wurde, oder eine Anzahlung, die umgegliedert wird.
 
-1. Wählen Sie **Umbuchen**.
-2. Wählen Sie das **Zielkonto** und das **Buchungsdatum der Umbuchung**.
-3. Klicken Sie auf **Buchen**.
+1. Wähle **Umbuchen**.
+2. Wähle das **Zielkonto** und das **Buchungsdatum der Umbuchung**.
+3. Klicke auf **Buchen**.
 
 Die ursprüngliche Buchung wird als **umgebucht** markiert. Auf dem Zielkonto entsteht ein neuer offener Posten mit demselben Geschäftspartner, derselben UID-Nummer und demselben Fälligkeitsdatum.
 
