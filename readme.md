@@ -152,6 +152,12 @@ YaBooks Core can also run with certain limitations as an Electron desktop app in
 npm run desktop
 ```
 
+## Help pages
+
+The user manual is written in Markdown in `assets/manuals/<page>.<language>.md`, with its screenshots in
+`assets/manuals/screenshots/<language>/`. It is shown at `/manuals/<page>.<language>` (e.g. `/manuals/index.en`) and
+reachable through **Help** in the main menu bar.
+
 ## License
 
 Licensed under the [EUPL-1.2](LICENSE).

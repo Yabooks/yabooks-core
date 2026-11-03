@@ -17,6 +17,9 @@
                 <a :href="(loggedIn ? '/home/' : '/login/')" style="font-weight: bold">
                     {{ $filters.translate("start.home") }}
                 </a>
+                <a :href="$filters.translate('start.help.link')">
+                    {{ $filters.translate("start.help") }}
+                </a>
                 <a @click="logout" v-if="loggedIn && !isInSingleUserMode">
                     {{ $filters.translate("start.logout") }}
                 </a>
