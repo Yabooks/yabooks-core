@@ -11,10 +11,10 @@ Tax codes are shared by all businesses and managed under **Settings → Tax code
 
 | Field | Meaning |
 | --- | --- |
-| **Code** | Unique identifier. Start it with the two-letter country code, e.g. `AT-V20`; the [quick recorder](quick-recorder.en#specification-of-vat) prefers codes of the business's home country and the country's flag is shown in the ledger. |
-| **Description** | e.g. *Austrian VAT 20 %*. |
+| **Code** | Unique identifier, starting with the lowercase two-letter country code, e.g. `at.vat.input`. The [quick recorder](quick-recorder.en#specification-of-vat) prefers codes of the business's home country, and the country's flag is shown in the ledger. |
+| **Description** | e.g. *Austrian input VAT*. |
 | **Type** | See below. |
-| **Rates (%)** | The rates this code can be used with, separated by commas, e.g. `20, 10`. |
+| **Rates (%)** | The rates this code can be used with, separated by commas, e.g. `20, 13, 10`. |
 | **Tax base** | Whether the rate applies to the **net** amount (usual for VAT) or the **gross** amount. |
 | **Currency** | Currency of the tax authority. |
 | **Keywords** | Additional search words. |
@@ -32,6 +32,25 @@ A deleted tax code remains on existing documents but can no longer be selected.
 | **Purchase tax payable and receivable** | Taxes the buyer owes and reclaims at the same time, e.g. reverse charge or intra-community acquisitions. | 🔄 |
 | **Tax payment** | Payments to or refunds from the tax office. | 💰 |
 
+## Country Prefixes
+
+> 💡 **Recommendation:** Always record tax codes and tax numbers with a country prefix, e.g. `au.abn` for the Australian Business Number. Many apps require specific codes, e.g. `at.tin` for the Austrian tax number or `at.vat.input` as the tax code for Austrian input VAT.
+
+Write the prefix as the lowercase two-letter country code followed by a dot. Use the codes your apps expect; when you set up tax codes yourself, follow the same pattern:
+
+| Code | Used for |
+| --- | --- |
+| `at.vat.output` | Tax code: Austrian VAT (output tax) |
+| `at.vat.input` | Tax code: Austrian input VAT |
+| `at.tin` | Tax number: Austrian tax number |
+| `au.abn` | Tax number: Australian Business Number |
+
+The prefix has practical effects:
+
+* The [quick recorder](quick-recorder.en#specification-of-vat) prefers tax codes of the business's home country, but only if they start with its **lowercase** country code (`at.…`, not `AT-…`).
+* The ledger and the tax registrations of [people and organizations](people.en#details-of-an-identity) show the country flag derived from the first two letters.
+* Codes from different countries never collide, e.g. `at.vat.input` and `de.vat.input`.
+
 ## Recording Taxes
 
 A taxable booking consists of at least two lines with the same tax code and rate:
@@ -43,8 +62,8 @@ Example: incoming invoice of 123.45 including 20 % VAT
 
 | Account | Amount | Tax code | Tax base |
 | --- | ---: | --- | --- |
-| 5700 Office supplies | 102.88 | AT-VS20 20 % | ☑ |
-| 2500 Input VAT | 20.57 | AT-VS20 20 % | ☐ |
+| 5700 Office supplies | 102.88 | at.vat.input 20 % | ☑ |
+| 2500 Input VAT | 20.57 | at.vat.input 20 % | ☐ |
 | 3300 Trade payables | −123.45 | | |
 
 There are two ways to record this:
@@ -57,8 +76,8 @@ For reverse charge, add both an output and an input tax line with the same code.
 ## Setting Up Tax Accounts
 
 1. Create the tax codes you need (or install an app that provides the tax codes of your country).
-2. Create a liability account for output tax (e.g. *3500 VAT payable*) and tag it with all output tax codes, e.g. `AT-V20`, `AT-V10`.
-3. Create an asset account for input tax (e.g. *2500 Input VAT*) and tag it with all input tax codes, e.g. `AT-VS20`.
+2. Create a liability account for output tax (e.g. *3500 VAT payable*) and tag it with all output tax codes, e.g. `at.vat.output`.
+3. Create an asset account for input tax (e.g. *2500 Input VAT*) and tag it with all input tax codes, e.g. `at.vat.input`.
 4. Optionally set a [preferred tax code](accounts.en#preferred-tax-code) on revenue and expense accounts.
 
 See [Tags](accounts.en#tags) for how to tag accounts.

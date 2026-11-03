@@ -51,7 +51,7 @@ The booking amount is then understood to be a gross amount.
 The applicable [tax code](taxes.en) is determined automatically as follows:
 1.  If a [preferred tax code](accounts.en#preferred-tax-code) is stored on the general ledger account that is compatible with the specified percentage, this code is used.
 2.  Otherwise, the existing tax codes are searched for a suitable match (input tax codes for expense accounts, output tax codes for revenue accounts).
-3.  If multiple codes meet the above criteria, the selection is limited to those that begin with the country code of the company’s registered office.
+3.  If multiple codes meet the above criteria, the selection is limited to those that begin with the lowercase country code of the company’s registered office, e.g. `at.` (see [Country prefixes](taxes.en#country-prefixes)).
 4.  If this still applies to multiple tax codes, the one with the shortest code identifier is used.
 
 The tax is posted to the respective output tax or input tax account. This account must be [tagged](accounts.en#tags) with the tax codes for which it is intended to be used.

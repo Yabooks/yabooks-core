@@ -73,8 +73,8 @@ Example of an outgoing invoice of 3,000.00 plus 20 % VAT:
 | Account | Amount | Tax code | Tax base |
 | --- | ---: | --- | --- |
 | 2000 Trade receivables | 3,600.00 | | |
-| 4000 Consulting revenues | −3,000.00 | AT-V20 20 % | ☑ |
-| 3500 VAT payable | −600.00 | AT-V20 20 % | ☐ |
+| 4000 Consulting revenues | −3,000.00 | at.vat.output 20 % | ☑ |
+| 3500 VAT payable | −600.00 | at.vat.output 20 % | ☐ |
 
 > 💡 **Tip:** For simple bookings the [quick recorder](quick-recorder.en) creates such documents including the tax line from one line of text.
 

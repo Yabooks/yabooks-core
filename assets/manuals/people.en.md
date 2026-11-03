@@ -33,9 +33,11 @@ The boxes below the header hold further details. Each box has a **+** button to 
 | **Doing business as** | Trade names the identity uses in addition to its legal name. |
 | **Main contact** | E-mail address, phone number (international format, e.g. `+436641234567`) and address. An address must be complete (street, number, ZIP code and city) or left empty entirely. Several addresses can be stored. |
 | **Bank connections** | IBAN, BIC, bank name and account holder. Used e.g. by banking apps to match payments. |
-| **Tax & business registrations** | Tax numbers and registrations as key–value pairs, e.g. key `AT-UID` and value `ATU12345678`. The first two letters of the key show the country flag. |
+| **Tax & business registrations** | Tax numbers and registrations as key–value pairs, e.g. key `at.tin` and value `12 345/6789` for the Austrian tax number. The first two letters of the key show the country flag; see the recommendation below. |
 | **Businesses** | The businesses owned by this identity (see below). |
 | **Relationships and links** | Connections to other identities, see [Relationships](#relationships). |
+
+> 💡 **Recommendation:** Always record tax codes and tax numbers with a country prefix, e.g. `au.abn` for the Australian Business Number. Many apps require specific codes, e.g. `at.tin` for the Austrian tax number or `at.vat.input` as the tax code for Austrian input VAT. See [Country prefixes](taxes.en#country-prefixes).
 
 ## Relationships
 

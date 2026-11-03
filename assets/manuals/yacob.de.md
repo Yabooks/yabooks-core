@@ -14,8 +14,8 @@ YaCob ist ein KI-Assistent mit Zugriff auf deine YaBooks-Daten. Stelle Fragen in
 
 Beispiele:
 
-* *Welche Rechnungen von Blue Lake Hotel sind noch unbezahlt?*
-* *Wie hoch war der Büromaterialaufwand der Sample Company im ersten Quartal?*
+* *Welche Rechnungen von Hotel Blauer See sind noch unbezahlt?*
+* *Wie hoch war der Büromaterialaufwand der Musterfirma im ersten Quartal?*
 * *Liste alle Entwürfe mit Buchungen im März auf.*
 * *Vergleiche die Erlöse von Jänner und Februar und erkläre den Unterschied.*
 

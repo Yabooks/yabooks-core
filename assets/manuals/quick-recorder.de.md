@@ -51,7 +51,7 @@ Der Buchungsbetrag wird sodann als Bruttobetrag verstanden.
 Der anzuwendende [Steuercode](taxes.de) wird automatisch wie folgt ermittelt:
 1.  Ist am Sachkonto ein [bevorzugter Steuercode](accounts.de#bevorzugter-steuercode) hinterlegt, der mit dem angegebenen Prozentsatz kompatibel ist, so wird dieser verwendet.
 2.  Anderenfalls werden die existierenden Steuercodes nach einem passenden durchsucht (Vorsteuercodes bei Aufwandskonten, Umsatzsteuercodes bei Erfolgskonten).
-3.  Gibt es mehrere Codes, auf die die obigen Kriterien zutreffen, wird auf jene eingeschränkt, die mit dem Ländercode des Sitzes des Unternehmens beginnen.
+3.  Gibt es mehrere Codes, auf die die obigen Kriterien zutreffen, wird auf jene eingeschränkt, die mit dem kleingeschriebenen Ländercode des Sitzes des Unternehmens beginnen, z. B. `at.` (siehe [Länderpräfixe](taxes.de#landerprafixe)).
 4.  Trifft auch dies auf mehrere Steuercodes zu, so wird jener verwendet, der das kürzeste Kürzel führt.
 
 Die Steuer wird auf das jeweilige Umsatz- oder Vorsteuerkonto gebucht. Dieses ist mit jenen Steuercodes zu [taggen](accounts.de#tags), für die es verwendet werden soll.

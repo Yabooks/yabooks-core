@@ -46,14 +46,14 @@ Tags teilen YaBooks mit, wofür ein Konto verwendet wird:
 
 | Tag | Wirkung |
 | --- | --- |
-| Ein **Steuercode**, z. B. `AT-V20` | Das Konto erhält die Steuerbeträge dieses Steuercodes. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bucht die Steuer auf das Konto mit dem passenden Steuercode-Tag. Tagge dein Umsatzsteuerkonto mit allen Umsatzsteuercodes und dein Vorsteuerkonto mit allen Vorsteuercodes. Siehe [Steuern](taxes.de). |
+| Ein **Steuercode**, z. B. `at.vat.output` | Das Konto erhält die Steuerbeträge dieses Steuercodes. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bucht die Steuer auf das Konto mit dem passenden Steuercode-Tag. Tagge dein Umsatzsteuerkonto mit allen Umsatzsteuercodes und dein Vorsteuerkonto mit allen Vorsteuercodes. Siehe [Steuern](taxes.de). |
 | `accruals` | Das Konto kann beim [Abgrenzen einer Buchung](general-ledger.de#abgrenzen) über mehrere Monate als Abgrenzungskonto verwendet werden, z. B. *aktive Rechnungsabgrenzung* oder *passive Rechnungsabgrenzung*. |
 
 Apps können weitere Tags definieren.
 
 ### Bevorzugter Steuercode
 
-Konten können einen bevorzugten Steuercode haben, z. B. `AT-V20` bei einem Erlöskonto. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) wählt dann zuerst diesen Steuercode, wenn du für das Konto einen Steuersatz angibst. Der bevorzugte Steuercode wird üblicherweise von Apps gesetzt, die einen Kontenplan importieren, oder über die API.
+Konten können einen bevorzugten Steuercode haben, z. B. `at.vat.output` bei einem Erlöskonto. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) wählt dann zuerst diesen Steuercode, wenn du für das Konto einen Steuersatz angibst. Der bevorzugte Steuercode wird üblicherweise von Apps gesetzt, die einen Kontenplan importieren, oder über die API.
 
 ## Kostenstellen
 

@@ -46,14 +46,14 @@ Tags tell YaBooks what an account is used for:
 
 | Tag | Effect |
 | --- | --- |
-| A **tax code**, e.g. `AT-V20` | The account receives the tax amounts of this tax code. The [quick recorder](quick-recorder.en#specification-of-vat) posts tax to the account tagged with the matching tax code. Tag your VAT payable account with all output tax codes and your input VAT account with all input tax codes. See [Taxes](taxes.en). |
+| A **tax code**, e.g. `at.vat.output` | The account receives the tax amounts of this tax code. The [quick recorder](quick-recorder.en#specification-of-vat) posts tax to the account tagged with the matching tax code. Tag your VAT payable account with all output tax codes and your input VAT account with all input tax codes. See [Taxes](taxes.en). |
 | `accruals` | The account can be used as an accrual account when [accruing a ledger transaction](general-ledger.en#accruing) over several months, e.g. *prepaid expenses* or *deferred income*. |
 
 Apps may define further tags.
 
 ### Preferred Tax Code
 
-Accounts can have a preferred tax code, e.g. `AT-V20` for a revenue account. The [quick recorder](quick-recorder.en#specification-of-vat) then picks this tax code first when you enter a tax percentage for the account. The preferred tax code is usually set by apps that import a chart of accounts, or through the API.
+Accounts can have a preferred tax code, e.g. `at.vat.output` for a revenue account. The [quick recorder](quick-recorder.en#specification-of-vat) then picks this tax code first when you enter a tax percentage for the account. The preferred tax code is usually set by apps that import a chart of accounts, or through the API.
 
 ## Cost Centers
 

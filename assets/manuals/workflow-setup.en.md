@@ -21,7 +21,7 @@ Plan about one hour; most of it is the chart of accounts.
 1. Open **People**, click **+** and choose **New Organization** (or **New Individual** for a sole proprietor).
 2. Enter the legal name and save.
 3. Click ✏️ and add the registration number and jurisdiction (e.g. `AT`).
-4. Add the **main contact** with the registered office address, the **bank connections** and the **tax & business registrations**, e.g. `AT-UID` = `ATU12345678`.
+4. Add the **main contact** with the registered office address, the **bank connections** and the **tax & business registrations**, e.g. `at.tin` = `12 345/6789`, always with a country prefix (see [Tax codes and tax numbers](taxes.en#country-prefixes)).
 
 The country of the registered office matters: the [quick recorder](quick-recorder.en#specification-of-vat) prefers tax codes of this country.
 
@@ -37,7 +37,7 @@ The country of the registered office matters: the [quick recorder](quick-recorde
 ## 3. Check the Tax Codes
 
 Tax codes are shared by all businesses. Open **Settings → Tax codes** and check that all codes you need exist – for VAT usually at least the output tax and input tax codes for each rate, reverse charge and tax payments.
-Apps for your country may provide them for you. See [Taxes](taxes.en).
+Apps for your country may provide them for you. Make sure every code starts with the country prefix, e.g. `at.vat.input` – see [Country prefixes](taxes.en#country-prefixes).
 
 ## 4. Set Up the Chart of Accounts
 

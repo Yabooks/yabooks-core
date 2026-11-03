@@ -73,8 +73,8 @@ Beispiel einer Ausgangsrechnung über 3.000,00 zuzüglich 20 % USt:
 | Konto | Betrag | Steuercode | Bemessungsgrundlage |
 | --- | ---: | --- | --- |
 | 2000 Forderungen | 3.600,00 | | |
-| 4000 Beratungserlöse | −3.000,00 | AT-V20 20 % | ☑ |
-| 3500 Umsatzsteuer | −600,00 | AT-V20 20 % | ☐ |
+| 4000 Beratungserlöse | −3.000,00 | at.vat.output 20 % | ☑ |
+| 3500 Umsatzsteuer | −600,00 | at.vat.output 20 % | ☐ |
 
 > 💡 **Tipp:** Einfache Buchungen erfasst die [Schnellbuchungsfunktion](quick-recorder.de) samt Steuerzeile aus einer einzigen Textzeile.
 

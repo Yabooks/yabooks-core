@@ -11,10 +11,10 @@ Steuercodes gelten für alle Unternehmen und werden unter **Einstellungen → St
 
 | Feld | Bedeutung |
 | --- | --- |
-| **Code** | Eindeutige Kennung. Beginne mit dem zweistelligen Ländercode, z. B. `AT-V20`; die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bevorzugt Codes des Sitzlandes und im Hauptbuch wird die Länderflagge angezeigt. |
-| **Beschreibung** | z. B. *Umsatzsteuer 20 %*. |
+| **Code** | Eindeutige Kennung, beginnend mit dem kleingeschriebenen zweistelligen Ländercode, z. B. `at.vat.input`. Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bevorzugt Codes des Sitzlandes, und im Hauptbuch wird die Länderflagge angezeigt. |
+| **Beschreibung** | z. B. *Vorsteuer Österreich*. |
 | **Art** | Siehe unten. |
-| **Sätze (%)** | Die Steuersätze, mit denen der Code verwendet werden kann, durch Beistriche getrennt, z. B. `20, 10`. |
+| **Sätze (%)** | Die Steuersätze, mit denen der Code verwendet werden kann, durch Beistriche getrennt, z. B. `20, 13, 10`. |
 | **Bemessungsgrundlage** | Ob der Satz auf den **Netto**betrag (üblich bei der Umsatzsteuer) oder den **Brutto**betrag angewandt wird. |
 | **Währung** | Währung der Steuerbehörde. |
 | **Schlagwörter** | Zusätzliche Suchbegriffe. |
@@ -32,6 +32,25 @@ Ein gelöschter Steuercode bleibt in bestehenden Belegen erhalten, kann aber nic
 | **Erwerbsteuer (Schuld und Vorsteuer)** | Steuern, die der Käufer gleichzeitig schuldet und abzieht, z. B. Reverse Charge oder innergemeinschaftlicher Erwerb. | 🔄 |
 | **Steuerzahlung** | Zahlungen an bzw. Erstattungen vom Finanzamt. | 💰 |
 
+## Länderpräfixe
+
+> 💡 **Empfehlung:** Erfasse Steuercodes und Steuernummern immer mit Länderpräfix, z. B. `au.abn` für die australische Business Number. Viele Apps setzen die Verwendung bestimmter Codes voraus, z. B. `at.tin` für die österreichische Steuernummer oder `at.vat.input` als Steuercode für die österreichische Vorsteuer.
+
+Das Präfix ist der kleingeschriebene zweistellige Ländercode, gefolgt von einem Punkt. Verwende die Codes, die deine Apps erwarten; legst du Steuercodes selbst an, folge demselben Schema:
+
+| Code | Verwendet für |
+| --- | --- |
+| `at.vat.output` | Steuercode: österreichische Umsatzsteuer |
+| `at.vat.input` | Steuercode: österreichische Vorsteuer |
+| `at.tin` | Steuernummer: österreichische Steuernummer |
+| `au.abn` | Steuernummer: australische Business Number |
+
+Das Präfix hat praktische Auswirkungen:
+
+* Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bevorzugt Steuercodes des Sitzlandes des Unternehmens, aber nur, wenn sie mit dessen **kleingeschriebenem** Ländercode beginnen (`at.…`, nicht `AT-…`).
+* Das Hauptbuch und die Steuerregistrierungen von [Personen und Organisationen](people.de#details-einer-identitat) zeigen die aus den ersten beiden Buchstaben abgeleitete Länderflagge.
+* Codes verschiedener Länder kommen einander nie in die Quere, z. B. `at.vat.input` und `de.vat.input`.
+
 ## Steuern erfassen
 
 Eine steuerpflichtige Buchung besteht aus mindestens zwei Zeilen mit demselben Steuercode und Steuersatz:
@@ -43,8 +62,8 @@ Beispiel: Eingangsrechnung über 123,45 inklusive 20 % USt
 
 | Konto | Betrag | Steuercode | Bemessungsgrundlage |
 | --- | ---: | --- | --- |
-| 5700 Büromaterial | 102,88 | AT-VS20 20 % | ☑ |
-| 2500 Vorsteuer | 20,57 | AT-VS20 20 % | ☐ |
+| 5700 Büromaterial | 102,88 | at.vat.input 20 % | ☑ |
+| 2500 Vorsteuer | 20,57 | at.vat.input 20 % | ☐ |
 | 3300 Verbindlichkeiten | −123,45 | | |
 
 Es gibt zwei Wege, dies zu erfassen:
@@ -57,8 +76,8 @@ Bei Reverse Charge erfasst du sowohl eine Umsatzsteuer- als auch eine Vorsteuerz
 ## Steuerkonten einrichten
 
 1. Lege die benötigten Steuercodes an (oder installiere eine App, die die Steuercodes deines Landes bereitstellt).
-2. Lege ein Fremdkapitalkonto für die Umsatzsteuer an (z. B. *3500 Umsatzsteuer*) und tagge es mit allen Umsatzsteuercodes, z. B. `AT-V20`, `AT-V10`.
-3. Lege ein Vermögenskonto für die Vorsteuer an (z. B. *2500 Vorsteuer*) und tagge es mit allen Vorsteuercodes, z. B. `AT-VS20`.
+2. Lege ein Fremdkapitalkonto für die Umsatzsteuer an (z. B. *3500 Umsatzsteuer*) und tagge es mit allen Umsatzsteuercodes, z. B. `at.vat.output`.
+3. Lege ein Vermögenskonto für die Vorsteuer an (z. B. *2500 Vorsteuer*) und tagge es mit allen Vorsteuercodes, z. B. `at.vat.input`.
 4. Setze optional einen [bevorzugten Steuercode](accounts.de#bevorzugter-steuercode) bei Erlös- und Aufwandskonten.
 
 Wie Konten getaggt werden, steht unter [Tags](accounts.de#tags).

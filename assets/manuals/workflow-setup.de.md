@@ -21,7 +21,7 @@ Plane etwa eine Stunde ein; der Großteil entfällt auf den Kontenplan.
 1. Öffne **Personen**, klicke auf **+** und wähle **Neue Organisation** (bzw. **Neue Privatperson** bei Einzelunternehmen).
 2. Gib den rechtlichen Namen ein und speichere.
 3. Klicke auf ✏️ und ergänze Firmenbuchnummer und Rechtsordnung (z. B. `AT`).
-4. Ergänze **Kontaktmöglichkeiten** mit der Adresse des Sitzes, die **Bankverbindungen** und die **Unternehmens- und Steuerregistrierungen**, z. B. `AT-UID` = `ATU12345678`.
+4. Ergänze **Kontaktmöglichkeiten** mit der Adresse des Sitzes, die **Bankverbindungen** und die **Unternehmens- und Steuerregistrierungen**, z. B. `at.tin` = `12 345/6789`, immer mit Länderpräfix (siehe [Steuercodes und Steuernummern](taxes.de#landerprafixe)).
 
 Das Sitzland ist wichtig: Die [Schnellbuchungsfunktion](quick-recorder.de#angabe-von-umsatzsteuer) bevorzugt Steuercodes dieses Landes.
 
@@ -37,7 +37,7 @@ Das Sitzland ist wichtig: Die [Schnellbuchungsfunktion](quick-recorder.de#angabe
 ## 3. Steuercodes prüfen
 
 Steuercodes gelten für alle Unternehmen. Öffne **Einstellungen → Steuercodes** und prüfe, dass alle benötigten Codes vorhanden sind – für die Umsatzsteuer meist zumindest Umsatzsteuer- und Vorsteuercodes je Steuersatz, Reverse Charge und Steuerzahlungen.
-Apps für dein Land können sie bereitstellen. Siehe [Steuern](taxes.de).
+Apps für dein Land können sie bereitstellen. Achte darauf, dass jeder Code mit dem Länderpräfix beginnt, z. B. `at.vat.input` – siehe [Länderpräfixe](taxes.de#landerprafixe).
 
 ## 4. Kontenplan einrichten
 

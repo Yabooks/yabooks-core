@@ -33,13 +33,15 @@ Die Felder darunter enthalten weitere Details. Jedes Feld hat eine **+**-Schaltf
 | **Marken und Geschäftsbezeichnungen** | Handelsnamen, die zusätzlich zum rechtlichen Namen verwendet werden. |
 | **Kontaktmöglichkeiten** | E-Mail-Adresse, Telefonnummer (internationales Format, z. B. `+436641234567`) und Adresse. Eine Adresse muss vollständig (Straße, Nummer, PLZ und Ort) oder ganz leer sein. Mehrere Adressen sind möglich. |
 | **Bankverbindungen** | IBAN, BIC, Bankname und Kontoinhaber. Wird z. B. von Banking-Apps zur Zuordnung von Zahlungen verwendet. |
-| **Unternehmens- und Steuerregistrierungen** | Steuernummern und Registrierungen als Schlüssel-Wert-Paare, z. B. Schlüssel `AT-UID` und Wert `ATU12345678`. Die ersten beiden Buchstaben des Schlüssels bestimmen die angezeigte Länderflagge. |
+| **Unternehmens- und Steuerregistrierungen** | Steuernummern und Registrierungen als Schlüssel-Wert-Paare, z. B. Schlüssel `at.tin` und Wert `12 345/6789` für die österreichische Steuernummer. Die ersten beiden Buchstaben des Schlüssels bestimmen die angezeigte Länderflagge; siehe die Empfehlung unten. |
 | **Unternehmen** | Die Unternehmen dieser Identität (siehe unten). |
 | **Beziehungen und Verknüpfungen** | Verbindungen zu anderen Identitäten, siehe [Beziehungen](#beziehungen). |
 
+> 💡 **Empfehlung:** Erfasse Steuercodes und Steuernummern immer mit Länderpräfix, z. B. `au.abn` für die australische Business Number. Viele Apps setzen die Verwendung bestimmter Codes voraus, z. B. `at.tin` für die österreichische Steuernummer oder `at.vat.input` als Steuercode für die österreichische Vorsteuer. Siehe [Länderpräfixe](taxes.de#landerprafixe).
+
 ## Beziehungen
 
-Beziehungen verbinden Identitäten miteinander, z. B. *Anna Berger* ist *Geschäftsführerin* der *Sample Company Ltd*.
+Beziehungen verbinden Identitäten miteinander, z. B. *Anna Berger* ist *Geschäftsführerin* der *Musterfirma GmbH*.
 
 1. Klicke im Feld **Beziehungen und Verknüpfungen** auf **+**.
 2. Suche die verknüpfte Person oder Organisation.
